@@ -1,10 +1,18 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { Clock, Home, MessageCircle, Search, Tag } from "lucide-react";
+import {
+  Clock,
+  Home,
+  MessageCircle,
+  RefreshCw,
+  Search,
+  Tag,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -43,6 +51,10 @@ export function AppSidebar() {
     limit: 10,
   });
 
+  // Gather clusters mutation
+  const [gatherClusters, { isLoading: isGathering }] =
+    clustersApi.useGatherClustersMutation();
+
   // Set isClient to true on mount
   useEffect(() => {
     setIsClient(true);
@@ -58,6 +70,15 @@ export function AppSidebar() {
   const formatDate = (dateString: string) => {
     if (!isClient) return "";
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+  };
+
+  // Handle refresh clusters
+  const handleRefreshClusters = async () => {
+    try {
+      await gatherClusters().unwrap();
+    } catch (error) {
+      console.error("Error gathering clusters:", error);
+    }
   };
 
   return (
@@ -100,9 +121,22 @@ export function AppSidebar() {
 
         {/* Clusters */}
         <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center gap-2">
-            <Tag className="h-4 w-4" />
-            Clusters
+          <SidebarGroupLabel className="flex items-center gap-2 justify-between">
+            <span className="flex items-center gap-2">
+              <Tag className="h-4 w-4" />
+              Clusters
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={handleRefreshClusters}
+              disabled={isGathering}
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${isGathering ? "animate-spin" : ""}`}
+              />
+            </Button>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             {clustersLoading ? (

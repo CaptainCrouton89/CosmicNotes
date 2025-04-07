@@ -42,6 +42,9 @@ export const notesApi = createApi({
 
     getNote: builder.query<Note, number>({
       query: (id) => `note/${id}`,
+      transformResponse: (response: { note: Note }) => {
+        return response.note;
+      },
       providesTags: (result, error, id) => [{ type: "Note", id }],
     }),
 
@@ -53,6 +56,13 @@ export const notesApi = createApi({
         `note/search?query=${encodeURIComponent(
           query
         )}&matchCount=${matchCount}&matchThreshold=${matchThreshold}`,
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.notes.map(({ id }) => ({ type: "Note" as const, id })),
+              { type: "Note", id: "LIST" },
+            ]
+          : [{ type: "Note", id: "LIST" }],
     }),
 
     createNote: builder.mutation<Note, NoteInput>({
@@ -61,6 +71,9 @@ export const notesApi = createApi({
         method: "POST",
         body: note,
       }),
+      transformResponse: (response: { success: boolean; note: Note }) => {
+        return response.note;
+      },
       invalidatesTags: [{ type: "Note", id: "LIST" }],
     }),
 
@@ -73,6 +86,9 @@ export const notesApi = createApi({
         method: "PUT",
         body: note,
       }),
+      transformResponse: (response: { note: Note }) => {
+        return response.note;
+      },
       invalidatesTags: (result, error, { id }) => [
         { type: "Note", id },
         { type: "Note", id: "LIST" },

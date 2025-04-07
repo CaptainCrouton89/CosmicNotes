@@ -2,38 +2,28 @@
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { notesApi } from "@/lib/redux/services/notesApi";
 import { useState } from "react";
 
 export default function Home() {
   const [note, setNote] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const [createNote, { isLoading: isSaving }] =
+    notesApi.useCreateNoteMutation();
 
   const handleSaveNote = async () => {
     if (!note.trim()) return;
 
-    setIsSaving(true);
     try {
-      const response = await fetch("/api/note", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: note,
-        }),
-      });
+      await createNote({
+        content: note,
+        embedding: "",
+      }).unwrap();
 
-      if (response.ok) {
-        // Clear the note area after successful save
-        setNote("");
-        console.log("Note saved successfully!");
-      } else {
-        console.error("Failed to save note");
-      }
+      // Clear the note area after successful save
+      setNote("");
+      console.log("Note saved successfully!");
     } catch (error) {
       console.error("Error saving note:", error);
-    } finally {
-      setIsSaving(false);
     }
   };
 

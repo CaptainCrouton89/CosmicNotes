@@ -12,31 +12,34 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { notesApi } from "@/lib/redux/services/notesApi";
+import { Database } from "@/types/database.types";
 import { ArrowLeft, Clock, Tag, Trash2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+// Define Note type from the same source as notesApi
+type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"] & {
+  cosmic_tags?: {
+    tag: string;
+    confidence: number;
+    created_at: string;
+  }[];
+};
+
 interface Tag {
   id: number;
+  note: number;
   tag: string;
   confidence: number;
   created_at: string;
-}
-
-interface Note {
-  id: number;
-  content: string;
-  created_at: string;
-  metadata: Record<string, string | number | boolean | null>;
 }
 
 export default function NotePage() {
   const params = useParams();
   const noteId = params.id;
 
-  const [note, setNote] = useState<Note | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
@@ -45,60 +48,67 @@ export default function NotePage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const router = useRouter();
 
+  // Add Redux hooks
+  const {
+    data: note,
+    isLoading: loading,
+    refetch,
+  } = notesApi.useGetNoteQuery(Number(noteId), {
+    skip: !noteId,
+  });
+  const [updateNote] = notesApi.useUpdateNoteMutation();
+  const [deleteNoteMutation] = notesApi.useDeleteNoteMutation();
+
+  // Debug logs
   useEffect(() => {
-    async function fetchNote() {
-      try {
-        setLoading(true);
-        const [noteResponse, tagsResponse] = await Promise.all([
-          fetch(`/api/note/${noteId}`),
-          fetch(`/api/note/${noteId}/tags`),
-        ]);
+    console.log("Note data from individual page:", note);
+  }, [note]);
 
-        if (!noteResponse.ok) {
-          throw new Error("Failed to fetch note");
-        }
+  // Define a function to fetch tags that can be reused
+  const fetchTags = useCallback(async () => {
+    if (!noteId) return;
 
-        if (!tagsResponse.ok) {
-          throw new Error("Failed to fetch tags");
-        }
+    try {
+      const tagsResponse = await fetch(`/api/note/${noteId}/tags`);
 
-        const noteData = await noteResponse.json();
-        const tagsData = await tagsResponse.json();
-
-        setNote(noteData.note);
-        setTags(tagsData.tags);
-        setContent(noteData.note.content);
-        setLastSaved(new Date());
-      } catch (err) {
-        console.error("Error fetching note:", err);
-        setError("Failed to load note");
-      } finally {
-        setLoading(false);
+      if (!tagsResponse.ok) {
+        throw new Error("Failed to fetch tags");
       }
-    }
 
-    fetchNote();
+      const tagsData = await tagsResponse.json();
+      setTags(tagsData.tags);
+    } catch (err) {
+      console.error("Error fetching tags:", err);
+      setError("Failed to load tags");
+    }
   }, [noteId]);
+
+  // Fetch tags when the component mounts
+  useEffect(() => {
+    fetchTags();
+  }, [fetchTags]);
+
+  // Update content when note data is loaded
+  useEffect(() => {
+    if (note) {
+      setContent(note.content);
+      setLastSaved(new Date());
+    }
+  }, [note]);
 
   const saveNote = useCallback(async () => {
     if (!note) return;
 
     try {
       setSaving(true);
-      const response = await fetch(`/api/note/${noteId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content }),
-      });
+      await updateNote({
+        id: Number(noteId),
+        note: { content },
+      }).unwrap();
 
-      if (!response.ok) {
-        throw new Error("Failed to update note");
-      }
+      // Refetch the note data and tags to ensure UI is updated
+      await Promise.all([refetch(), fetchTags()]);
 
-      const data = await response.json();
-      setNote(data.note);
       setLastSaved(new Date());
     } catch (err) {
       console.error("Error updating note:", err);
@@ -106,7 +116,7 @@ export default function NotePage() {
     } finally {
       setSaving(false);
     }
-  }, [note, noteId, content]);
+  }, [note, noteId, content, updateNote, refetch, fetchTags]);
 
   // Auto-save after 10 seconds of no typing
   useEffect(() => {
@@ -150,13 +160,8 @@ export default function NotePage() {
 
     try {
       setDeleting(true);
-      const response = await fetch(`/api/note/${noteId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete note");
-      }
+      // Replace direct fetch with RTK Query mutation
+      await deleteNoteMutation(Number(noteId)).unwrap();
 
       setDeleteDialogOpen(false);
       router.push("/");
@@ -165,7 +170,7 @@ export default function NotePage() {
       setError("Failed to delete note");
       setDeleting(false);
     }
-  }, [note, noteId, router]);
+  }, [note, noteId, router, deleteNoteMutation]);
 
   return (
     <div className="space-y-6">

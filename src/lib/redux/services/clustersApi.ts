@@ -50,5 +50,16 @@ export const clustersApi = createApi({
       query: ({ clusterId, page = 1, limit = 20 }) =>
         `note/cluster?clusterId=${clusterId}&page=${page}&limit=${limit}`,
     }),
+
+    gatherClusters: builder.mutation<
+      { message: string; clustersCreated: any[] },
+      void
+    >({
+      query: () => ({
+        url: "cluster/gather",
+        method: "POST",
+      }),
+      invalidatesTags: [{ type: "Cluster", id: "LIST" }],
+    }),
   }),
 });

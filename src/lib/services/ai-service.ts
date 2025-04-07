@@ -9,8 +9,8 @@ export async function generateNoteSummary(notes: Note[]) {
   const result = await generateObject({
     model: openai("gpt-4o"),
     system:
-      "You are a helpful assistant that creates comprehensive summaries from multiple related notes.",
-    prompt: `Create a well-organized, markdown formatted comprehensive summary of these related notes. Include citations to the original notes using their IDs and the date of the note. Format citations as [id].
+      "You are a helpful assistant that specializes in turning disorganized notes into well-organized, markdown formatted notes.",
+    prompt: `Create a well-organized, markdown formatted note containing all the information from these related notes. Include citations to the original notes using their IDs and the date of the note. Format citations as [id]. It should appear as a brand new note.
              
              Notes:
              ${notes

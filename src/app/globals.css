@@ -120,3 +120,46 @@
     @apply bg-background text-foreground;
   }
 }
+
+.markdown {
+  h1 {
+    @apply text-2xl font-bold mb-3;
+  }
+  h2 {
+    @apply text-xl font-bold mt-4 mb-2;
+  }
+  h3 {
+    @apply text-lg font-bold mt-3 mb-1;
+  }
+  h4 {
+    @apply text-base font-bold mt-2 mb-1;
+  }
+  h5 {
+    @apply text-sm font-bold mt-2 mb-1;
+  }
+  h6 {
+    @apply text-xs font-bold mt-2 mb-1;
+  }
+  p {
+    @apply text-base mb-4;
+  }
+  a {
+    @apply text-primary hover:underline;
+  }
+  ul,
+  ol {
+    @apply mb-4 ml-6 list-decimal;
+  }
+  li {
+    @apply mb-1 list-decimal;
+  }
+  blockquote {
+    @apply pl-4 border-l-4 border-muted italic my-4;
+  }
+  pre {
+    @apply my-4;
+  }
+  hr {
+    @apply my-6;
+  }
+}

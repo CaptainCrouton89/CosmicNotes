@@ -3,6 +3,8 @@
 import { clustersApi } from "@/lib/redux/services/clustersApi";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function ClusterPage() {
   const params = useParams();
@@ -81,7 +83,11 @@ export default function ClusterPage() {
           <p>Last updated {formatDate(cluster.updated_at)}</p>
           <p>Created {formatDate(cluster.created_at)}</p>
         </div>
-        <p className="text-lg">{cluster.summary}</p>
+        <div className="markdown">
+          <Markdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>
+            {cluster.summary}
+          </Markdown>
+        </div>
       </div>
 
       <hr className="my-8 border-t border-gray-200" />
