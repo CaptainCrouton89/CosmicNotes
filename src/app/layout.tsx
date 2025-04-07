@@ -1,8 +1,11 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { Providers } from "@/components/providers";
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
+import { PWAMeta } from "@/components/pwa-meta";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const inter = Inter({
@@ -13,6 +16,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Cosmic Notes",
   description: "A simple note-taking application",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -22,6 +26,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <PWAMeta />
+      </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
           <SidebarProvider>
@@ -39,8 +46,10 @@ export default function RootLayout({
                 </main>
               </div>
             </div>
+            <PWAInstallPrompt />
           </SidebarProvider>
         </Providers>
+        <Script src="/sw-register.js" strategy="afterInteractive" />
       </body>
     </html>
   );
