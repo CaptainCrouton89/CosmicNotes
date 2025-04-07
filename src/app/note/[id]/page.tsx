@@ -151,6 +151,7 @@ export default function NotePage() {
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            onBlur={saveNote}
             className="min-h-[200px] w-full"
             placeholder="Write your note..."
           />

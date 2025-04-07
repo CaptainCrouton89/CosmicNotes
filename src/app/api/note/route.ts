@@ -1,5 +1,6 @@
 import { generateEmbedding } from "@/lib/embeddings";
 import { ApplicationError, UserError } from "@/lib/errors";
+import { generateAndSaveTags } from "@/lib/tags";
 import { createClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 
@@ -57,6 +58,14 @@ export async function POST(req: NextRequest) {
       throw new ApplicationError("Failed to save note", {
         supabaseError: insertError,
       });
+    }
+
+    // Generate and save tags for the new note
+    try {
+      await generateAndSaveTags(content, savedNote.id);
+    } catch (tagError) {
+      console.error("Error generating tags:", tagError);
+      // Don't fail the whole request if tag generation fails
     }
 
     return new Response(

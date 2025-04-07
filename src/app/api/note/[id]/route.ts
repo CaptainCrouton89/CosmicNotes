@@ -1,6 +1,7 @@
 import { generateEmbedding } from "@/lib/embeddings";
 import { ApplicationError, UserError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
+import { generateAndSaveTags } from "@/lib/tags";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
@@ -64,15 +65,17 @@ export async function PUT(
       throw new UserError("Note content is required");
     }
 
+    const supabase = await createClient();
+
     // Generate new embedding for the updated content
     const embedding = await generateEmbedding(body.content);
 
-    const supabase = await createClient();
+    // Update the note with new content and embedding
     const { data: note, error } = await supabase
       .from("cosmic_memory")
       .update({
         content: body.content,
-        embedding, // Now properly typed as string
+        embedding,
       })
       .eq("id", parseInt(id))
       .select()
@@ -84,6 +87,25 @@ export async function PUT(
 
     if (!note) {
       throw new UserError("Note not found");
+    }
+
+    // Delete old tags
+    const { error: deleteError } = await supabase
+      .from("cosmic_tags")
+      .delete()
+      .eq("note", parseInt(id));
+
+    if (deleteError) {
+      console.error("Error deleting old tags:", deleteError);
+      // Don't fail the whole request if tag deletion fails
+    }
+
+    // Generate and save new tags
+    try {
+      await generateAndSaveTags(body.content, parseInt(id));
+    } catch (tagError) {
+      console.error("Error generating new tags:", tagError);
+      // Don't fail the whole request if tag generation fails
     }
 
     return NextResponse.json({ note });
@@ -114,6 +136,17 @@ export async function DELETE(
 
     // Initialize Supabase client
     const supabaseClient = await createClient();
+
+    // Delete associated tags first
+    const { error: tagDeleteError } = await supabaseClient
+      .from("cosmic_tags")
+      .delete()
+      .eq("note", parseInt(noteId));
+
+    if (tagDeleteError) {
+      console.error("Failed to delete associated tags:", tagDeleteError);
+      // Continue with deleting the note even if tag deletion fails
+    }
 
     // Delete the note
     const { error } = await supabaseClient
