@@ -56,9 +56,25 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    const notesWithTags = await Promise.all(
+      notes.map(async (note) => {
+        const { data: tags } = await supabaseClient
+          .from("cosmic_tags")
+          .select("*")
+          .eq("note", note.id);
+
+        return {
+          ...note,
+          cosmic_tags: tags,
+        };
+      })
+    );
+
+    console.log(notesWithTags);
+
     return new Response(
       JSON.stringify({
-        notes: notes || [],
+        notes: notesWithTags,
       }),
       {
         status: 200,

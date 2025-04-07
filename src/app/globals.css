@@ -151,7 +151,7 @@
     @apply mb-4 ml-6 list-decimal;
   }
   li {
-    @apply mb-1 list-decimal;
+    @apply mb-1 list-decimal text-base;
   }
   blockquote {
     @apply pl-4 border-l-4 border-muted italic my-4;

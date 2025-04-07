@@ -1,14 +1,23 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { notesApi } from "@/lib/redux/services/notesApi";
 import { tagsApi } from "@/lib/redux/services/tagsApi";
-import { clearSearch, setSearchQuery } from "@/lib/redux/slices/searchSlice";
+import { setSearchQuery } from "@/lib/redux/slices/searchSlice";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
+
+// Define types for the cosmic tags
+interface CosmicTag {
+  tag: string;
+  confidence: number;
+  created_at: string;
+}
 
 export default function SearchPage() {
   const router = useRouter();
@@ -57,12 +66,6 @@ export default function SearchPage() {
     setSkip(false);
   };
 
-  const handleClearSearch = () => {
-    dispatch(clearSearch());
-    setLocalSearchQuery("");
-    setSkip(true);
-  };
-
   const handleRefine = async () => {
     setIsRefining(true);
     try {
@@ -97,37 +100,28 @@ export default function SearchPage() {
 
       <form onSubmit={handleSearch} className="mb-6">
         <div className="flex gap-4">
-          <input
+          <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setLocalSearchQuery(e.target.value)}
             placeholder="Search notes..."
             className="flex-1 px-4 py-2 border rounded-lg"
           />
-          <button
+          <Button
             type="submit"
             disabled={isSearching}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
           >
             {isSearching ? "Searching..." : "Search"}
-          </button>
-          {hasSearched && (
-            <button
-              type="button"
-              onClick={handleClearSearch}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-            >
-              Clear
-            </button>
-          )}
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleRefine}
             disabled={isRefining}
             className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50"
           >
             {isRefining ? "Refining..." : "Refine Tags"}
-          </button>
+          </Button>
         </div>
       </form>
 
@@ -138,6 +132,18 @@ export default function SearchPage() {
             className="p-4 border rounded-lg hover:border-blue-500 cursor-pointer"
             onClick={() => router.push(`/note/${note.id}`)}
           >
+            {note.cosmic_tags && note.cosmic_tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {note.cosmic_tags.map((tag: CosmicTag, index: number) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"
+                  >
+                    {tag.tag}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="text-lg mb-2 markdown">
               <Markdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>
                 {truncateContent(note.content)}
