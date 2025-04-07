@@ -34,7 +34,7 @@ export async function POST() {
           // convert [#id] to links
           const linkedSummary = summary.replace(
             /\[(\d+)\]/g,
-            (match, id) => `[${id}](/note/${id})`
+            (match, id) => `[[${id}](/note/${id})]`
           );
 
           // Upsert the cluster
