@@ -27,15 +27,15 @@ export default function RootLayout({
           <SidebarProvider>
             <div className="flex min-h-screen flex-1 ">
               <AppSidebar />
-              <div className="flex flex-col flex-1">
-                <header className="border-b">
+              <div className="flex flex-col flex-1 h-screen">
+                <header className="border-b pl-3">
                   <div className="container flex h-14 items-center">
                     <SidebarTrigger />
                     <div className="font-semibold ml-2">Cosmic Notes</div>
                   </div>
                 </header>
-                <main className="flex-1 overflow-auto">
-                  <div className="container py-6 px-10">{children}</div>
+                <main className="flex-1 overflow-auto min-h-0">
+                  <div className="container py-6 px-10 h-full">{children}</div>
                 </main>
               </div>
             </div>

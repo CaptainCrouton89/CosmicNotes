@@ -2,15 +2,33 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { linkifySummary } from "@/lib/utils";
 import { useChat } from "@ai-sdk/react";
 import { useEffect, useRef } from "react";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-export function ChatInterface() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } =
+type ChatInterfaceProps = {
+  className?: string;
+  endpoint?: string;
+  chatId?: string;
+};
+
+export function ChatInterface({
+  className,
+  endpoint,
+  chatId,
+}: ChatInterfaceProps) {
+  const { messages, input, handleInputChange, handleSubmit, status, error } =
     useChat({
-      api: "/api/chat",
+      api: endpoint || "/api/chat",
       onError: (err: Error) => {
         console.error("Chat error:", err);
+      },
+      id: `cluster-${chatId}`,
+      maxSteps: 15,
+      body: {
+        tagName: chatId,
       },
     });
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -23,17 +41,15 @@ export function ChatInterface() {
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-[600px]">
+    <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center text-center">
             <div className="text-muted-foreground">
               <p className="text-lg font-medium">
-                Welcome to the Cosmic Notes Chatbot!
+                I know your notes. Ask me anything about them.
               </p>
-              <p className="text-sm">
-                Ask me anything about note-taking or organizing your thoughts.
-              </p>
+              <p className="text-sm">Seriously :)</p>
             </div>
           </div>
         ) : (
@@ -53,7 +69,15 @@ export function ChatInterface() {
               >
                 {message.parts.map((part, i) => {
                   if (part.type === "text") {
-                    return <div key={`${message.id}-${i}`}>{part.text}</div>;
+                    return (
+                      <div key={`${message.id}-${i}`} className="markdown">
+                        <Markdown
+                          remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
+                        >
+                          {linkifySummary(part.text)}
+                        </Markdown>
+                      </div>
+                    );
                   }
                   return null;
                 })}
@@ -75,10 +99,10 @@ export function ChatInterface() {
           onChange={handleInputChange}
           placeholder="Type your message..."
           className="flex-1"
-          disabled={isLoading}
+          disabled={status !== "ready"}
         />
-        <Button type="submit" disabled={isLoading || !input.trim()}>
-          {isLoading ? "Thinking..." : "Send"}
+        <Button type="submit" disabled={status !== "ready" || !input.trim()}>
+          {status === "ready" ? "Send" : "Thinking..."}
         </Button>
       </form>
     </div>

@@ -3,10 +3,11 @@ import type { NextRequest } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const clusterId = parseInt(params.id, 10);
+    const { id } = await params;
+    const clusterId = parseInt(id, 10);
 
     if (isNaN(clusterId)) {
       return new Response(

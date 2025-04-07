@@ -5,6 +5,7 @@ import {
   getNotesForTag,
 } from "@/lib/services/tag-service";
 import { createClient } from "@/lib/supabase/server";
+import { linkifySummary } from "@/lib/utils";
 import { NextResponse } from "next/server";
 
 export async function POST() {
@@ -32,10 +33,7 @@ export async function POST() {
           const summary = await generateNoteSummary(notes);
 
           // convert [#id] to links
-          const linkedSummary = summary.replace(
-            /\[(\d+)\]/g,
-            (match, id) => `[[${id}](/note/${id})]`
-          );
+          const linkedSummary = linkifySummary(summary);
 
           // Upsert the cluster
           const { error: upsertError } = await supabase
