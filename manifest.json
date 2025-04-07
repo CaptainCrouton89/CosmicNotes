@@ -1,0 +1,38 @@
+{
+  "short_name": "Cosmic",
+  "name": "Cosmic Notes",
+  "icons": [
+    {
+      "src": "/src/app/favicon.ico",
+      "type": "image/x-icon",
+      "sizes": "64x64"
+    }
+  ],
+  "id": "/?source=pwa",
+  "start_url": "/?source=pwa",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#ffffff",
+  "shortcuts": [
+    {
+      "name": "Add a new note",
+      "short_name": "New Note",
+      "description": "Create a new note quickly",
+      "url": "/note/new?source=pwa"
+    },
+    {
+      "name": "Search your notes",
+      "short_name": "Search",
+      "description": "Search through all your notes",
+      "url": "/search?source=pwa"
+    },
+    {
+      "name": "Chat with your notes",
+      "short_name": "Chat",
+      "description": "Chat with AI about your notes",
+      "url": "/chat?source=pwa"
+    }
+  ],
+  "description": "A simple and powerful note-taking application"
+}
