@@ -1,0 +1,22 @@
+{
+  "name": "page-content-saver",
+  "version": "1.0.0",
+  "description": "A Chrome extension for saving page content as notes",
+  "private": true,
+  "scripts": {
+    "build": "echo \"No build step required for basic extension\" && exit 0",
+    "lint": "eslint *.js",
+    "test": "echo \"No tests defined\" && exit 0"
+  },
+  "keywords": [
+    "chrome-extension",
+    "page-content",
+    "notes",
+    "save-content"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.45.0"
+  }
+}

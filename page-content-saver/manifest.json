@@ -1,0 +1,34 @@
+{
+  "name": "Cosmic Notes Saver",
+  "description": "Save the content of the current page to Cosmic Notes",
+  "version": "1.0",
+  "manifest_version": 3,
+  "permissions": ["activeTab", "storage", "scripting"],
+  "host_permissions": ["https://cosmic-delta-gilt.vercel.app/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["config.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
