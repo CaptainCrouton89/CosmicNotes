@@ -127,6 +127,30 @@ export type Database = {
           },
         ]
       }
+      cosmic_cluster: {
+        Row: {
+          created_at: string
+          id: number
+          summary: string
+          tag: string
+          tag_count: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          summary: string
+          tag: string
+          tag_count: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          summary?: string
+          tag?: string
+          tag_count?: number
+        }
+        Relationships: []
+      }
       cosmic_memory: {
         Row: {
           content: string

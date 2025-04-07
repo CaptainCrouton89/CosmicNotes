@@ -9,10 +9,10 @@ export const runtime = "edge";
 // GET a specific note by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const id = (await params).id;
     if (!id) {
       throw new UserError("Note ID is required");
     }
@@ -51,10 +51,10 @@ export async function GET(
 // PUT/UPDATE a specific note by ID
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const id = (await params).id;
     if (!id) {
       throw new UserError("Note ID is required");
     }
@@ -125,10 +125,10 @@ export async function PUT(
 // DELETE a specific note by ID
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const noteId = params.id;
+    const noteId = (await params).id;
 
     if (!noteId) {
       throw new UserError("Note ID is required");

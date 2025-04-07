@@ -7,10 +7,10 @@ export const runtime = "edge";
 // GET tags for a specific note
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const id = (await params).id;
     if (!id) {
       throw new UserError("Note ID is required");
     }

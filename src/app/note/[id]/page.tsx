@@ -10,7 +10,7 @@ interface Note {
   id: number;
   content: string;
   created_at: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, string | number | boolean | null>;
 }
 
 export default function NotePage() {

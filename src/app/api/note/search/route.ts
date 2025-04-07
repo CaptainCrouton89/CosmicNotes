@@ -58,7 +58,9 @@ export async function GET(req: NextRequest) {
     });
 
     if (error) {
-      throw new ApplicationError("Failed to search notes", error);
+      throw new ApplicationError("Failed to search notes", {
+        supabaseError: error,
+      });
     }
 
     return new Response(

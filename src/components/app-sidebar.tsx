@@ -2,6 +2,7 @@
 
 import { formatDistanceToNow } from "date-fns";
 import { Clock, Home, MessageCircle, Search } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import {
@@ -21,7 +22,7 @@ interface Note {
   id: number;
   content: string;
   created_at: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, string | number | boolean | null>;
 }
 
 export function AppSidebar() {
@@ -78,26 +79,26 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a href="/">
+                  <Link href="/">
                     <Home className="h-4 w-4" />
                     <span>Home</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a href="/search">
+                  <Link href="/search">
                     <Search className="h-4 w-4" />
                     <span>Search</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a href="/chat">
+                  <Link href="/chat">
                     <MessageCircle className="h-4 w-4" />
                     <span>Chat</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -131,7 +132,7 @@ export function AppSidebar() {
                 {notes.map((note) => (
                   <SidebarMenuItem key={note.id}>
                     <SidebarMenuButton className="w-full text-left" asChild>
-                      <a
+                      <Link
                         href={`/note/${note.id}`}
                         className="flex justify-between"
                       >
@@ -139,7 +140,7 @@ export function AppSidebar() {
                         <span className="text-xs text-muted-foreground ml-auto">
                           {formatDate(note.created_at)}
                         </span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
