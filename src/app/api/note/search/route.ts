@@ -1,11 +1,9 @@
 import { ApplicationError, UserError } from "@/lib/errors";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 import type { NextRequest } from "next/server";
 import { Configuration, OpenAIApi } from "openai-edge";
 
-const openAiKey = process.env.OPENAI_KEY!;
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const openAiKey = process.env.OPENAI_API_KEY!;
 
 const config = new Configuration({
   apiKey: openAiKey,
@@ -29,12 +27,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Initialize Supabase client
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
+    const supabaseClient = await createClient();
 
     // Get embedding for the query
     const embeddingResponse = await openai.createEmbedding({

@@ -1,7 +1,7 @@
 import { ApplicationError } from "@/lib/errors";
 import { Configuration, OpenAIApi } from "openai-edge";
 
-const openAiKey = process.env.OPENAI_KEY!;
+const openAiKey = process.env.OPENAI_API_KEY!;
 
 const config = new Configuration({
   apiKey: openAiKey,
