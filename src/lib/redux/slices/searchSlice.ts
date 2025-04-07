@@ -1,23 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { notesApi } from "../services/notesApi";
 
-// Import from database types if possible instead of creating a new type
-interface Note {
-  id: number;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  cosmic_tags?: {
-    tag: string;
-    confidence: number;
-    created_at: string;
-  }[];
-  [key: string]: any; // Allow for additional properties
-}
-
 interface SearchState {
   query: string;
-  results: any[]; // Using any to avoid type issues
+  results: Record<string, unknown>[]; // Using Record for better typing than any
   hasSearched: boolean;
 }
 

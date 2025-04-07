@@ -55,7 +55,11 @@ export default function NotePage() {
     refetch,
   } = notesApi.useGetNoteQuery(Number(noteId), {
     skip: !noteId,
-  });
+  }) as {
+    data: Note | undefined;
+    isLoading: boolean;
+    refetch: () => Promise<{ data: Note | undefined }>;
+  };
   const [updateNote] = notesApi.useUpdateNoteMutation();
   const [deleteNoteMutation] = notesApi.useDeleteNoteMutation();
 

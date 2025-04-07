@@ -98,10 +98,10 @@ export default function SearchPage() {
     const noteResults = (data?.notes || savedResults || []).map((note) => ({
       ...note,
       type: "note",
-    }));
+    })) as SearchResult[];
 
     // Return clusters first, then notes
-    return [...filteredClusters, ...noteResults];
+    return [...(filteredClusters as SearchResult[]), ...noteResults];
   };
 
   const combinedResults = getCombinedSearchResults();
@@ -287,11 +287,11 @@ export default function SearchPage() {
           !isClustersLoading && (
             <div className="text-center p-6 bg-gray-50 rounded-lg">
               <p className="text-gray-600">
-                No results found for "{searchQuery}"
+                No results found for &quot;{searchQuery}&quot;
               </p>
               {!hasSearched && (
                 <p className="text-gray-500 mt-2">
-                  Click "Search Notes" to search note content
+                  Click &quot;Search Notes&quot; to search note content
                 </p>
               )}
             </div>

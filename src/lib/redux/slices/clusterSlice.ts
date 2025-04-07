@@ -9,7 +9,6 @@ interface Cluster {
   summary: string;
   created_at: string;
   updated_at: string;
-  [key: string]: any;
 }
 
 interface ClusterState {

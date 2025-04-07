@@ -87,14 +87,17 @@ export const searchNotesTool = tool({
 /**
  * Reranks search results using OpenAI to better match the query intent
  */
-async function rerankResults(query: string, notes: any[]) {
+async function rerankResults(query: string, notes: Record<string, unknown>[]) {
   try {
     // Prepare the notes for scoring - construct a minimal version to save tokens
     const notesForScoring = notes.map((note) => ({
       id: note.id,
-      content: note.content.substring(0, 500), // Limit content length to save tokens
+      content:
+        typeof note.content === "string" ? note.content.substring(0, 500) : "", // Limit content length to save tokens
       tags: note.cosmic_tags
-        ? note.cosmic_tags.map((t: any) => t.tag).join(", ")
+        ? Array.isArray(note.cosmic_tags)
+          ? note.cosmic_tags.map((t: { tag: string }) => t.tag).join(", ")
+          : ""
         : "",
     }));
 
@@ -121,8 +124,12 @@ async function rerankResults(query: string, notes: any[]) {
     // Sort the original notes by their scores
     return [...notes].sort((a, b) => {
       // If we have scores, use them; otherwise preserve the original order
-      const scoreA = scores.results.find((r: any) => r.id === a.id)?.score;
-      const scoreB = scores.results.find((r: any) => r.id === b.id)?.score;
+      const scoreA = scores.results.find(
+        (r: { id: unknown; score: number }) => r.id === a.id
+      )?.score;
+      const scoreB = scores.results.find(
+        (r: { id: unknown; score: number }) => r.id === b.id
+      )?.score;
       return (scoreB ?? 0) - (scoreA ?? 0);
     });
   } catch (error) {

@@ -15,10 +15,9 @@ type ChatInterfaceProps = {
 };
 
 export function ChatInterface({
-  className,
   endpoint,
   chatId,
-}: ChatInterfaceProps) {
+}: Omit<ChatInterfaceProps, "className">) {
   const { messages, input, handleInputChange, handleSubmit, status, error } =
     useChat({
       api: endpoint || "/api/chat",

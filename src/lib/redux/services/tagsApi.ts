@@ -30,7 +30,7 @@ export const tagsApi = createApi({
       providesTags: (result, error, tag) => [{ type: "Tag", id: tag }],
     }),
 
-    refineTags: builder.mutation<{ results: any[] }, void>({
+    refineTags: builder.mutation<{ results: Tag[] }, void>({
       query: () => ({
         url: "tags/refine",
         method: "POST",

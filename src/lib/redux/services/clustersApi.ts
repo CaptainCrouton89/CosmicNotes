@@ -2,7 +2,6 @@ import { Database } from "@/types/database.types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 type Cluster = Database["public"]["Tables"]["cosmic_cluster"]["Row"];
-type ClusterInput = Database["public"]["Tables"]["cosmic_cluster"]["Insert"];
 
 interface PaginatedResponse {
   clusters: Cluster[];
@@ -52,7 +51,7 @@ export const clustersApi = createApi({
     }),
 
     gatherClusters: builder.mutation<
-      { message: string; clustersCreated: any[] },
+      { message: string; clustersCreated: Cluster[] },
       void
     >({
       query: () => ({

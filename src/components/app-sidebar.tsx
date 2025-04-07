@@ -60,12 +60,6 @@ export function AppSidebar() {
     setIsClient(true);
   }, []);
 
-  // Helper function to truncate content
-  const truncateContent = (content: string, maxLength = 15) => {
-    if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength) + "...";
-  };
-
   // Format date only on client side
   const formatDate = (dateString: string) => {
     if (!isClient) return "";
