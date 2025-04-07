@@ -19,7 +19,7 @@ function extractHashtags(content: string): [Tag[], string] {
   const hashtags: Tag[] = [];
   const cleanedContent = content.replace(hashtagRegex, (match, tag) => {
     hashtags.push({
-      tag: tag.toLowerCase(),
+      tag: tag,
       confidence: 1.0,
     });
     return tag; // Keep the word, just remove the # symbol
@@ -53,16 +53,13 @@ export async function generateAndSaveTags(
         model: openai("gpt-4o"),
         system:
           "You are a helpful assistant that extracts relevant tags from content.",
-        prompt: `Extract the most relevant tags from this content. Identify key topics, concepts, and entities. 
-                 The tags should be concise (1-3 words) and relevant to the content.
-                 Return exactly 1-5 tags based on the content length and complexity.
-                 For each tag, provide a confidence score between 0 and 1, where 1 is most confident.
+        prompt: `Identify 1-2 tags that best describe the content. 
                  
                  Content: ${cleanedContent}`,
         schema: z.object({
           tags: z.array(
             z.object({
-              tag: z.string(),
+              tag: z.string().describe("The tag in PascalCase"),
               confidence: z
                 .number()
                 .min(0)
@@ -75,10 +72,8 @@ export async function generateAndSaveTags(
 
       // Process AI tags and set confidence to 1.0 if they match a hashtag
       aiTags = result.object.tags.map((tag) => ({
-        tag: tag.tag.toLowerCase(),
-        confidence: hashTagSet.has(tag.tag.toLowerCase())
-          ? 1.0
-          : tag.confidence,
+        tag: tag.tag,
+        confidence: hashTagSet.has(tag.tag) ? 1.0 : tag.confidence,
       }));
     }
 

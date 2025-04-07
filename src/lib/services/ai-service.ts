@@ -7,10 +7,10 @@ type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"];
 
 export async function generateNoteSummary(notes: Note[]) {
   const result = await generateObject({
-    model: openai("gpt-4"),
+    model: openai("gpt-4o"),
     system:
       "You are a helpful assistant that creates comprehensive summaries from multiple related notes.",
-    prompt: `Create a well-organized, comprehensive summary of these related notes. Include citations to the original notes using their IDs.
+    prompt: `Create a well-organized, markdown formatted comprehensive summary of these related notes. Include citations to the original notes using their IDs and the date of the note. Format citations as [id].
              
              Notes:
              ${notes

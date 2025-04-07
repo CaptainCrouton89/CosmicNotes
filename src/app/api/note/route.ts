@@ -142,7 +142,9 @@ export async function GET(req: NextRequest) {
       count,
     } = await supabaseClient
       .from("cosmic_memory")
-      .select("*", { count: "exact" })
+      .select("*, cosmic_tags(tag, confidence, created_at)", {
+        count: "exact",
+      })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -152,6 +154,16 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    const cleanedNotes = notes.map((note) => {
+      return {
+        ...note,
+        cosmic_tags: note.cosmic_tags.sort(
+          (a: { confidence: number }, b: { confidence: number }) =>
+            b.confidence - a.confidence
+        ),
+      };
+    });
+
     // Calculate total pages
     const totalCount = count || 0;
     const totalPages = Math.ceil(totalCount / limit);
@@ -159,7 +171,7 @@ export async function GET(req: NextRequest) {
     return new Response(
       JSON.stringify({
         success: true,
-        notes,
+        notes: cleanedNotes,
         pagination: {
           page,
           limit,

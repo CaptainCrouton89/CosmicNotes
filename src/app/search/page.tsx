@@ -1,46 +1,45 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { notesApi } from "@/lib/redux/services/notesApi";
+import { tagsApi } from "@/lib/redux/services/tagsApi";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-
-interface Note {
-  id: number;
-  content: string;
-  created_at: string;
-  metadata: Record<string, string | number | boolean | null>;
-  similarity?: number;
-}
+import { toast } from "sonner";
 
 export default function SearchPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Note[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [skip, setSkip] = useState(true);
+
+  const { data, isFetching: isSearching } = notesApi.useSearchNotesQuery(
+    { query: searchQuery },
+    { skip }
+  );
+
+  // Access notes from data.notes
+  const searchResults = data?.notes || [];
+
+  const [refineTags] = tagsApi.useRefineTagsMutation();
+  const [isRefining, setIsRefining] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) {
-      setSearchResults([]);
       return;
     }
+    setSkip(false);
+  };
 
-    setIsSearching(true);
+  const handleRefine = async () => {
+    setIsRefining(true);
     try {
-      const response = await fetch(
-        `/api/note/search?query=${encodeURIComponent(searchQuery)}`
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setSearchResults(data.notes || []);
-      } else {
-        console.error("Search failed");
-        setSearchResults([]);
-      }
+      await refineTags().unwrap();
+      toast.success("Tags refined successfully");
     } catch (error) {
-      console.error("Error searching notes:", error);
+      console.error("Error refining tags:", error);
+      toast.error("Failed to refine tags");
     } finally {
-      setIsSearching(false);
+      setIsRefining(false);
     }
   };
 
@@ -55,68 +54,49 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold">Search Notes</h1>
-        <p className="text-muted-foreground">
-          Search through your notes using semantic similarity.
-        </p>
-      </div>
+    <div className="max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Search Notes</h1>
 
-      <form
-        onSubmit={handleSearch}
-        className="flex w-full max-w-lg items-center space-x-2"
-      >
-        <Input
-          type="search"
-          placeholder="Search notes..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1"
-          autoFocus
-        />
-        <Button type="submit" disabled={isSearching}>
-          {isSearching ? "Searching..." : "Search"}
-        </Button>
-        {searchResults.length > 0 && (
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSearchQuery("");
-              setSearchResults([]);
-            }}
+      <form onSubmit={handleSearch} className="mb-6">
+        <div className="flex gap-4">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search notes..."
+            className="flex-1 px-4 py-2 border rounded-lg"
+          />
+          <button
+            type="submit"
+            disabled={isSearching}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
           >
-            Clear
-          </Button>
-        )}
+            {isSearching ? "Searching..." : "Search"}
+          </button>
+          <button
+            type="button"
+            onClick={handleRefine}
+            disabled={isRefining}
+            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50"
+          >
+            {isRefining ? "Refining..." : "Refine Tags"}
+          </button>
+        </div>
       </form>
 
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Search Results</h2>
-
-        {searchResults.length > 0 ? (
-          <div className="space-y-4">
-            {searchResults.map((note) => (
-              <div key={note.id} className="p-4 border rounded-md bg-card">
-                <div className="text-sm text-muted-foreground mb-1">
-                  {formatDate(note.created_at)}
-                  {note.similarity !== undefined && (
-                    <span className="ml-2 px-1.5 py-0.5 bg-primary/10 text-primary rounded-sm text-xs">
-                      {Math.round(note.similarity * 100)}% match
-                    </span>
-                  )}
-                </div>
-                <p className="whitespace-pre-wrap">{note.content}</p>
-              </div>
-            ))}
+        {searchResults.map((note) => (
+          <div
+            key={note.id}
+            className="p-4 border rounded-lg hover:border-blue-500 cursor-pointer"
+            onClick={() => router.push(`/note/${note.id}`)}
+          >
+            <div className="text-lg mb-2">{note.content}</div>
+            <div className="text-sm text-gray-500">
+              Created {formatDate(note.created_at)}
+            </div>
           </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            {searchQuery
-              ? "No matching notes found"
-              : "Enter a query to search your notes"}
-          </div>
-        )}
+        ))}
       </div>
     </div>
   );

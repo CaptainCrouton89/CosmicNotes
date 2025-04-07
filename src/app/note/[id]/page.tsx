@@ -1,10 +1,27 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, Clock, Tag, Trash2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+
+interface Tag {
+  id: number;
+  tag: string;
+  confidence: number;
+  created_at: string;
+}
 
 interface Note {
   id: number;
@@ -18,24 +35,39 @@ export default function NotePage() {
   const noteId = params.id;
 
   const [note, setNote] = useState<Note | null>(null);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     async function fetchNote() {
       try {
         setLoading(true);
-        const response = await fetch(`/api/note/${noteId}`);
-        if (!response.ok) {
+        const [noteResponse, tagsResponse] = await Promise.all([
+          fetch(`/api/note/${noteId}`),
+          fetch(`/api/note/${noteId}/tags`),
+        ]);
+
+        if (!noteResponse.ok) {
           throw new Error("Failed to fetch note");
         }
-        const data = await response.json();
-        setNote(data.note);
-        setContent(data.note.content);
+
+        if (!tagsResponse.ok) {
+          throw new Error("Failed to fetch tags");
+        }
+
+        const noteData = await noteResponse.json();
+        const tagsData = await tagsResponse.json();
+
+        setNote(noteData.note);
+        setTags(tagsData.tags);
+        setContent(noteData.note.content);
         setLastSaved(new Date());
       } catch (err) {
         console.error("Error fetching note:", err);
@@ -113,6 +145,28 @@ export default function NotePage() {
     return `${month} ${day}, ${year} at ${hours}:${minutes}`;
   };
 
+  const deleteNote = useCallback(async () => {
+    if (!note) return;
+
+    try {
+      setDeleting(true);
+      const response = await fetch(`/api/note/${noteId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete note");
+      }
+
+      setDeleteDialogOpen(false);
+      router.push("/");
+    } catch (err) {
+      console.error("Error deleting note:", err);
+      setError("Failed to delete note");
+      setDeleting(false);
+    }
+  }, [note, noteId, router]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -122,12 +176,47 @@ export default function NotePage() {
           </Button>
           <h1 className="text-2xl font-bold">Note Details</h1>
         </div>
-        <div className="text-sm text-muted-foreground">
-          {saving
-            ? "Saving..."
-            : lastSaved
-            ? `Last saved: ${formatDate(lastSaved.toISOString())}`
-            : ""}
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            {saving
+              ? "Saving..."
+              : lastSaved
+              ? `Last saved: ${formatDate(lastSaved.toISOString())}`
+              : ""}
+          </div>
+          <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={!note}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Note</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete this note? This action cannot
+                  be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  variant="ghost"
+                  onClick={() => setDeleteDialogOpen(false)}
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={deleteNote}
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting..." : "Delete"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -147,7 +236,26 @@ export default function NotePage() {
             <Clock className="h-4 w-4" />
             <span>Created: {formatDate(note.created_at)}</span>
           </div>
-          {/* <div className="p-6 border rounded-lg bg-card"> */}
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Tag className="h-4 w-4" />
+                <span>Tags:</span>
+              </div>
+              {tags.map((tag) => (
+                <Badge
+                  key={tag.id}
+                  variant="secondary"
+                  className="text-xs flex items-center gap-1.5"
+                >
+                  <span>{tag.tag}</span>
+                  <span className="opacity-60">
+                    {Math.round(tag.confidence * 100)}%
+                  </span>
+                </Badge>
+              ))}
+            </div>
+          )}
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -155,7 +263,6 @@ export default function NotePage() {
             className="min-h-[200px] w-full"
             placeholder="Write your note..."
           />
-          {/* </div> */}
         </div>
       )}
     </div>

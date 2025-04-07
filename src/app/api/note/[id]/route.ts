@@ -22,7 +22,7 @@ export async function GET(
     const supabase = await createClient();
     const { data: note, error } = await supabase
       .from("cosmic_memory")
-      .select("*")
+      .select("*, cosmic_tags(tag, confidence, created_at)")
       .eq("id", parseInt(id))
       .single();
 

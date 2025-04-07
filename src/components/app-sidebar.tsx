@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { Clock, Home, MessageCircle, Search } from "lucide-react";
+import { Clock, Home, MessageCircle, Search, Tag } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -17,42 +17,35 @@ import {
   SidebarMenuItem,
   SidebarMenuSkeleton,
 } from "@/components/ui/sidebar";
-
-interface Note {
-  id: number;
-  content: string;
-  created_at: string;
-  metadata: Record<string, string | number | boolean | null>;
-}
+import { clustersApi } from "@/lib/redux/services/clustersApi";
+import { notesApi } from "@/lib/redux/services/notesApi";
 
 export function AppSidebar() {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
 
+  // Notes query
+  const {
+    data: notesData,
+    error: notesError,
+    isLoading: notesLoading,
+  } = notesApi.useGetNotesQuery({
+    page: 1,
+    limit: 40,
+  });
+
+  // Clusters query
+  const {
+    data: clustersData,
+    error: clustersError,
+    isLoading: clustersLoading,
+  } = clustersApi.useGetClustersQuery({
+    page: 1,
+    limit: 10,
+  });
+
+  // Set isClient to true on mount
   useEffect(() => {
-    // Mark that we're now on the client
     setIsClient(true);
-
-    async function fetchRecentNotes() {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/note?page=1&limit=40");
-        if (!response.ok) {
-          throw new Error("Failed to fetch notes");
-        }
-        const data = await response.json();
-        setNotes(data.notes || []);
-      } catch (err) {
-        console.error("Error fetching notes:", err);
-        setError("Failed to load recent notes");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchRecentNotes();
   }, []);
 
   // Helper function to truncate content
@@ -105,6 +98,63 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* Clusters */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="flex items-center gap-2">
+            <Tag className="h-4 w-4" />
+            Clusters
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            {clustersLoading ? (
+              // Loading state
+              <SidebarMenu>
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <SidebarMenuItem key={index}>
+                    <SidebarMenuSkeleton showIcon />
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            ) : clustersError ? (
+              <div className="px-4 py-2 text-red-500">An error occurred</div>
+            ) : clustersData?.clusters.length === 0 ? (
+              <div className="px-4 py-2 text-muted-foreground">
+                No clusters found
+              </div>
+            ) : (
+              <SidebarMenu>
+                {clustersData?.clusters
+                  ? [...clustersData.clusters]
+                      .sort(
+                        (a, b) =>
+                          new Date(b.updated_at).getTime() -
+                          new Date(a.updated_at).getTime()
+                      )
+                      .map((cluster) => (
+                        <SidebarMenuItem key={cluster.id}>
+                          <SidebarMenuButton
+                            className="w-full text-left"
+                            asChild
+                          >
+                            <Link
+                              href={`/cluster/${cluster.id}`}
+                              className="flex justify-between"
+                            >
+                              <span>
+                                {cluster.tag} ({cluster.tag_count})
+                              </span>
+                              <span className="text-xs text-muted-foreground ml-auto">
+                                {formatDate(cluster.updated_at)}
+                              </span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))
+                  : null}
+              </SidebarMenu>
+            )}
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {/* Recent notes */}
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center gap-2">
@@ -112,7 +162,7 @@ export function AppSidebar() {
             Recent Notes
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            {loading ? (
+            {notesLoading ? (
               // Loading state
               <SidebarMenu>
                 {Array.from({ length: 5 }).map((_, index) => (
@@ -121,22 +171,22 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
-            ) : error ? (
-              <div className="px-4 py-2 text-red-500">{error}</div>
-            ) : notes.length === 0 ? (
+            ) : notesError ? (
+              <div className="px-4 py-2 text-red-500">An error occurred</div>
+            ) : notesData?.notes.length === 0 ? (
               <div className="px-4 py-2 text-muted-foreground">
                 No notes found
               </div>
             ) : (
               <SidebarMenu>
-                {notes.map((note) => (
+                {notesData?.notes.map((note) => (
                   <SidebarMenuItem key={note.id}>
                     <SidebarMenuButton className="w-full text-left" asChild>
                       <Link
                         href={`/note/${note.id}`}
                         className="flex justify-between"
                       >
-                        <span>{truncateContent(note.content, 20)}</span>
+                        <span>{note.cosmic_tags?.[0]?.tag || "Untagged"}</span>
                         <span className="text-xs text-muted-foreground ml-auto">
                           {formatDate(note.created_at)}
                         </span>
