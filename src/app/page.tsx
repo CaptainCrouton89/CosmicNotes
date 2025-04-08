@@ -84,11 +84,14 @@ export default function Home() {
         const data = await suggestResponse.json();
 
         // Convert to TagSuggestion format and pre-select tags with high confidence
-        const suggestions: TagSuggestion[] = data.tags.map((tag: any) => ({
-          tag: tag.tag,
-          confidence: tag.confidence,
-          selected: tag.confidence >= 0.8,
-        }));
+        // Also filter out any X20 tags that might have slipped through
+        const suggestions: TagSuggestion[] = data.tags
+          .filter((tag: any) => tag.tag !== "X20" && !tag.tag.includes("X20"))
+          .map((tag: any) => ({
+            tag: tag.tag,
+            confidence: tag.confidence,
+            selected: tag.confidence >= 0.8,
+          }));
 
         setSuggestedTags(suggestions);
         setShowTagDialog(true);
@@ -114,9 +117,11 @@ export default function Home() {
     try {
       setSavingTags(true);
 
-      // Filter selected tags
+      // Filter selected tags and also ensure no X20 tags are saved
       const tagsToSave = suggestedTags
-        .filter((tag) => tag.selected)
+        .filter(
+          (tag) => tag.selected && tag.tag !== "X20" && !tag.tag.includes("X20")
+        )
         .map((tag) => ({
           tag: tag.tag,
           confidence: tag.confidence,

@@ -17,6 +17,16 @@ export interface TagCount {
 }
 
 /**
+ * Cleans a tag string to remove encoding issues and problematic characters
+ * @param tag The tag to clean
+ * @returns Cleaned tag
+ */
+function cleanTag(tag: string): string {
+  // Remove X20 which may be encoding for spaces
+  return tag.replace(/X20/g, " ").trim();
+}
+
+/**
  * Extract hashtags from content and return them as tags with confidence 1.0
  * @param content The content to extract hashtags from
  * @returns Array of [tags, cleaned content]
@@ -25,10 +35,14 @@ function extractHashtags(content: string): [Tag[], string] {
   const hashtagRegex = /#(\w+)/g;
   const hashtags: Tag[] = [];
   const cleanedContent = content.replace(hashtagRegex, (match, tag) => {
-    hashtags.push({
-      tag: capitalize(tag),
-      confidence: 1.0,
-    });
+    const cleanedTag = cleanTag(tag);
+    if (cleanedTag && cleanedTag !== "X20") {
+      // Skip empty tags or X20 tags
+      hashtags.push({
+        tag: capitalize(cleanedTag),
+        confidence: 1.0,
+      });
+    }
     return tag; // Keep the word, just remove the # symbol
   });
 
@@ -67,7 +81,12 @@ export async function getTagsForNote(content: string): Promise<Tag[]> {
 
     // Add cluster tags with confidence 0.8 if they don't exist or have lower confidence
     similarClusters.forEach((cluster) => {
-      const capitalizedTag = capitalize(cluster.tag!);
+      if (!cluster.tag) return;
+
+      const cleanedTag = cleanTag(cluster.tag);
+      if (!cleanedTag || cleanedTag === "X20") return; // Skip problematic tags
+
+      const capitalizedTag = capitalize(cleanedTag);
       const existingConfidence = tagMap.get(capitalizedTag) || 0;
       if (existingConfidence < 0.8) {
         tagMap.set(capitalizedTag, cluster.score!);
@@ -110,7 +129,10 @@ export async function getTagsForNote(content: string): Promise<Tag[]> {
 
         // Process AI tags, keeping highest confidence scores
         result.object.tags.forEach((tag) => {
-          const capitalizedTag = capitalize(tag.tag);
+          const cleanedTag = cleanTag(tag.tag);
+          if (!cleanedTag || cleanedTag === "X20") return; // Skip problematic tags
+
+          const capitalizedTag = capitalize(cleanedTag);
           const existingConfidence = tagMap.get(capitalizedTag) || 0;
           const newConfidence = Math.max(existingConfidence, tag.confidence);
           tagMap.set(capitalizedTag, newConfidence);
@@ -122,12 +144,12 @@ export async function getTagsForNote(content: string): Promise<Tag[]> {
     }
 
     // Convert the Map back to an array of Tag objects
-    const uniqueTags: Tag[] = Array.from(tagMap.entries()).map(
-      ([tag, confidence]) => ({
+    const uniqueTags: Tag[] = Array.from(tagMap.entries())
+      .filter(([tag]) => tag !== "X20" && !tag.includes("X20")) // Filter out X20 tags
+      .map(([tag, confidence]) => ({
         tag,
         confidence,
-      })
-    );
+      }));
 
     console.log("Unique tags:", uniqueTags);
     return uniqueTags;

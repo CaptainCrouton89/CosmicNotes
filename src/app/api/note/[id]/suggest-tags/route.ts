@@ -38,8 +38,13 @@ export async function POST(
     // Generate tag suggestions without saving them
     const suggestedTags = await getTagsForNote(note.content);
 
+    // Additional filter to ensure no X20 tags slip through
+    const filteredTags = suggestedTags.filter(
+      (tag) => tag.tag !== "X20" && !tag.tag.includes("X20")
+    );
+
     return NextResponse.json({
-      tags: suggestedTags,
+      tags: filteredTags,
     });
   } catch (error) {
     if (error instanceof UserError) {
