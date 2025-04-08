@@ -172,27 +172,37 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Search Notes & Clusters</h1>
+    <div className="container px-4 py-8 mx-auto max-w-5xl">
+      <h1 className="text-3xl font-bold mb-8 text-center sm:text-left">
+        Search Notes & Clusters
+      </h1>
 
-      <form onSubmit={handleSearch} className="mb-6">
-        <div className="flex gap-4">
+      <form onSubmit={handleSearch} className="mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row">
           <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setLocalSearchQuery(e.target.value)}
             placeholder="Search notes and clusters..."
+            className="flex-1 px-4 py-3 text-lg"
           />
-          <Button type="submit" disabled={isSearching}>
-            {isSearching ? "Searching Notes..." : "Search Notes"}
-          </Button>
-          <Button
-            onClick={handleRefine}
-            disabled={isRefining}
-            variant="secondary"
-          >
-            {isRefining ? "Refining..." : "Refine Tags"}
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              type="submit"
+              disabled={isSearching}
+              className="px-6 py-3 h-auto"
+            >
+              {isSearching ? "Searching Notes..." : "Search Notes"}
+            </Button>
+            <Button
+              onClick={handleRefine}
+              disabled={isRefining}
+              variant="secondary"
+              className="px-6 py-3 h-auto"
+            >
+              {isRefining ? "Refining..." : "Refine Tags"}
+            </Button>
+          </div>
         </div>
       </form>
 
@@ -204,24 +214,26 @@ export default function SearchPage() {
 
       {searchQuery && !isClustersLoading && filteredClusters.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-3">Matching Clusters</h2>
+          <h2 className="text-xl font-semibold mb-4">Matching Clusters</h2>
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {combinedResults.map((item, index) => (
           <div
             key={`${item.type}-${item.id}-${index}`}
-            className={`p-4 border rounded-lg hover:border-blue-500 cursor-pointer ${
+            className={`p-5 border rounded-lg hover:border-blue-500 hover:shadow-md transition-all cursor-pointer ${
               item.type === "cluster" ? "bg-blue-50" : ""
             }`}
             onClick={() => handleItemClick(item)}
           >
             {/* Item Type Indicator */}
-            <div className="flex justify-between mb-1">
+            <div className="flex justify-between mb-2">
               <span
-                className={`text-xs font-medium ${
-                  item.type === "cluster" ? "text-blue-700" : "text-gray-500"
+                className={`text-xs font-medium px-2 py-1 rounded-full ${
+                  item.type === "cluster"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-gray-100 text-gray-700"
                 }`}
               >
                 {item.type === "cluster" ? "CLUSTER" : "NOTE"}
@@ -231,13 +243,13 @@ export default function SearchPage() {
             {/* Cluster-specific content */}
             {item.type === "cluster" && (
               <>
-                <h3 className="text-lg font-semibold mb-2">
+                <h3 className="text-xl font-semibold mb-3">
                   {(item as Cluster).tag}
                   <span className="text-sm font-normal text-gray-500 ml-2">
                     ({(item as Cluster).tag_count} notes)
                   </span>
                 </h3>
-                <div className="text-md mb-2 markdown">
+                <div className="text-md mb-3 markdown">
                   <Markdown
                     remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
                   >
@@ -264,7 +276,7 @@ export default function SearchPage() {
                     )}
                   </div>
                 )}
-                <div className="text-md mb-2 markdown">
+                <div className="text-md mb-3 markdown">
                   <Markdown
                     remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
                   >
@@ -285,12 +297,12 @@ export default function SearchPage() {
           combinedResults.length === 0 &&
           !isSearching &&
           !isClustersLoading && (
-            <div className="text-center p-6 bg-gray-50 rounded-lg">
-              <p className="text-gray-600">
+            <div className="text-center p-8 bg-gray-50 rounded-lg shadow-sm">
+              <p className="text-gray-600 text-lg">
                 No results found for &quot;{searchQuery}&quot;
               </p>
               {!hasSearched && (
-                <p className="text-gray-500 mt-2">
+                <p className="text-gray-500 mt-3">
                   Click &quot;Search Notes&quot; to search note content
                 </p>
               )}

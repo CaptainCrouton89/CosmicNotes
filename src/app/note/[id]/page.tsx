@@ -13,10 +13,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { notesApi } from "@/lib/redux/services/notesApi";
+import { tagsApi } from "@/lib/redux/services/tagsApi";
 import { Database } from "@/types/database.types";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
-import { ArrowLeft, Clock, RefreshCw, Save, Tag, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Clock,
+  RefreshCw,
+  Save,
+  Tag,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -52,6 +61,7 @@ export default function NotePage() {
   const router = useRouter();
   const editorRef = useRef<MDXEditorMethods>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [tagDeleting, setTagDeleting] = useState<string | null>(null);
 
   // Add Redux hooks
   const {
@@ -67,6 +77,7 @@ export default function NotePage() {
   };
   const [updateNote] = notesApi.useUpdateNoteMutation();
   const [deleteNoteMutation] = notesApi.useDeleteNoteMutation();
+  const [deleteTag] = tagsApi.useDeleteTagMutation();
 
   // Define a function to fetch tags that can be reused
   const fetchTags = useCallback(async () => {
@@ -213,6 +224,31 @@ export default function NotePage() {
     }
   }, [noteId, refetch, fetchTags]);
 
+  // Add a function to handle tag deletion
+  const handleTagDelete = useCallback(
+    async (tag: string) => {
+      if (!noteId) return;
+
+      try {
+        setTagDeleting(tag);
+
+        await deleteTag({
+          noteId: Number(noteId),
+          tag,
+        }).unwrap();
+
+        // Refresh tags after deletion
+        await fetchTags();
+      } catch (err) {
+        console.error("Error deleting tag:", err);
+        setError("Failed to delete tag");
+      } finally {
+        setTagDeleting(null);
+      }
+    },
+    [noteId, deleteTag, fetchTags]
+  );
+
   return (
     <div className="space-y-6 flex flex-col flex-1">
       <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
@@ -325,12 +361,28 @@ export default function NotePage() {
                 <Badge
                   key={tag.id}
                   variant="secondary"
-                  className="text-xs flex items-center gap-1.5"
+                  className="text-xs flex items-center gap-1.5 pr-1 group"
                 >
                   <span>{tag.tag}</span>
                   <span className="opacity-60">
                     {Math.round(tag.confidence * 100)}%
                   </span>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleTagDelete(tag.tag);
+                    }}
+                    className="ml-1 p-0.5 rounded-full opacity-0 group-hover:opacity-70 hover:opacity-100 hover:bg-muted-foreground/10 transition-opacity"
+                    title="Remove tag"
+                    aria-label={`Remove tag ${tag.tag}`}
+                    disabled={tagDeleting === tag.tag}
+                  >
+                    {tagDeleting === tag.tag ? (
+                      <div className="w-3 h-3 border-t-2 border-muted-foreground rounded-full animate-spin"></div>
+                    ) : (
+                      <X className="h-3 w-3" />
+                    )}
+                  </button>
                 </Badge>
               ))}
             </div>

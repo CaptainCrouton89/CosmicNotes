@@ -59,7 +59,7 @@ export async function getTagsForNote(content: string): Promise<Tag[]> {
     let similarClusters: Database["public"]["CompositeTypes"]["matched_cluster"][] =
       [];
     try {
-      similarClusters = await searchClusters(content, 3, 0.8);
+      similarClusters = await searchClusters(content, 5, 0.7);
     } catch (error) {
       console.warn("Error fetching similar clusters:", error);
       // Continue even if we can't get similar clusters
@@ -83,7 +83,7 @@ export async function getTagsForNote(content: string): Promise<Tag[]> {
     );
 
     // Generate additional tags using AI if we don't have enough tags yet
-    if (tagMap.size < 2 && cleanedContent.trim()) {
+    if (tagMap.size < 4 && cleanedContent.trim()) {
       try {
         // Generate tags using Vercel AI SDK
         const result = await generateObject({
