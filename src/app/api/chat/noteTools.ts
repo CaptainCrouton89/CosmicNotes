@@ -198,3 +198,27 @@ export const getNotesWithTagsTool = tool({
     return notesWithTags;
   },
 });
+
+export const addNoteTool = tool({
+  description: "Add a note to the database",
+  parameters: z.object({
+    content: z.string().describe("Well-formatted content of the note"),
+    tags: z.array(z.string()).describe("The tags to add to the note"),
+  }),
+  execute: async ({ content, tags }) => {
+    const text = `${content} ${tags.map((tag) => `#${tag}`).join(", ")}`;
+    const result = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/note`, {
+      method: "POST",
+      body: JSON.stringify({ content: text }),
+    });
+
+    if (!result.ok) {
+      throw new ApplicationError("Failed to add note", {
+        status: result.status,
+        statusText: result.statusText,
+      });
+    }
+
+    return "Note added successfully";
+  },
+});

@@ -1,6 +1,10 @@
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
-// Import noteTools (will be used later to add tools)
+import {
+  addNoteTool,
+  getNotesWithTagsTool,
+  searchNotesTool,
+} from "./noteTools";
 
 const openAiKey = process.env.OPENAI_API_KEY;
 
@@ -19,10 +23,15 @@ export async function POST(req: Request) {
 
     // Use streamText for streaming response
     const result = streamText({
-      model: openai("gpt-4"),
+      model: openai("gpt-4o"),
       system:
         "You are a helpful assistant that helps users organize and understand their notes. You can discuss various topics and assist with note-taking strategies.",
       messages,
+      tools: {
+        addNoteTool,
+        getNotesWithTagsTool,
+        searchNotesTool,
+      },
     });
 
     // Return a streaming response using the correct API

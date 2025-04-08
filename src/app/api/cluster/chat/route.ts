@@ -1,7 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
-import { getNotesWithTagsTool, searchNotesTool } from "../../chat/noteTools";
+import {
+  addNoteTool,
+  getNotesWithTagsTool,
+  searchNotesTool,
+} from "../../chat/noteTools";
 
 export const runtime = "edge";
 
@@ -53,6 +57,7 @@ export async function POST(req: Request) {
       tools: {
         searchNotesTool,
         getNotesWithTagsTool,
+        addNoteTool,
       },
     });
 
