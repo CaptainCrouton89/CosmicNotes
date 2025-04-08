@@ -655,15 +655,7 @@ export type Database = {
           match_threshold: number
           match_count: number
         }
-        Returns: {
-          created_at: string
-          embedding: string | null
-          id: number
-          summary: string
-          tag: string
-          tag_count: number
-          updated_at: string
-        }[]
+        Returns: Database["public"]["CompositeTypes"]["matched_cluster"][]
       }
       match_conversation_messages: {
         Args: {
@@ -767,7 +759,16 @@ export type Database = {
       status: "open" | "in progress" | "completed"
     }
     CompositeTypes: {
-      [_ in never]: never
+      matched_cluster: {
+        id: number | null
+        tag: string | null
+        tag_count: number | null
+        summary: string | null
+        created_at: string | null
+        updated_at: string | null
+        embedding: string | null
+        score: number | null
+      }
     }
   }
 }

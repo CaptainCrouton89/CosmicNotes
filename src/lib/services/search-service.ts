@@ -1,6 +1,7 @@
 import { generateEmbedding } from "@/lib/embeddings";
 import { ApplicationError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
+import { Database } from "@/types/database.types";
 
 /**
  * Search for notes that match the given query using vector similarity
@@ -62,7 +63,7 @@ export async function searchClusters(
   query: string,
   matchCount: number = 10,
   matchThreshold: number = 0.5
-) {
+): Promise<Database["public"]["CompositeTypes"]["matched_cluster"][]> {
   // Get embedding for the query
   const embeddingString = await generateEmbedding(query);
   const embedding = JSON.parse(embeddingString);

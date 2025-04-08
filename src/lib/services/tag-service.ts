@@ -53,8 +53,11 @@ export async function getTagsForNote(content: string): Promise<Tag[]> {
       tagMap.set(capitalize(tag.tag), 1.0);
     });
 
+    console.log("hashTags", hashTags);
+
     // Get similar clusters to use as context for tagging
-    let similarClusters: any[] = [];
+    let similarClusters: Database["public"]["CompositeTypes"]["matched_cluster"][] =
+      [];
     try {
       similarClusters = await searchClusters(content, 3, 0.8);
     } catch (error) {
@@ -64,12 +67,20 @@ export async function getTagsForNote(content: string): Promise<Tag[]> {
 
     // Add cluster tags with confidence 0.8 if they don't exist or have lower confidence
     similarClusters.forEach((cluster) => {
-      const capitalizedTag = capitalize(cluster.tag);
+      const capitalizedTag = capitalize(cluster.tag!);
       const existingConfidence = tagMap.get(capitalizedTag) || 0;
       if (existingConfidence < 0.8) {
-        tagMap.set(capitalizedTag, 0.8);
+        tagMap.set(capitalizedTag, cluster.score!);
       }
     });
+
+    console.log(
+      "similarClusters",
+      similarClusters.map((c) => ({
+        tag: c.tag,
+        score: c.score,
+      }))
+    );
 
     // Generate additional tags using AI if we don't have enough tags yet
     if (tagMap.size < 2 && cleanedContent.trim()) {
