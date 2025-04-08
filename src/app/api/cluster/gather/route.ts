@@ -38,11 +38,14 @@ export async function POST() {
           // Upsert the cluster
           const { error: upsertError } = await supabase
             .from("cosmic_cluster")
-            .upsert({
-              tag,
-              tag_count: count,
-              summary: linkedSummary,
-            });
+            .upsert(
+              {
+                tag,
+                tag_count: count,
+                summary: linkedSummary,
+              },
+              { onConflict: "tag" }
+            );
 
           if (upsertError) {
             console.error(

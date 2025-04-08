@@ -161,6 +161,7 @@ export type Database = {
           embedding: string
           id: number
           metadata: Json
+          title: string
         }
         Insert: {
           content?: string
@@ -168,6 +169,7 @@ export type Database = {
           embedding: string
           id?: number
           metadata?: Json
+          title?: string
         }
         Update: {
           content?: string
@@ -175,6 +177,7 @@ export type Database = {
           embedding?: string
           id?: number
           metadata?: Json
+          title?: string
         }
         Relationships: []
       }
@@ -671,6 +674,7 @@ export type Database = {
           embedding: string
           id: number
           metadata: Json
+          title: string
         }[]
       }
       match_page_sections: {
