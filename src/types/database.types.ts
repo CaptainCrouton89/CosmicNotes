@@ -130,6 +130,7 @@ export type Database = {
       cosmic_cluster: {
         Row: {
           created_at: string
+          embedding: string | null
           id: number
           summary: string
           tag: string
@@ -138,6 +139,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          embedding?: string | null
           id?: number
           summary: string
           tag: string
@@ -146,6 +148,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          embedding?: string | null
           id?: number
           summary?: string
           tag?: string
@@ -645,6 +648,22 @@ export type Database = {
       l2_normalize: {
         Args: { "": unknown } | { "": unknown } | { "": string }
         Returns: unknown
+      }
+      match_clusters: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+          match_count: number
+        }
+        Returns: {
+          created_at: string
+          embedding: string | null
+          id: number
+          summary: string
+          tag: string
+          tag_count: number
+          updated_at: string
+        }[]
       }
       match_conversation_messages: {
         Args: {

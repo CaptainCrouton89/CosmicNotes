@@ -1,7 +1,6 @@
-import { ApplicationError } from "@/lib/errors";
 import { generateNoteTitle } from "@/lib/services/ai-service";
+import { getTagsForNote, saveTagsToDatabase } from "@/lib/services/tag-service";
 import { createClient } from "@/lib/supabase/server";
-import { getTagsForNote } from "@/lib/tags";
 import { NextRequest, NextResponse } from "next/server";
 
 export const POST = async (request: NextRequest) => {
@@ -57,25 +56,11 @@ export const POST = async (request: NextRequest) => {
 
   // Generate and save new tags
   try {
-    const tags = await getTagsForNote(note.content, parseInt(id));
-    // Initialize Supabase client
+    const tags = await getTagsForNote(note.content);
     const supabase = await createClient();
 
     // Save tags to the database
-    const { error } = await supabase.from("cosmic_tags").insert(
-      tags.map((tag) => ({
-        note: id,
-        tag: tag.tag,
-        confidence: tag.confidence,
-        created_at: new Date().toISOString(),
-      }))
-    );
-
-    if (error) {
-      throw new ApplicationError("Failed to save tags", {
-        supabaseError: error,
-      });
-    }
+    await saveTagsToDatabase(supabase, tags, parseInt(id));
   } catch (tagError) {
     console.error("Error generating new tags:", tagError);
     // Don't fail the whole request if tag generation fails

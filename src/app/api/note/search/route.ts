@@ -1,14 +1,6 @@
 import { ApplicationError, UserError } from "@/lib/errors";
-import { createClient } from "@/lib/supabase/server";
+import { searchNotes } from "@/lib/services/search-service";
 import type { NextRequest } from "next/server";
-import { Configuration, OpenAIApi } from "openai-edge";
-
-const openAiKey = process.env.OPENAI_API_KEY!;
-
-const config = new Configuration({
-  apiKey: openAiKey,
-});
-const openai = new OpenAIApi(config);
 
 export const runtime = "edge";
 
@@ -26,51 +18,8 @@ export async function GET(req: NextRequest) {
       throw new UserError("Missing query parameter");
     }
 
-    // Initialize Supabase client
-    const supabaseClient = await createClient();
-
-    // Get embedding for the query
-    const embeddingResponse = await openai.createEmbedding({
-      model: "text-embedding-ada-002",
-      input: query.replace(/\n/g, " "),
-    });
-
-    if (!embeddingResponse.ok) {
-      const error = await embeddingResponse.json();
-      throw new ApplicationError("Failed to generate embedding", error);
-    }
-
-    const embeddingData = await embeddingResponse.json();
-    const [{ embedding }] = embeddingData.data;
-
-    // Search for similar notes using vector similarity
-    const { data: notes, error } = await supabaseClient.rpc("match_notes", {
-      query_embedding: embedding,
-      match_threshold: matchThreshold,
-      match_count: matchCount,
-    });
-
-    if (error) {
-      throw new ApplicationError("Failed to search notes", {
-        supabaseError: error,
-      });
-    }
-
-    const notesWithTags = await Promise.all(
-      notes.map(async (note) => {
-        const { data: tags } = await supabaseClient
-          .from("cosmic_tags")
-          .select("*")
-          .eq("note", note.id);
-
-        return {
-          ...note,
-          cosmic_tags: tags,
-        };
-      })
-    );
-
-    console.log(notesWithTags);
+    // Use the search service to get matching notes
+    const notesWithTags = await searchNotes(query, matchCount, matchThreshold);
 
     return new Response(
       JSON.stringify({

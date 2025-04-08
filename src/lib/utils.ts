@@ -11,3 +11,8 @@ export const linkifySummary = (summary: string, fuzzyMatch = false) => {
   }
   return summary.replace(/\[(\d+)\]/g, (match, id) => `[[${id}](/note/${id})]`);
 };
+
+// capitalizes first letter
+export const capitalize = (str: string) => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};

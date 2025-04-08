@@ -110,8 +110,6 @@ export default function NotePage() {
     }
   }, [note, loading, noteId]);
 
-  console.log("Content:", content);
-
   const handleEditorChange = useCallback((markdown: string) => {
     setContent(markdown);
     setHasChanges(true);

@@ -1,7 +1,7 @@
 import { generateEmbedding } from "@/lib/embeddings";
 import { ApplicationError, UserError } from "@/lib/errors";
 import { generateNoteTitle } from "@/lib/services/ai-service";
-import { getTagsForNote } from "@/lib/tags";
+import { getTagsForNote, saveTagsToDatabase } from "@/lib/services/tag-service";
 import { createClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 
@@ -67,8 +67,8 @@ export async function POST(req: NextRequest) {
 
     // Generate and save tags for the new note
     try {
-      const tags = await getTagsForNote(content, savedNote.id);
-      await supabaseClient.from("cosmic_tags").insert(tags);
+      const tags = await getTagsForNote(content);
+      await saveTagsToDatabase(supabaseClient, tags, savedNote.id);
     } catch (tagError) {
       console.error("Error generating tags:", tagError);
       // Don't fail the whole request if tag generation fails

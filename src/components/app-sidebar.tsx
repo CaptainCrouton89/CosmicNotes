@@ -7,6 +7,7 @@ import {
   MessageCircle,
   RefreshCw,
   Search,
+  Settings,
   Tag,
 } from "lucide-react";
 import Link from "next/link";
@@ -227,6 +228,22 @@ export function AppSidebar() {
                 ))}
               </SidebarMenu>
             )}
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Settings */}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/settings">
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

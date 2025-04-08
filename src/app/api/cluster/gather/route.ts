@@ -1,3 +1,4 @@
+import { generateEmbedding } from "@/lib/embeddings";
 import { generateNoteSummary } from "@/lib/services/ai-service";
 import {
   getAllTagsWithCounts,
@@ -32,6 +33,10 @@ export async function POST() {
           // Generate AI summary
           const summary = await generateNoteSummary(notes);
 
+          const embedding = await generateEmbedding(
+            notes.map((note) => note.content).join("\n")
+          );
+
           // convert [#id] to links
           const linkedSummary = linkifySummary(summary);
 
@@ -43,6 +48,7 @@ export async function POST() {
                 tag,
                 tag_count: count,
                 summary: linkedSummary,
+                embedding,
               },
               { onConflict: "tag" }
             );

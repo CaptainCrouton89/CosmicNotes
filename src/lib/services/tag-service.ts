@@ -1,9 +1,175 @@
+import { ApplicationError } from "@/lib/errors";
 import { Database } from "@/types/database.types";
+import { openai } from "@ai-sdk/openai";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { generateObject } from "ai";
+import * as z from "zod";
+import { capitalize } from "../utils";
+import { searchClusters } from "./search-service";
+export interface Tag {
+  tag: string;
+  confidence: number;
+}
 
 export interface TagCount {
   tag: string;
   count: number;
+}
+
+/**
+ * Extract hashtags from content and return them as tags with confidence 1.0
+ * @param content The content to extract hashtags from
+ * @returns Array of [tags, cleaned content]
+ */
+function extractHashtags(content: string): [Tag[], string] {
+  const hashtagRegex = /#(\w+)/g;
+  const hashtags: Tag[] = [];
+  const cleanedContent = content.replace(hashtagRegex, (match, tag) => {
+    hashtags.push({
+      tag: capitalize(tag),
+      confidence: 1.0,
+    });
+    return tag; // Keep the word, just remove the # symbol
+  });
+
+  return [hashtags, cleanedContent];
+}
+
+/**
+ * Generates tags for the given content using AI
+ * @param content The content to generate tags for
+ * @returns Array of generated tags with confidence scores
+ */
+export async function getTagsForNote(content: string): Promise<Tag[]> {
+  try {
+    // First extract explicit hashtags
+    const [hashTags, cleanedContent] = extractHashtags(content);
+
+    // Track unique tags with their highest confidence scores
+    const tagMap = new Map<string, number>();
+
+    // Add hashtags with confidence 1.0
+    hashTags.forEach((tag) => {
+      tagMap.set(capitalize(tag.tag), 1.0);
+    });
+
+    // Get similar clusters to use as context for tagging
+    let similarClusters: any[] = [];
+    try {
+      similarClusters = await searchClusters(content, 3, 0.8);
+    } catch (error) {
+      console.warn("Error fetching similar clusters:", error);
+      // Continue even if we can't get similar clusters
+    }
+
+    // Add cluster tags with confidence 0.8 if they don't exist or have lower confidence
+    similarClusters.forEach((cluster) => {
+      const capitalizedTag = capitalize(cluster.tag);
+      const existingConfidence = tagMap.get(capitalizedTag) || 0;
+      if (existingConfidence < 0.8) {
+        tagMap.set(capitalizedTag, 0.8);
+      }
+    });
+
+    // Generate additional tags using AI if we don't have enough tags yet
+    if (tagMap.size < 2 && cleanedContent.trim()) {
+      try {
+        // Generate tags using Vercel AI SDK
+        const result = await generateObject({
+          model: openai("gpt-4o"),
+          temperature: 0,
+          system:
+            "You are a helpful assistant that extracts relevant tags from content.",
+          prompt: `Identify 1-2 tags that best describe the content. 
+                 
+                 Content: ${cleanedContent}`,
+          schema: z.object({
+            tags: z.array(
+              z.object({
+                tag: z.string().describe("The tag in PascalCase"),
+                confidence: z
+                  .number()
+                  .min(0)
+                  .max(1)
+                  .describe("Confidence score between 0 and 1"),
+              })
+            ),
+          }),
+        });
+
+        // Process AI tags, keeping highest confidence scores
+        result.object.tags.forEach((tag) => {
+          const capitalizedTag = capitalize(tag.tag);
+          const existingConfidence = tagMap.get(capitalizedTag) || 0;
+          const newConfidence = Math.max(existingConfidence, tag.confidence);
+          tagMap.set(capitalizedTag, newConfidence);
+        });
+      } catch (error) {
+        console.warn("Error generating AI tags:", error);
+        // Continue even if AI tag generation fails
+      }
+    }
+
+    // Convert the Map back to an array of Tag objects
+    const uniqueTags: Tag[] = Array.from(tagMap.entries()).map(
+      ([tag, confidence]) => ({
+        tag,
+        confidence,
+      })
+    );
+
+    console.log("Unique tags:", uniqueTags);
+    return uniqueTags;
+  } catch (error) {
+    console.error("Error generating tags:", error);
+    throw new ApplicationError("Failed to generate tags", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
+ * Save generated tags to the database
+ * @param supabase Supabase client
+ * @param tags Array of tags with confidence scores
+ * @param noteId ID of the note these tags belong to
+ */
+export async function saveTagsToDatabase(
+  supabase: SupabaseClient<Database>,
+  tags: Tag[],
+  noteId: number
+) {
+  try {
+    // Delete existing tags for this note
+    const { error: deleteError } = await supabase
+      .from("cosmic_tags")
+      .delete()
+      .eq("note", noteId);
+
+    if (deleteError) {
+      throw new Error(`Failed to delete existing tags: ${deleteError.message}`);
+    }
+
+    // Insert new tags
+    if (tags.length > 0) {
+      const { error: insertError } = await supabase.from("cosmic_tags").insert(
+        tags.map((tag) => ({
+          note: noteId,
+          tag: tag.tag,
+          confidence: tag.confidence,
+        }))
+      );
+
+      if (insertError) {
+        throw new Error(`Failed to insert tags: ${insertError.message}`);
+      }
+    }
+  } catch (error) {
+    console.error("Error saving tags:", error);
+    throw new ApplicationError("Failed to save tags", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 export async function getAllTagsWithCounts(supabase: SupabaseClient<Database>) {

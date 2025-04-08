@@ -1,5 +1,6 @@
 import { ApplicationError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
+import { capitalize } from "@/lib/utils";
 import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { NextResponse } from "next/server";
@@ -82,7 +83,7 @@ export async function POST() {
         // Update all occurrences of similar tags to the primary tag
         const { error: updateError } = await supabase
           .from("cosmic_tags")
-          .update({ tag: suggestion.primaryTag })
+          .update({ tag: capitalize(suggestion.primaryTag) })
           .in("tag", suggestion.similarTags);
 
         if (updateError) {
