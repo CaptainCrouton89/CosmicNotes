@@ -357,11 +357,11 @@ export default function NotePage() {
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl lg:text-2xl font-bold truncate max-w-xs lg:max-w-md xl:max-w-lg">
+          <h1 className="text-xl xl:text-2xl font-bold truncate max-w-xs xl:max-w-md xl:max-w-lg">
             {note?.title || "Note Details"}
           </h1>
         </div>
-        <div className="flex items-center gap-2 lg:gap-4 self-end lg:self-auto">
+        <div className="flex items-center gap-2 xl:gap-4 xl:self-auto self-start">
           <Button
             variant="outline"
             size="sm"
