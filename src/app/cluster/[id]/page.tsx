@@ -70,8 +70,8 @@ export default function ClusterPage() {
   }
 
   return (
-    <div className="flex min-h-0 h-full">
-      <div className="w-3/5 overflow-y-auto py-8 px-6">
+    <div className="flex flex-col md:flex-row min-h-0 h-full">
+      <div className="w-full md:w-3/5 overflow-y-auto py-6 px-4 md:py-8 md:px-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
             {cluster.tag}
@@ -110,7 +110,7 @@ export default function ClusterPage() {
         ) : notesData?.notes.length === 0 ? (
           <p className="text-gray-500">No notes found in this cluster</p>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             {notesData?.notes.map((note) => (
               <div
                 key={note.id}
@@ -138,7 +138,7 @@ export default function ClusterPage() {
         )}
       </div>
 
-      <div className="w-2/5 border-l border-gray-200 h-full flex flex-col">
+      <div className="w-full md:w-2/5 border-t md:border-t-0 md:border-l border-gray-200 h-[500px] md:h-full flex flex-col">
         <div className="p-3 border-b border-gray-200">
           <h2 className="font-semibold">AI Assistant</h2>
         </div>
