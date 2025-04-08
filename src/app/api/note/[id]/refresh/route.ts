@@ -57,10 +57,11 @@ export const POST = async (request: NextRequest) => {
   // Generate and save new tags
   try {
     const tags = await getTagsForNote(note.content);
+    tags.sort((a, b) => b.confidence - a.confidence);
     const supabase = await createClient();
 
     // Save tags to the database
-    await saveTagsToDatabase(supabase, tags, parseInt(id));
+    await saveTagsToDatabase(supabase, tags.slice(0, 2), parseInt(id));
   } catch (tagError) {
     console.error("Error generating new tags:", tagError);
     // Don't fail the whole request if tag generation fails

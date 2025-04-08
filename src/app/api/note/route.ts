@@ -141,16 +141,19 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Query notes with pagination and sorting
+    // Query notes with pagination and sorting, excluding content
     const {
       data: notes,
       error,
       count,
     } = await supabaseClient
       .from("cosmic_memory")
-      .select("*, cosmic_tags(tag, confidence, created_at)", {
-        count: "exact",
-      })
+      .select(
+        "id, title, created_at, updated_at, metadata, cosmic_tags(tag, confidence, created_at)",
+        {
+          count: "exact",
+        }
+      )
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 

@@ -182,9 +182,6 @@ export function AppSidebar() {
                                   {cluster.tag_count}
                                 </span>
                               </span>
-                              <span className="text-xs text-muted-foreground ml-auto">
-                                {formatDate(cluster.updated_at)}
-                              </span>
                             </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -226,10 +223,11 @@ export function AppSidebar() {
                         href={`/note/${note.id}`}
                         className="flex justify-between"
                       >
-                        <span>{note.title || note.cosmic_tags?.[0]?.tag}</span>
-                        {/* <span className="text-xs text-muted-foreground ml-auto">
-                          {formatDate(note.created_at)}
-                        </span> */}
+                        <span>
+                          {note.title ||
+                            note.cosmic_tags?.[0]?.tag ||
+                            "Untitled"}
+                        </span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

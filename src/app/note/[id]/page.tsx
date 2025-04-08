@@ -3,6 +3,7 @@
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -39,11 +40,17 @@ type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"] & {
 };
 
 interface Tag {
-  id: number;
-  note: number;
+  id?: number;
+  note?: number;
   tag: string;
   confidence: number;
-  created_at: string;
+  created_at?: string;
+}
+
+interface TagSuggestion {
+  tag: string;
+  confidence: number;
+  selected: boolean;
 }
 
 export default function NotePage() {
@@ -51,6 +58,8 @@ export default function NotePage() {
   const noteId = params.id;
 
   const [tags, setTags] = useState<Tag[]>([]);
+  const [suggestedTags, setSuggestedTags] = useState<TagSuggestion[]>([]);
+  const [showTagDialog, setShowTagDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
@@ -58,6 +67,7 @@ export default function NotePage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [savingTags, setSavingTags] = useState(false);
   const router = useRouter();
   const editorRef = useRef<MDXEditorMethods>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -126,6 +136,7 @@ export default function NotePage() {
     setHasChanges(true);
   }, []);
 
+  // Modified saveNote function that doesn't automatically update tags
   const saveNote = useCallback(async () => {
     if (!note) return;
 
@@ -139,18 +150,88 @@ export default function NotePage() {
         note: { content: currentContent },
       }).unwrap();
 
-      // Refetch the note data and tags to ensure UI is updated
-      await Promise.all([refetch(), fetchTags()]);
+      // Refetch the note data
+      await refetch();
 
       setLastSaved(new Date());
       setHasChanges(false);
+
+      // Get tag suggestions
+      try {
+        const suggestResponse = await fetch(
+          `/api/note/${noteId}/suggest-tags`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!suggestResponse.ok) {
+          throw new Error("Failed to get tag suggestions");
+        }
+
+        const data = await suggestResponse.json();
+
+        // Convert to TagSuggestion format and pre-select tags with high confidence
+        const suggestions: TagSuggestion[] = data.tags.map((tag: Tag) => ({
+          tag: tag.tag,
+          confidence: tag.confidence,
+          selected: tag.confidence >= 0.8,
+        }));
+
+        setSuggestedTags(suggestions);
+        setShowTagDialog(true);
+      } catch (err) {
+        console.error("Error getting tag suggestions:", err);
+        setError("Failed to get tag suggestions");
+      }
     } catch (err) {
       console.error("Error updating note:", err);
       setError("Failed to save note");
     } finally {
       setSaving(false);
     }
-  }, [note, noteId, content, updateNote, refetch, fetchTags]);
+  }, [note, noteId, content, updateNote, refetch]);
+
+  // New function to save selected tags
+  const saveSelectedTags = useCallback(async () => {
+    if (!noteId) return;
+
+    try {
+      setSavingTags(true);
+
+      // Filter selected tags
+      const tagsToSave = suggestedTags
+        .filter((tag) => tag.selected)
+        .map((tag) => ({
+          tag: tag.tag,
+          confidence: tag.confidence,
+        }));
+
+      const response = await fetch(`/api/note/${noteId}/save-tags`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tags: tagsToSave }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save tags");
+      }
+
+      // Refresh tags after saving
+      await fetchTags();
+      setShowTagDialog(false);
+    } catch (err) {
+      console.error("Error saving tags:", err);
+      setError("Failed to save tags");
+    } finally {
+      setSavingTags(false);
+    }
+  }, [noteId, suggestedTags, fetchTags]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -224,6 +305,13 @@ export default function NotePage() {
     }
   }, [noteId, refetch, fetchTags]);
 
+  // Add a function to focus the editor
+  const focusEditor = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+  }, []);
+
   // Add a function to handle tag deletion
   const handleTagDelete = useCallback(
     async (tag: string) => {
@@ -248,6 +336,15 @@ export default function NotePage() {
     },
     [noteId, deleteTag, fetchTags]
   );
+
+  // Toggle a tag selection in the suggestions dialog
+  const toggleTagSelection = useCallback((index: number) => {
+    setSuggestedTags((prev) =>
+      prev.map((tag, i) =>
+        i === index ? { ...tag, selected: !tag.selected } : tag
+      )
+    );
+  }, []);
 
   return (
     <div className="space-y-6 flex flex-col flex-1">
@@ -281,7 +378,7 @@ export default function NotePage() {
             className="h-9 px-3"
           >
             <Save className="h-4 w-4 mr-2" />
-            Save
+            {saving ? "Saving..." : "Save"}
           </Button>
           <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <DialogTrigger asChild>
@@ -323,6 +420,51 @@ export default function NotePage() {
           </Dialog>
         </div>
       </div>
+
+      {/* Tag Selection Dialog */}
+      <Dialog open={showTagDialog} onOpenChange={setShowTagDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Tags</DialogTitle>
+            <DialogDescription>
+              Select tags for your note. Tags with high confidence are
+              pre-selected.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-4 max-h-[300px] overflow-y-auto">
+              {suggestedTags.map((tag, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`tag-${index}`}
+                    checked={tag.selected}
+                    onCheckedChange={() => toggleTagSelection(index)}
+                  />
+                  <div className="flex items-center justify-between w-full">
+                    <label
+                      htmlFor={`tag-${index}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {tag.tag}
+                    </label>
+                    <Badge variant="outline" className="ml-auto">
+                      {Math.round(tag.confidence * 100)}%
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowTagDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveSelectedTags} disabled={savingTags}>
+              {savingTags ? "Saving Tags..." : "Save Tags"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {loading ? (
         <div className="h-40 flex items-center justify-center">
@@ -387,7 +529,10 @@ export default function NotePage() {
               ))}
             </div>
           )}
-          <div className="w-full border rounded-md overflow-hidden flex-1">
+          <div
+            className="w-full border rounded-md overflow-hidden flex-1 cursor-text"
+            onClick={focusEditor}
+          >
             <ForwardRefEditor
               key={String(noteId)}
               ref={editorRef}

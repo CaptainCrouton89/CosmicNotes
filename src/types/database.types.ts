@@ -216,6 +216,36 @@ export type Database = {
           },
         ]
       }
+      cosmic_user_settings: {
+        Row: {
+          chat_prompt: string | null
+          cluster_prompt: string | null
+          created_at: string
+          id: number
+          merge_tag_prompt: string | null
+          tag_prompt: string | null
+          updated_at: string
+        }
+        Insert: {
+          chat_prompt?: string | null
+          cluster_prompt?: string | null
+          created_at?: string
+          id?: number
+          merge_tag_prompt?: string | null
+          tag_prompt?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chat_prompt?: string | null
+          cluster_prompt?: string | null
+          created_at?: string
+          id?: number
+          merge_tag_prompt?: string | null
+          tag_prompt?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       data_models: {
         Row: {
           created_at: string | null

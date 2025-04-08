@@ -2,16 +2,16 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTagMergeDialog } from "@/hooks/use-tag-merge-dialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { clustersApi } from "@/lib/redux/services/clustersApi";
 import { notesApi } from "@/lib/redux/services/notesApi";
-import { tagsApi } from "@/lib/redux/services/tagsApi";
 import { setSearchQuery } from "@/lib/redux/slices/searchSlice";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { toast } from "sonner";
 
 // Define types for the cosmic tags
 interface CosmicTag {
@@ -46,80 +46,68 @@ type SearchResult = (Note | Cluster) & { type: string };
 export default function SearchPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const [skip, setSkip] = useState(true); // Skip initial search
+  const storedSearchQuery = useAppSelector((state) => state.search.query);
+  const [searchQuery, setLocalSearchQuery] = useState(storedSearchQuery || "");
 
-  // Get search state from Redux
+  // Use the existing API hooks
+  const { isLoading: isClustersLoading, data: clustersData } =
+    clustersApi.useGetClustersQuery({ page: 1, limit: 100 });
+  const { data: searchData, isLoading: isSearching } =
+    notesApi.useSearchNotesQuery({ query: searchQuery }, { skip });
+
+  const clusters = clustersData?.clusters || [];
+  const isLoading = isSearching;
+
+  // Filter clusters based on search query
+  const filteredClusters = searchQuery
+    ? clusters
+        .filter((cluster: Cluster) =>
+          cluster.tag.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .map((cluster) => ({
+          ...cluster,
+          type: "cluster",
+        }))
+    : [];
+
+  // Access our tag merge dialog hook
   const {
-    query: savedQuery,
-    results: savedResults,
-    hasSearched,
-  } = useAppSelector((state) => state.search);
+    isLoading: isRefining,
+    getMergeSuggestions,
+    TagMergeDialogComponent,
+  } = useTagMergeDialog();
 
-  // Get clusters from Redux
-  const { clusters } = useAppSelector((state) => state.cluster);
-
-  // Local state for controlled input
-  const [searchQuery, setLocalSearchQuery] = useState(savedQuery);
-
-  // Skip initial fetch if no previous search was made
-  const [skip, setSkip] = useState(!hasSearched);
-
-  // Fetch clusters if they haven't been loaded yet
-  const { isLoading: isClustersLoading } = clustersApi.useGetClustersQuery(
-    { page: 1, limit: 100 },
-    { skip: clusters.length > 0 }
-  );
-
-  const { data, isFetching: isSearching } = notesApi.useSearchNotesQuery(
-    { query: savedQuery },
-    { skip }
-  );
-
-  // Real-time filtering of clusters based on current search input
-  const filteredClusters = useMemo(() => {
-    if (!searchQuery) return [];
-
-    const lowerQuery = searchQuery.toLowerCase();
-    return clusters
-      .filter((cluster) => {
-        return (
-          cluster.tag.toLowerCase().includes(lowerQuery) ||
-          (cluster.summary &&
-            cluster.summary.toLowerCase().includes(lowerQuery))
-        );
-      })
-      .map((cluster) => ({
-        ...cluster,
-        type: "cluster",
-      }));
-  }, [clusters, searchQuery]);
-
-  // Combine results - using filtered clusters based on current input (not saved query)
+  // Combine clusters and notes for display
   const getCombinedSearchResults = (): SearchResult[] => {
-    const noteResults = (data?.notes || savedResults || []).map((note) => ({
+    if (!searchQuery) return [];
+    if (!searchData || !searchData.notes)
+      return filteredClusters as SearchResult[];
+
+    // Cast notes array to match our Note type
+    const notes = searchData.notes as unknown as Note[];
+    const noteResults = notes.map((note) => ({
       ...note,
       type: "note",
     })) as SearchResult[];
 
     // Return clusters first, then notes
-    return [...(filteredClusters as SearchResult[]), ...noteResults];
+    return [...filteredClusters, ...noteResults];
   };
 
   const combinedResults = getCombinedSearchResults();
 
   // Sync with Redux when data changes
   useEffect(() => {
-    if (data && data.notes) {
+    if (searchData && searchData.notes) {
       // This will be handled by the extraReducer in searchSlice
     }
-  }, [data, dispatch]);
+  }, [searchData, dispatch]);
 
   // When search query changes, update Redux state but don't trigger API call
   useEffect(() => {
     dispatch(setSearchQuery(searchQuery));
   }, [searchQuery, dispatch]);
-
-  const [refineTags] = tagsApi.useRefineTagsMutation();
-  const [isRefining, setIsRefining] = useState(false);
 
   // Search button only triggers the API call for notes
   const handleSearch = async (e: React.FormEvent) => {
@@ -131,17 +119,8 @@ export default function SearchPage() {
     setSkip(false);
   };
 
-  const handleRefine = async () => {
-    setIsRefining(true);
-    try {
-      await refineTags().unwrap();
-      toast.success("Tags refined successfully");
-    } catch (error) {
-      console.error("Error refining tags:", error);
-      toast.error("Failed to refine tags");
-    } finally {
-      setIsRefining(false);
-    }
+  const handleRefine = () => {
+    getMergeSuggestions();
   };
 
   const formatDate = (dateString: string) => {
@@ -200,11 +179,14 @@ export default function SearchPage() {
               variant="secondary"
               className="px-6 py-3 h-auto"
             >
-              {isRefining ? "Refining..." : "Refine Tags"}
+              {isRefining ? "Analyzing Tags..." : "Refine Tags"}
             </Button>
           </div>
         </div>
       </form>
+
+      {/* Include the tag merge dialog component */}
+      {TagMergeDialogComponent}
 
       {isClustersLoading && (
         <div className="text-center p-4">
@@ -297,17 +279,25 @@ export default function SearchPage() {
           combinedResults.length === 0 &&
           !isSearching &&
           !isClustersLoading && (
-            <div className="text-center p-8 bg-gray-50 rounded-lg shadow-sm">
-              <p className="text-gray-600 text-lg">
-                No results found for &quot;{searchQuery}&quot;
-              </p>
-              {!hasSearched && (
-                <p className="text-gray-500 mt-3">
-                  Click &quot;Search Notes&quot; to search note content
-                </p>
-              )}
+            <div className="text-center p-8 border rounded-lg">
+              <p className="text-gray-500">No results found</p>
             </div>
           )}
+
+        {isLoading && (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="p-5 border rounded-lg">
+                <Skeleton className="h-4 w-20 mb-4" />
+                <Skeleton className="h-6 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-full mb-1" />
+                <Skeleton className="h-4 w-full mb-1" />
+                <Skeleton className="h-4 w-2/3 mb-4" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

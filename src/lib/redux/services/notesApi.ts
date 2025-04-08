@@ -8,10 +8,20 @@ type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"] & {
     created_at: string;
   }[];
 };
+
+// Create a more lightweight type for the notes list view
+type NoteListItem = Omit<Note, "content" | "embedding"> & {
+  cosmic_tags: {
+    tag: string;
+    confidence: number;
+    created_at: string;
+  }[];
+};
+
 type NoteInput = Database["public"]["Tables"]["cosmic_memory"]["Insert"];
 
 interface PaginatedResponse {
-  notes: Note[];
+  notes: NoteListItem[];
   pagination: {
     page: number;
     limit: number;

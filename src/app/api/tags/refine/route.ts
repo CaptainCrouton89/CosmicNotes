@@ -76,41 +76,23 @@ export async function POST() {
       }),
     });
 
-    // For each merge suggestion with high confidence, update the database
-    const updates = result.object.mergeSuggestions
-      .filter((suggestion) => suggestion.confidence >= 0.8) // Only process high-confidence merges
-      .map(async (suggestion) => {
-        // Update all occurrences of similar tags to the primary tag
-        const { error: updateError } = await supabase
-          .from("cosmic_tags")
-          .update({ tag: capitalize(suggestion.primaryTag) })
-          .in("tag", suggestion.similarTags);
-
-        if (updateError) {
-          console.error("Error updating tags:", updateError);
-          return {
-            success: false,
-            primaryTag: suggestion.primaryTag,
-            error: updateError,
-          };
-        }
-
-        return {
-          success: true,
-          ...suggestion,
-        };
-      });
-
-    const results = await Promise.all(updates);
+    // Filter high-confidence merges but don't apply them automatically
+    const filteredSuggestions = result.object.mergeSuggestions
+      .filter((suggestion) => suggestion.confidence >= 0.7)
+      .map((suggestion) => ({
+        ...suggestion,
+        primaryTag: capitalize(suggestion.primaryTag),
+        similarTags: suggestion.similarTags,
+      }));
 
     return NextResponse.json({
-      message: "Tag refinement completed",
-      results: results,
+      message: "Tag refinement suggestions generated",
+      suggestions: filteredSuggestions,
     });
   } catch (error) {
-    console.error("Error refining tags:", error);
+    console.error("Error generating tag refinement suggestions:", error);
     return NextResponse.json(
-      { error: "Failed to refine tags" },
+      { error: "Failed to generate tag refinement suggestions" },
       { status: 500 }
     );
   }

@@ -53,6 +53,8 @@ export async function POST(req: Request) {
       ## Instructions
       Help the user understand their notes and use them to answer the question. If you use notes to answer the question, cite them like this:
       Blah blah blah [123]. It will be converted to a link by the markdown renderer.
+
+      # Do not search notes unless specifically asked to do so.
       `,
       messages,
       temperature: 0.1,
