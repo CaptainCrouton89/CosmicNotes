@@ -51,6 +51,7 @@ export async function generateAndSaveTags(
       // Generate tags using Vercel AI SDK
       const result = await generateObject({
         model: openai("gpt-4o"),
+        temperature: 0,
         system:
           "You are a helpful assistant that extracts relevant tags from content.",
         prompt: `Identify 1-2 tags that best describe the content. 

@@ -168,7 +168,10 @@ export function AppSidebar() {
                               className="flex justify-between"
                             >
                               <span>
-                                {cluster.tag} ({cluster.tag_count})
+                                {cluster.tag}{" "}
+                                <span className="text-muted-foreground">
+                                  {cluster.tag_count}
+                                </span>
                               </span>
                               <span className="text-xs text-muted-foreground ml-auto">
                                 {formatDate(cluster.updated_at)}

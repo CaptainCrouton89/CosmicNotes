@@ -104,6 +104,7 @@ async function rerankResults(query: string, notes: Record<string, unknown>[]) {
     // Use OpenAI to rerank
     const result = await generateObject({
       model: openai("gpt-4o-mini"),
+      temperature: 0,
       system:
         'You are a search result reranker. Given a query and search results, assign each result a relevance score from 0-100 based on how well it answers the query. Higher scores mean greater relevance. Return the scores as a JSON object with format: {"results": [{"id": "note_id", "score": numeric_score}, ...]}.',
       schema: z.object({
