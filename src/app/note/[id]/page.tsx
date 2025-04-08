@@ -16,7 +16,7 @@ import { notesApi } from "@/lib/redux/services/notesApi";
 import { Database } from "@/types/database.types";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
-import { ArrowLeft, Clock, Save, Tag, Trash2 } from "lucide-react";
+import { ArrowLeft, Clock, RefreshCw, Save, Tag, Trash2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -51,6 +51,7 @@ export default function NotePage() {
   const [hasChanges, setHasChanges] = useState(false);
   const router = useRouter();
   const editorRef = useRef<MDXEditorMethods>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Add Redux hooks
   const {
@@ -66,11 +67,6 @@ export default function NotePage() {
   };
   const [updateNote] = notesApi.useUpdateNoteMutation();
   const [deleteNoteMutation] = notesApi.useDeleteNoteMutation();
-
-  // Debug logs
-  useEffect(() => {
-    console.log("Note data from individual page:", note);
-  }, [note]);
 
   // Define a function to fetch tags that can be reused
   const fetchTags = useCallback(async () => {
@@ -98,12 +94,23 @@ export default function NotePage() {
 
   // Update content when note data is loaded
   useEffect(() => {
-    if (note) {
+    if (loading) {
+      // Clear editor content while loading to prevent showing stale content
+      setContent("");
+    } else if (note) {
       setContent(note.content);
+      console.log("Note content:", note.content);
       setLastSaved(new Date());
       setHasChanges(false);
+
+      // Also manually reset editor content if reference exists
+      if (editorRef.current) {
+        editorRef.current.setMarkdown(note.content);
+      }
     }
-  }, [note]);
+  }, [note, loading, noteId]);
+
+  console.log("Content:", content);
 
   const handleEditorChange = useCallback((markdown: string) => {
     setContent(markdown);
@@ -135,17 +142,6 @@ export default function NotePage() {
       setSaving(false);
     }
   }, [note, noteId, content, updateNote, refetch, fetchTags]);
-
-  // Auto-save after 10 seconds of no typing
-  useEffect(() => {
-    if (!note || !hasChanges) return;
-
-    const timer = setTimeout(() => {
-      saveNote();
-    }, 10000);
-
-    return () => clearTimeout(timer);
-  }, [content, saveNote, note, hasChanges]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -190,35 +186,77 @@ export default function NotePage() {
     }
   }, [note, noteId, router, deleteNoteMutation]);
 
+  // Add refresh note function
+  const refreshNote = useCallback(async () => {
+    if (!noteId) return;
+
+    try {
+      setRefreshing(true);
+
+      const response = await fetch(`/api/note/${noteId}/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: noteId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to refresh note");
+      }
+
+      // Refetch note data and tags after refresh
+      await Promise.all([refetch(), fetchTags()]);
+    } catch (err) {
+      console.error("Error refreshing note:", err);
+      setError("Failed to refresh note");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [noteId, refetch, fetchTags]);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 flex flex-col flex-1">
+      <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">Note Details</h1>
+          <h1 className="text-xl lg:text-2xl font-bold truncate max-w-xs lg:max-w-md xl:max-w-lg">
+            {note?.title || "Note Details"}
+          </h1>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-muted-foreground">
-            {saving
-              ? "Saving..."
-              : lastSaved
-              ? `Last saved: ${formatDate(lastSaved.toISOString())}`
-              : ""}
-          </div>
+        <div className="flex items-center gap-2 lg:gap-4 self-end lg:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshNote}
+            disabled={refreshing || !note}
+            className="h-9 px-3"
+          >
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+            />
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={saveNote}
             disabled={saving || !hasChanges || !note}
+            className="h-9 px-3"
           >
             <Save className="h-4 w-4 mr-2" />
             Save
           </Button>
           <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="destructive" size="sm" disabled={!note}>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={!note}
+                className="h-9 px-3"
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
               </Button>
@@ -263,10 +301,21 @@ export default function NotePage() {
           Note not found
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>Created: {formatDate(note.created_at)}</span>
+        <div className="space-y-4 flex flex-col flex-1">
+          <div className="flex flex-col gap-1 text-muted-foreground text-xs">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span>Created: {formatDate(note.created_at)}</span>
+            </div>
+            {lastSaved && (
+              <div className="flex items-center gap-2 ml-6">
+                {saving ? (
+                  <span>Saving...</span>
+                ) : (
+                  <span>Last saved: {formatDate(lastSaved.toISOString())}</span>
+                )}
+              </div>
+            )}
           </div>
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-2 items-center">
@@ -288,8 +337,9 @@ export default function NotePage() {
               ))}
             </div>
           )}
-          <div className="w-full border rounded-md overflow-hidden">
+          <div className="w-full border rounded-md overflow-hidden flex-1">
             <ForwardRefEditor
+              key={String(noteId)}
               ref={editorRef}
               markdown={content}
               onChange={handleEditorChange}

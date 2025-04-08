@@ -217,10 +217,10 @@ export function AppSidebar() {
                         href={`/note/${note.id}`}
                         className="flex justify-between"
                       >
-                        <span>{note.cosmic_tags?.[0]?.tag || "Untagged"}</span>
-                        <span className="text-xs text-muted-foreground ml-auto">
+                        <span>{note.title || note.cosmic_tags?.[0]?.tag}</span>
+                        {/* <span className="text-xs text-muted-foreground ml-auto">
                           {formatDate(note.created_at)}
-                        </span>
+                        </span> */}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

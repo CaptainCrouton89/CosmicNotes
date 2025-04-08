@@ -13,11 +13,18 @@ export function PWAInstallPrompt() {
   const [installPrompt, setInstallPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
     // Check if the app is already installed
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsAppInstalled(true);
+    }
+
+    // Check if user previously dismissed the prompt
+    const hasUserDismissed = localStorage.getItem("pwa-prompt-dismissed");
+    if (hasUserDismissed) {
+      setIsDismissed(true);
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -65,8 +72,14 @@ export function PWAInstallPrompt() {
     setInstallPrompt(null);
   };
 
-  // Don't show install button if the app is already installed or there's no install prompt
-  if (isAppInstalled || !installPrompt) {
+  const handleDismiss = () => {
+    setInstallPrompt(null);
+    setIsDismissed(true);
+    localStorage.setItem("pwa-prompt-dismissed", "true");
+  };
+
+  // Don't show install button if the app is already installed, there's no install prompt, or user dismissed it
+  if (isAppInstalled || !installPrompt || isDismissed) {
     return null;
   }
 
@@ -78,7 +91,7 @@ export function PWAInstallPrompt() {
         when offline.
       </p>
       <div className="flex justify-end space-x-2">
-        <Button variant="outline" onClick={() => setInstallPrompt(null)}>
+        <Button variant="outline" onClick={handleDismiss}>
           Not now
         </Button>
         <Button onClick={handleInstallClick}>Install</Button>

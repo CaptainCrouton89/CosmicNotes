@@ -31,3 +31,19 @@ export async function generateNoteSummary(notes: Note[]) {
 
   return result.object.summary;
 }
+
+export async function generateNoteTitle(content: string) {
+  const result = await generateObject({
+    model: openai("gpt-4o-mini"),
+    temperature: 0.2,
+    system:
+      "You are a helpful assistant that specializes in turning disorganized notes into well-organized, markdown formatted notes.",
+    prompt: `Come up with a concise title for the following note:
+             ${content}`,
+    schema: z.object({
+      title: z.string().describe("A concise title for the note"),
+    }),
+  });
+
+  return result.object.title;
+}

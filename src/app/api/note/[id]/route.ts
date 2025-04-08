@@ -1,7 +1,6 @@
 import { generateEmbedding } from "@/lib/embeddings";
 import { ApplicationError, UserError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
-import { generateAndSaveTags } from "@/lib/tags";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
@@ -87,25 +86,6 @@ export async function PUT(
 
     if (!note) {
       throw new UserError("Note not found");
-    }
-
-    // Delete old tags
-    const { error: deleteError } = await supabase
-      .from("cosmic_tags")
-      .delete()
-      .eq("note", parseInt(id));
-
-    if (deleteError) {
-      console.error("Error deleting old tags:", deleteError);
-      // Don't fail the whole request if tag deletion fails
-    }
-
-    // Generate and save new tags
-    try {
-      await generateAndSaveTags(body.content, parseInt(id));
-    } catch (tagError) {
-      console.error("Error generating new tags:", tagError);
-      // Don't fail the whole request if tag generation fails
     }
 
     return NextResponse.json({ note });

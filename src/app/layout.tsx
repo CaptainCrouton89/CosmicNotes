@@ -42,7 +42,9 @@ export default function RootLayout({
                   </div>
                 </header>
                 <main className="flex-1 overflow-auto min-h-0">
-                  <div className="container py-6 px-10 h-full">{children}</div>
+                  <div className="container py-6 px-4 lg:px-10 h-full flex flex-col">
+                    {children}
+                  </div>
                 </main>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { generateEmbedding } from "@/lib/embeddings";
 import { ApplicationError, UserError } from "@/lib/errors";
-import { generateAndSaveTags } from "@/lib/tags";
+import { generateNoteTitle } from "@/lib/services/ai-service";
+import { getTagsForNote } from "@/lib/tags";
 import { createClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 
@@ -41,11 +42,15 @@ export async function POST(req: NextRequest) {
     // Get embeddings from OpenAI using our utility function
     const embedding = await generateEmbedding(content);
 
+    // Generate and save title for the new note
+    const title = await generateNoteTitle(content);
+
     // Save the note with embedding to the cosmic_memory table
     const { error: insertError, data: savedNote } = await supabaseClient
       .from("cosmic_memory")
       .insert({
         content,
+        title,
         created_at: new Date().toISOString(),
         embedding,
         metadata,
@@ -62,7 +67,8 @@ export async function POST(req: NextRequest) {
 
     // Generate and save tags for the new note
     try {
-      await generateAndSaveTags(content, savedNote.id);
+      const tags = await getTagsForNote(content, savedNote.id);
+      await supabaseClient.from("cosmic_tags").insert(tags);
     } catch (tagError) {
       console.error("Error generating tags:", tagError);
       // Don't fail the whole request if tag generation fails

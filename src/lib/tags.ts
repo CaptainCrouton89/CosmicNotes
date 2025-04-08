@@ -2,7 +2,6 @@ import { ApplicationError } from "@/lib/errors";
 import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import * as z from "zod";
-import { createClient } from "./supabase/server";
 
 interface Tag {
   tag: string;
@@ -34,7 +33,7 @@ function extractHashtags(content: string): [Tag[], string] {
  * @param noteId The ID of the note these tags belong to
  * @returns Array of generated tags with confidence scores
  */
-export async function generateAndSaveTags(
+export async function getTagsForNote(
   content: string,
   noteId: number
 ): Promise<Tag[]> {
@@ -91,25 +90,6 @@ export async function generateAndSaveTags(
       }
       return acc;
     }, []);
-
-    // Initialize Supabase client
-    const supabase = await createClient();
-
-    // Save tags to the database
-    const { error } = await supabase.from("cosmic_tags").insert(
-      uniqueTags.map((tag) => ({
-        note: noteId,
-        tag: tag.tag,
-        confidence: tag.confidence,
-        created_at: new Date().toISOString(),
-      }))
-    );
-
-    if (error) {
-      throw new ApplicationError("Failed to save tags", {
-        supabaseError: error,
-      });
-    }
 
     return uniqueTags;
   } catch (error) {
