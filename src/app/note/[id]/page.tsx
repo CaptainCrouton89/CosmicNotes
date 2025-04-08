@@ -1,5 +1,6 @@
 "use client";
 
+import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,12 +12,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { notesApi } from "@/lib/redux/services/notesApi";
 import { Database } from "@/types/database.types";
-import { ArrowLeft, Clock, Tag, Trash2 } from "lucide-react";
+import { MDXEditorMethods } from "@mdxeditor/editor";
+import "@mdxeditor/editor/style.css";
+import { ArrowLeft, Clock, Save, Tag, Trash2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // Define Note type from the same source as notesApi
 type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"] & {
@@ -46,7 +48,9 @@ export default function NotePage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   const router = useRouter();
+  const editorRef = useRef<MDXEditorMethods>(null);
 
   // Add Redux hooks
   const {
@@ -97,23 +101,33 @@ export default function NotePage() {
     if (note) {
       setContent(note.content);
       setLastSaved(new Date());
+      setHasChanges(false);
     }
   }, [note]);
+
+  const handleEditorChange = useCallback((markdown: string) => {
+    setContent(markdown);
+    setHasChanges(true);
+  }, []);
 
   const saveNote = useCallback(async () => {
     if (!note) return;
 
     try {
       setSaving(true);
+      // Get the latest content from the editor
+      const currentContent = editorRef.current?.getMarkdown() || content;
+
       await updateNote({
         id: Number(noteId),
-        note: { content },
+        note: { content: currentContent },
       }).unwrap();
 
       // Refetch the note data and tags to ensure UI is updated
       await Promise.all([refetch(), fetchTags()]);
 
       setLastSaved(new Date());
+      setHasChanges(false);
     } catch (err) {
       console.error("Error updating note:", err);
       setError("Failed to save note");
@@ -124,14 +138,14 @@ export default function NotePage() {
 
   // Auto-save after 10 seconds of no typing
   useEffect(() => {
-    if (!note) return;
+    if (!note || !hasChanges) return;
 
     const timer = setTimeout(() => {
       saveNote();
     }, 10000);
 
     return () => clearTimeout(timer);
-  }, [content, saveNote, note]);
+  }, [content, saveNote, note, hasChanges]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -193,6 +207,15 @@ export default function NotePage() {
               ? `Last saved: ${formatDate(lastSaved.toISOString())}`
               : ""}
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={saveNote}
+            disabled={saving || !hasChanges || !note}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save
+          </Button>
           <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="destructive" size="sm" disabled={!note}>
@@ -265,13 +288,18 @@ export default function NotePage() {
               ))}
             </div>
           )}
-          <Textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onBlur={saveNote}
-            className="min-h-[200px] w-full"
-            placeholder="Write your note..."
-          />
+          <div className="w-full border rounded-md overflow-hidden">
+            <ForwardRefEditor
+              ref={editorRef}
+              markdown={content}
+              onChange={handleEditorChange}
+              onBlur={() => {
+                if (hasChanges) {
+                  saveNote();
+                }
+              }}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -121,7 +121,8 @@
   }
 }
 
-.markdown {
+.markdown,
+.mdxeditor {
   h1 {
     @apply text-2xl font-bold mb-3;
   }
@@ -146,13 +147,6 @@
   a {
     @apply text-primary hover:underline;
   }
-  ul,
-  ol {
-    @apply mb-4 ml-6 list-decimal;
-  }
-  li {
-    @apply mb-1 list-decimal text-base;
-  }
   blockquote {
     @apply pl-4 border-l-4 border-muted italic my-4;
   }
@@ -161,5 +155,18 @@
   }
   hr {
     @apply my-6;
+  }
+  ul {
+    @apply list-disc pl-6 mb-4;
+  }
+  ol {
+    @apply list-decimal pl-6 mb-4;
+  }
+  li {
+    @apply my-0;
+  }
+  li > ul,
+  li > ol {
+    @apply mb-1;
   }
 }
