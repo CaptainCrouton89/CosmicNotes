@@ -37,6 +37,33 @@ export function useNoteEditor(noteId: number) {
     setHasChanges(true);
   }, []);
 
+  // Update the note title
+  const updateNoteTitle = useCallback(
+    async (title: string) => {
+      if (!note) return;
+
+      try {
+        setSaving(true);
+
+        await updateNote({
+          id: Number(noteId),
+          note: { title },
+        }).unwrap();
+
+        // Refetch the note data
+        await refetch();
+
+        setLastSaved(new Date());
+      } catch (err) {
+        console.error("Error updating note title:", err);
+        setError("Failed to save note title");
+      } finally {
+        setSaving(false);
+      }
+    },
+    [note, noteId, updateNote, refetch]
+  );
+
   // Save the note content
   const saveNote = useCallback(async () => {
     if (!note) return;
@@ -103,5 +130,6 @@ export function useNoteEditor(noteId: number) {
     refreshNote,
     focusEditor,
     setError,
+    updateNoteTitle,
   };
 }

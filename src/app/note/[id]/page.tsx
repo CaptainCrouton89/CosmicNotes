@@ -12,10 +12,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import "@mdxeditor/editor/style.css";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { KeyboardEvent, useEffect, useState } from "react";
 import { Zone } from "../_types";
 import {
   CategorySelector,
@@ -35,6 +36,8 @@ export default function NotePage() {
   const params = useParams();
   const noteId = Number(params.id);
   const router = useRouter();
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState("");
 
   // Use custom hooks
   const {
@@ -51,6 +54,7 @@ export default function NotePage() {
     saveNote,
     refreshNote,
     focusEditor,
+    updateNoteTitle,
   } = useNoteEditor(noteId);
 
   const {
@@ -74,18 +78,89 @@ export default function NotePage() {
     if (note?.content && editorRef.current) {
       editorRef.current.setMarkdown(note.content);
     }
+    if (note?.title) {
+      setTitleValue(note.title);
+    }
   }, [note, editorRef]);
+
+  const handleTitleClick = () => {
+    if (!note || loading) return;
+    setIsEditingTitle(true);
+  };
+
+  const handleTitleSave = async () => {
+    if (!titleValue.trim()) {
+      setTitleValue(note?.title || "");
+      setIsEditingTitle(false);
+      return;
+    }
+
+    if (titleValue !== note?.title) {
+      await updateNoteTitle(titleValue);
+    }
+
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleCancel = () => {
+    setTitleValue(note?.title || "");
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleTitleSave();
+    } else if (e.key === "Escape") {
+      handleTitleCancel();
+    }
+  };
 
   return (
     <div className="space-y-6 flex flex-col flex-1 py-6">
       <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-1">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl xl:text-2xl font-bold truncate max-w-xs xl:max-w-md xl:max-w-lg">
-            {note?.title || "Note Details"}
-          </h1>
+
+          {isEditingTitle ? (
+            <div className="flex items-center gap-2 flex-1">
+              <Input
+                type="text"
+                value={titleValue}
+                onChange={(e) => setTitleValue(e.target.value)}
+                onKeyDown={handleTitleKeyDown}
+                autoFocus
+                className="text-xl xl:text-2xl font-bold w-full max-w-xs xl:max-w-md"
+                placeholder="Note Title"
+                onBlur={handleTitleSave}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleTitleSave}
+                className="text-green-500"
+              >
+                <Check className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleTitleCancel}
+                className="text-red-500"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+          ) : (
+            <h1
+              className="text-xl xl:text-2xl font-bold truncate max-w-xs xl:max-w-md xl:max-w-lg cursor-pointer hover:text-primary transition-colors px-2 py-1"
+              onClick={handleTitleClick}
+              title="Click to edit title"
+            >
+              {note?.title || "Note Details"}
+            </h1>
+          )}
         </div>
 
         <NoteActions
@@ -96,7 +171,7 @@ export default function NotePage() {
           isRefreshing={refreshing}
           isSaving={saving}
           isDeleting={deleting}
-          disabled={!note}
+          disabled={!note || isEditingTitle}
         />
       </div>
 
