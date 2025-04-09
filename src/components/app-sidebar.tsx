@@ -30,8 +30,23 @@ import {
 import { clustersApi } from "@/lib/redux/services/clustersApi";
 import { notesApi } from "@/lib/redux/services/notesApi";
 
+// Type for grouping clusters by tag family
+type GroupedClusters = {
+  [tagFamily: string]: Array<{
+    id: number;
+    category: string;
+    tag_count: number;
+    tag_family: string;
+    created_at: string;
+    updated_at: string;
+  }>;
+};
+
 export function AppSidebar() {
   const [isClient, setIsClient] = useState(false);
+  const [expandedFamilies, setExpandedFamilies] = useState<
+    Record<string, boolean>
+  >({});
 
   // Notes query
   const {
@@ -50,7 +65,7 @@ export function AppSidebar() {
     isLoading: clustersLoading,
   } = clustersApi.useGetClustersQuery({
     page: 1,
-    limit: 10,
+    limit: 50, // Increased limit to ensure we get all clusters for grouping
   });
 
   // Gather clusters mutation
@@ -75,6 +90,30 @@ export function AppSidebar() {
     } catch (error) {
       console.error("Error gathering clusters:", error);
     }
+  };
+
+  // Group clusters by tag_family
+  const groupClustersByTagFamily = () => {
+    if (!clustersData?.clusters) return {};
+
+    return clustersData.clusters.reduce((grouped: GroupedClusters, cluster) => {
+      const family = cluster.tag_family;
+      if (!grouped[family]) {
+        grouped[family] = [];
+      }
+      grouped[family].push(cluster);
+      return grouped;
+    }, {});
+  };
+
+  const groupedClusters = groupClustersByTagFamily();
+
+  // Toggle expanded state for a tag family
+  const toggleFamilyExpanded = (family: string) => {
+    setExpandedFamilies((prev) => ({
+      ...prev,
+      [family]: !prev[family],
+    }));
   };
 
   return (
@@ -153,40 +192,61 @@ export function AppSidebar() {
               </SidebarMenu>
             ) : clustersError ? (
               <div className="px-4 py-2 text-red-500">An error occurred</div>
-            ) : clustersData?.clusters.length === 0 ? (
+            ) : Object.keys(groupedClusters).length === 0 ? (
               <div className="px-4 py-2 text-muted-foreground">
                 No clusters found
               </div>
             ) : (
               <SidebarMenu>
-                {clustersData?.clusters
-                  ? [...clustersData.clusters]
-                      .sort(
-                        (a, b) =>
-                          new Date(b.updated_at).getTime() -
-                          new Date(a.updated_at).getTime()
-                      )
-                      .map((cluster) => (
-                        <SidebarMenuItem key={cluster.id}>
-                          <SidebarMenuButton
-                            className="w-full text-left"
-                            asChild
-                          >
-                            <Link
-                              href={`/cluster/${cluster.id}`}
-                              className="flex justify-between"
-                            >
-                              <span>
-                                {cluster.tag}{" "}
-                                <span className="text-muted-foreground">
-                                  {cluster.tag_count}
-                                </span>
-                              </span>
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))
-                  : null}
+                {Object.entries(groupedClusters)
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([tagFamily, clusters]) => (
+                    <div key={tagFamily}>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          className="w-full text-left font-medium"
+                          onClick={() => toggleFamilyExpanded(tagFamily)}
+                        >
+                          <span className="flex justify-between items-center w-full">
+                            <span>{tagFamily}</span>
+                            <span className="text-muted-foreground text-xs">
+                              {clusters.length > 1
+                                ? `${clusters.length} categories`
+                                : clusters[0].tag_count > 1
+                                ? `${clusters[0].tag_count} notes`
+                                : `${clusters[0].tag_count} note`}
+                            </span>
+                          </span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+
+                      {/* Show child categories when expanded */}
+                      {expandedFamilies[tagFamily] && (
+                        <div className="pl-4 border-l ml-4 mt-0 mb-2">
+                          {clusters.map((cluster) => (
+                            <SidebarMenuItem key={cluster.id}>
+                              <SidebarMenuButton
+                                className="w-full text-left text-sm py-1"
+                                asChild
+                              >
+                                <Link
+                                  href={`/cluster/${cluster.id}`}
+                                  className="flex justify-between"
+                                >
+                                  <span>
+                                    {cluster.category}{" "}
+                                    <span className="text-muted-foreground">
+                                      ({cluster.tag_count})
+                                    </span>
+                                  </span>
+                                </Link>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
               </SidebarMenu>
             )}
           </SidebarGroupContent>

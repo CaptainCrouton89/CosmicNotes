@@ -59,11 +59,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get total count of notes with this cluster's tag
+    // Get total count of notes with this cluster's tag and category
     const { count, error: countError } = await supabaseClient
       .from("cosmic_tags")
-      .select("*", { count: "exact", head: true })
-      .eq("tag", cluster.tag);
+      .select("note", { count: "exact", head: true })
+      .eq("tag", cluster.tag_family);
 
     if (countError) {
       return new Response(
@@ -78,12 +78,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get notes for the cluster
+    // Get notes for the cluster's tag
     const { data: taggedNotes, error: notesError } = await supabaseClient
       .from("cosmic_tags")
       .select("note")
-      .eq("tag", cluster.tag)
-      .range(offset, offset + limit - 1);
+      .eq("tag", cluster.tag_family);
 
     if (notesError) {
       return new Response(
@@ -98,7 +97,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get the actual note details
+    // Get the actual note details with correct category
     const noteIds = taggedNotes.map((tag) => tag.note);
 
     if (noteIds.length === 0) {
@@ -120,11 +119,20 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { data: notes, error: fetchError } = await supabaseClient
+    // Filter by category if specified in the cluster
+    let notesQuery = supabaseClient
       .from("cosmic_memory")
       .select("*")
-      .in("id", noteIds)
-      .order("created_at", { ascending: false });
+      .in("id", noteIds);
+
+    if (cluster.category) {
+      notesQuery = notesQuery.eq("category", cluster.category);
+    }
+
+    // Add pagination and sorting
+    const { data: notes, error: fetchError } = await notesQuery
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (fetchError) {
       return new Response(
@@ -139,17 +147,18 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const totalCount = count || 0;
-    const totalPages = Math.ceil(totalCount / limit);
+    // Get count of notes matching both tag and category
+    const filteredCount = notes.length;
+    const totalPages = Math.ceil(filteredCount / limit);
     const hasMore = page < totalPages;
 
     return new Response(
       JSON.stringify({
-        notes: notes || [],
+        notes,
         pagination: {
           page,
           limit,
-          totalCount,
+          totalCount: filteredCount,
           totalPages,
           hasMore,
         },
@@ -160,8 +169,7 @@ export async function GET(req: NextRequest) {
       }
     );
   } catch (err: unknown) {
-    console.error(err);
-
+    console.error("Error fetching notes for cluster:", err);
     return new Response(
       JSON.stringify({
         error: "There was an error processing your request",

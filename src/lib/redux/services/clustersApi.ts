@@ -37,6 +37,51 @@ export const clustersApi = createApi({
           : [{ type: "Cluster", id: "LIST" }],
     }),
 
+    getClustersByCriteria: builder.query<
+      PaginatedResponse,
+      {
+        tagFamily?: string;
+        category?: string;
+        excludeIds?: number[];
+        page?: number;
+        limit?: number;
+      }
+    >({
+      query: ({
+        tagFamily,
+        category,
+        excludeIds = [],
+        page = 1,
+        limit = 10,
+      }) => {
+        let url = `cluster?page=${page}&limit=${limit}`;
+
+        if (tagFamily) {
+          url += `&tagFamily=${encodeURIComponent(tagFamily)}`;
+        }
+
+        if (category) {
+          url += `&category=${encodeURIComponent(category)}`;
+        }
+
+        if (excludeIds.length > 0) {
+          url += `&excludeIds=${excludeIds.join(",")}`;
+        }
+
+        return url;
+      },
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.clusters.map(({ id }) => ({
+                type: "Cluster" as const,
+                id,
+              })),
+              { type: "Cluster", id: "FILTERED_LIST" },
+            ]
+          : [{ type: "Cluster", id: "FILTERED_LIST" }],
+    }),
+
     getCluster: builder.query<Cluster, number>({
       query: (id) => `cluster/${id}`,
       providesTags: (result, error, id) => [{ type: "Cluster", id }],

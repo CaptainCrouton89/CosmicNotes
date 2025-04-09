@@ -6,14 +6,41 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const page = parseInt(url.searchParams.get("page") || "1", 10);
     const limit = parseInt(url.searchParams.get("limit") || "10", 10);
+    const tagFamily = url.searchParams.get("tagFamily");
+    const category = url.searchParams.get("category");
+    const excludeIdsParam = url.searchParams.get("excludeIds");
+
+    const excludeIds = excludeIdsParam
+      ? excludeIdsParam
+          .split(",")
+          .map((id) => parseInt(id, 10))
+          .filter((id) => !isNaN(id))
+      : [];
+
     const offset = (page - 1) * limit;
 
     const supabaseClient = await createClient();
 
-    // Get total count
-    const { count, error: countError } = await supabaseClient
+    // Build the query
+    let query = supabaseClient
       .from("cosmic_cluster")
-      .select("*", { count: "exact", head: true });
+      .select("*", { count: "exact" });
+
+    // Apply filters if provided
+    if (tagFamily) {
+      query = query.eq("tag_family", tagFamily);
+    }
+
+    if (category) {
+      query = query.eq("category", category);
+    }
+
+    if (excludeIds.length > 0) {
+      query = query.not("id", "in", `(${excludeIds.join(",")})`);
+    }
+
+    // Get total count with filters
+    const { count, error: countError } = await query.limit(1);
 
     if (countError) {
       return new Response(
@@ -28,10 +55,24 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get paginated data
-    const { data: clusters, error } = await supabaseClient
-      .from("cosmic_cluster")
-      .select("*")
+    // Get paginated data with the same filters
+    let dataQuery = supabaseClient.from("cosmic_cluster").select("*");
+
+    // Apply the same filters
+    if (tagFamily) {
+      dataQuery = dataQuery.eq("tag_family", tagFamily);
+    }
+
+    if (category) {
+      dataQuery = dataQuery.eq("category", category);
+    }
+
+    if (excludeIds.length > 0) {
+      dataQuery = dataQuery.not("id", "in", `(${excludeIds.join(",")})`);
+    }
+
+    // Add sorting and pagination
+    const { data: clusters, error } = await dataQuery
       .order("updated_at", { ascending: false })
       .range(offset, offset + limit - 1);
 

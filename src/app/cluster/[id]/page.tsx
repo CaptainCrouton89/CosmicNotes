@@ -2,7 +2,9 @@
 
 import { ChatInterface } from "@/components/chat-interface";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { clustersApi } from "@/lib/redux/services/clustersApi";
+import { Database } from "@/types/database.types";
 import { format } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -10,11 +12,14 @@ import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+type Cluster = Database["public"]["Tables"]["cosmic_cluster"]["Row"];
+
 export default function ClusterPage() {
   const params = useParams();
   const clusterId = Number(params.id);
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   // Initialize chat visibility based on screen size
   useEffect(() => {
@@ -39,6 +44,19 @@ export default function ClusterPage() {
     isLoading: clusterLoading,
     error: clusterError,
   } = clustersApi.useGetClusterQuery(clusterId);
+
+  const { data: relatedClusters, isLoading: relatedClustersLoading } =
+    clustersApi.useGetClustersByCriteriaQuery({
+      tagFamily: cluster?.tag_family,
+      excludeIds: cluster ? [cluster.id] : [],
+    });
+
+  // Set active category when cluster data loads
+  useEffect(() => {
+    if (cluster && !activeCategory) {
+      setActiveCategory(cluster.category);
+    }
+  }, [cluster, activeCategory]);
 
   const {
     data: notesData,
@@ -105,7 +123,7 @@ export default function ClusterPage() {
       >
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            {cluster.tag}
+            {cluster.tag_family}
             <span className="text-muted-foreground text-xl ml-2">
               ({cluster.tag_count} notes)
             </span>
@@ -113,8 +131,41 @@ export default function ClusterPage() {
           <div className="text-gray-500 mb-4">
             <p>Last updated {formatDate(cluster.updated_at)}</p>
             <p>Created {formatDate(cluster.created_at)}</p>
+            <p className="mt-1 text-sm font-medium">
+              Category: {cluster.category}
+            </p>
           </div>
-          <div className="markdown">
+
+          {/* Category tabs */}
+          {!relatedClustersLoading &&
+            relatedClusters &&
+            relatedClusters.clusters.length > 0 && (
+              <Tabs
+                defaultValue={cluster.category}
+                value={activeCategory || cluster.category}
+                onValueChange={setActiveCategory}
+                className="mt-4"
+              >
+                <TabsList>
+                  <TabsTrigger value={cluster.category}>
+                    {cluster.category}
+                  </TabsTrigger>
+                  {relatedClusters.clusters.map((relatedCluster: Cluster) => (
+                    <TabsTrigger
+                      key={relatedCluster.id}
+                      value={relatedCluster.category}
+                      onClick={() =>
+                        (window.location.href = `/cluster/${relatedCluster.id}`)
+                      }
+                    >
+                      {relatedCluster.category}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            )}
+
+          <div className="markdown mt-6">
             <Markdown remarkPlugins={[[remarkGfm, { singleTilde: false }]]}>
               {cluster.summary}
             </Markdown>
@@ -211,7 +262,7 @@ export default function ClusterPage() {
             <div className="flex-1 overflow-hidden">
               <ChatInterface
                 endpoint="/api/cluster/chat"
-                chatId={cluster.tag}
+                chatId={cluster.tag_family}
               />
             </div>
           </>
