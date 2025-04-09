@@ -15,8 +15,21 @@ const nextConfig = {
       },
     ];
   },
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
+  // Enable Turbopack for development builds only
+  experimental: {
+    turbo: {
+      // Turbopack specific options
+      rules: {
+        // Custom rules for Turbopack processing
+      },
+      // When running in dev mode with --turbopack flag, these webpack plugins won't run
+      // They will still be applied during the production build
+    },
+  },
+  // Configure webpack for production builds and when not using Turbopack
+  webpack: (config, { isServer, dev }) => {
+    // Only apply these plugins in production or when not using Turbopack
+    if (!isServer && (!dev || process.env.NEXT_TURBO !== "true")) {
       config.plugins.push(
         new GenerateSW({
           swDest: "public/sw.js",
