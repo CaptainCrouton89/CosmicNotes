@@ -44,9 +44,6 @@ type GroupedClusters = {
 
 export function AppSidebar() {
   const [isClient, setIsClient] = useState(false);
-  const [expandedFamilies, setExpandedFamilies] = useState<
-    Record<string, boolean>
-  >({});
 
   // Notes query
   const {
@@ -107,14 +104,6 @@ export function AppSidebar() {
   };
 
   const groupedClusters = groupClustersByTagFamily();
-
-  // Toggle expanded state for a tag family
-  const toggleFamilyExpanded = (family: string) => {
-    setExpandedFamilies((prev) => ({
-      ...prev,
-      [family]: !prev[family],
-    }));
-  };
 
   return (
     <Sidebar>
@@ -201,11 +190,13 @@ export function AppSidebar() {
                 {Object.entries(groupedClusters)
                   .sort(([a], [b]) => a.localeCompare(b))
                   .map(([tagFamily, clusters]) => (
-                    <div key={tagFamily}>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          className="w-full text-left font-medium"
-                          onClick={() => toggleFamilyExpanded(tagFamily)}
+                    <SidebarMenuItem key={tagFamily}>
+                      <SidebarMenuButton
+                        className="w-full text-left font-medium"
+                        asChild
+                      >
+                        <Link
+                          href={`/tag-family/${encodeURIComponent(tagFamily)}`}
                         >
                           <span className="flex justify-between items-center w-full">
                             <span>{tagFamily}</span>
@@ -217,35 +208,9 @@ export function AppSidebar() {
                                 : `${clusters[0].tag_count} note`}
                             </span>
                           </span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-
-                      {/* Show child categories when expanded */}
-                      {expandedFamilies[tagFamily] && (
-                        <div className="pl-4 border-l ml-4 mt-0 mb-2">
-                          {clusters.map((cluster) => (
-                            <SidebarMenuItem key={cluster.id}>
-                              <SidebarMenuButton
-                                className="w-full text-left text-sm py-1"
-                                asChild
-                              >
-                                <Link
-                                  href={`/cluster/${cluster.id}`}
-                                  className="flex justify-between"
-                                >
-                                  <span>
-                                    {cluster.category}{" "}
-                                    <span className="text-muted-foreground">
-                                      ({cluster.tag_count})
-                                    </span>
-                                  </span>
-                                </Link>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                   ))}
               </SidebarMenu>
             )}
