@@ -31,9 +31,10 @@ interface Note {
   type?: string;
 }
 
-interface Cluster {
+interface SearchCluster {
   id: number;
-  tag_family: string;
+  tag_family: number;
+  tag_family_name: string;
   category: string;
   tag_count: number;
   summary: string;
@@ -75,12 +76,14 @@ export default function SearchPage() {
   const filteredClusters = searchQuery
     ? (clusters
         .filter((cluster) =>
-          cluster.tag_family.toLowerCase().includes(searchQuery.toLowerCase())
+          String(cluster.tag_family_name)
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())
         )
         .map((cluster) => ({
           ...cluster,
           type: "cluster",
-        })) as (Cluster & { type: string })[])
+        })) as (SearchCluster & { type: string })[])
     : [];
 
   // Access our tag merge dialog hook
@@ -170,13 +173,13 @@ export default function SearchPage() {
   };
 
   const handleItemClick = (
-    item: Note | Cluster | { type: string; id: number }
+    item: Note | SearchCluster | { type: string; id: number }
   ) => {
     if (item.type === "cluster") {
-      const cluster = item as Cluster & { type: string };
+      const cluster = item as SearchCluster & { type: string };
       router.push(
         `/tag-family/${encodeURIComponent(
-          cluster.tag_family
+          String(cluster.tag_family)
         )}?category=${encodeURIComponent(cluster.category)}`
       );
     } else {

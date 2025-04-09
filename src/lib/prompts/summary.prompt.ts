@@ -1,6 +1,7 @@
 import { Database } from "@/types/database.types";
 
 type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"];
+type TodoItem = Database["public"]["Tables"]["cosmic_todo_item"]["Row"];
 
 const formatNote = (
   note: Note,
@@ -55,31 +56,6 @@ ${formatNotes(notes)}`,
   summary:
     "A comprehensive, well-organized summary that combines the key information from all notes",
 });
-
-export const getTodoPrompt =
-  (existingNote: string): ((notes: Note[]) => SummaryPrompt) =>
-  (notes) => ({
-    model: "gpt-4o-mini",
-    prompt: `Here is the existing todo list:
-
-${existingNote}
-
-Update the todo list based on the following notes:
-
-# All Notes
-${formatNotes(notes)}
-
-# Instructions
-Do not alter the existing todo list, just add new tasks to it if necessary. Use the following format:
-
-\`\`\`
-- [x] Task 1
-- [ ] Task 2
-- [ ] Task 3
-\`\`\`
-`,
-    summary: "One large todo list in MD format, with each task on a new line.",
-  });
 
 export const getScratchpadPrompt = (notes: Note[]): SummaryPrompt => ({
   model: "gpt-4o-mini",
@@ -181,24 +157,24 @@ export const getPromptFunction = (
   existingNote: string
 ): ((notes: Note[]) => SummaryPrompt) => {
   switch (category) {
-    case "to-do":
-      return getTodoPrompt(existingNote);
-    case "scratchpad":
+    case "Scratchpad":
       return getScratchpadPrompt;
-    case "collections":
+    case "Collections":
       return getCollectionsPrompt;
-    case "brainstorm":
+    case "Brainstorm":
       return getBrainstormPrompt;
-    case "journal":
+    case "Journal":
       return getJournalPrompt;
-    case "meeting":
+    case "Meeting":
       return getMeetingPrompt;
-    case "research":
+    case "Research":
       return getResearchPrompt;
-    case "learning":
+    case "Learning":
       return getLearningPrompt;
-    case "feedback":
+    case "Feedback":
       return getFeedbackPrompt;
+    case "Learning":
+      return getLearningPrompt;
     default:
       throw new Error(`Unknown category: ${category}`);
   }

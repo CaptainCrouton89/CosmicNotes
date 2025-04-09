@@ -1,7 +1,18 @@
 import { Database } from "@/types/database.types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-type Cluster = Database["public"]["Tables"]["cosmic_cluster"]["Row"];
+interface TodoItem {
+  id: number;
+  item: string;
+  done: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+type Cluster = Database["public"]["Tables"]["cosmic_cluster"]["Row"] & {
+  tag_family_name?: string;
+  todo_items?: TodoItem[];
+};
 
 interface PaginatedResponse {
   clusters: Cluster[];
@@ -40,7 +51,7 @@ export const clustersApi = createApi({
     getClustersByCriteria: builder.query<
       PaginatedResponse,
       {
-        tagFamily?: string;
+        tagFamily?: number;
         category?: string;
         excludeIds?: number[];
         page?: number;
@@ -56,8 +67,8 @@ export const clustersApi = createApi({
       }) => {
         let url = `cluster?page=${page}&limit=${limit}`;
 
-        if (tagFamily) {
-          url += `&tagFamily=${encodeURIComponent(tagFamily)}`;
+        if (tagFamily !== undefined) {
+          url += `&tagFamily=${tagFamily}`;
         }
 
         if (category) {

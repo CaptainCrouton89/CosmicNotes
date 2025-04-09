@@ -1,9 +1,9 @@
 import { generateEmbedding } from "@/lib/embeddings";
-import { generateNoteSummary } from "@/lib/services/ai-service";
+import { generateNoteSummary, generateTodos } from "@/lib/services/ai-service";
 import { getNotesForTag } from "@/lib/services/tag-service";
 import { linkifySummary } from "@/lib/utils";
 import { Database } from "@/types/database.types";
-import { SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "../supabase/server";
 
 type MemoryRow = Database["public"]["Tables"]["cosmic_memory"]["Row"];
 
@@ -11,9 +11,9 @@ type MemoryRow = Database["public"]["Tables"]["cosmic_memory"]["Row"];
  * Get notes for a specific tag, grouped by category
  */
 export async function getNotesForTagByCategory(
-  supabase: SupabaseClient<Database>,
   tag: string
 ): Promise<Map<string, MemoryRow[]>> {
+  const supabase = await createClient();
   // Get all notes for this tag
   const notes = await getNotesForTag(supabase, tag);
 
@@ -35,16 +35,19 @@ export async function getNotesForTagByCategory(
  * Create or update a tag family record
  */
 export async function createOrUpdateTagFamily(
-  supabase: SupabaseClient<Database>,
   tag: string,
   count: number
 ): Promise<{ id: number | null; countChanged: boolean }> {
   try {
+    const supabase = await createClient();
+    console.log("tag", tag);
     const { data: existingTagFamily, error: tagFamilyError } = await supabase
       .from("cosmic_tag_family")
       .select("id, tag_count")
       .eq("tag", tag)
       .maybeSingle();
+
+    console.log("existingTagFamily", existingTagFamily);
 
     if (tagFamilyError) {
       console.error(`Error fetching tag family for ${tag}:`, tagFamilyError);
@@ -95,44 +98,66 @@ export async function createOrUpdateTagFamily(
  * Create or update a cluster for a tag and category
  */
 export async function createOrUpdateCluster(
-  supabase: SupabaseClient<Database>,
-  tag: string,
+  tagFamilyId: number,
   category: string,
   notes: MemoryRow[]
 ): Promise<{ action: string; count: number } | null> {
+  const supabase = await createClient();
   try {
     // Check if cluster already exists
     const { data: existingCluster, error: clusterError } = await supabase
       .from("cosmic_cluster")
       .select("id, tag_count, summary")
-      .eq("tag_family", tag)
+      .eq("tag_family", tagFamilyId)
       .eq("category", category)
       .maybeSingle();
 
     if (clusterError) {
       console.error(
-        `Error fetching cluster for ${tag}/${category}:`,
+        `Error fetching cluster for tag family ID ${tagFamilyId}/${category}:`,
         clusterError
       );
       return null;
     }
 
+    let summary = "";
     // Generate data for cluster
-    const summary = await generateNoteSummary(
-      notes,
-      existingCluster?.summary ?? ""
-    );
+    if (category !== "To-Do") {
+      summary = await generateNoteSummary(notes, existingCluster?.summary);
+    }
     const linkedSummary = linkifySummary(summary);
+
     const embedding = await generateEmbedding(
       notes.map((note) => note.content).join("\n")
     );
+
+    if (category === "To-Do") {
+      const todos = await generateTodos(notes, tagFamilyId);
+
+      const { error: insertError } = await supabase
+        .from("cosmic_todo_item")
+        .insert(
+          todos.map((todo) => ({
+            item: todo,
+            tag: tagFamilyId,
+          }))
+        );
+
+      if (insertError) {
+        console.error(
+          `Error creating todos for tag family ID ${tagFamilyId}/${category}:`,
+          insertError
+        );
+        return null;
+      }
+    }
 
     if (!existingCluster) {
       // Create new cluster
       const { error: insertError } = await supabase
         .from("cosmic_cluster")
         .insert({
-          tag_family: tag,
+          tag_family: tagFamilyId,
           category,
           tag_count: notes.length,
           summary: linkedSummary,
@@ -141,7 +166,7 @@ export async function createOrUpdateCluster(
 
       if (insertError) {
         console.error(
-          `Error creating cluster for ${tag}/${category}:`,
+          `Error creating cluster for tag family ID ${tagFamilyId}/${category}:`,
           insertError
         );
         return null;
@@ -164,7 +189,7 @@ export async function createOrUpdateCluster(
 
       if (updateError) {
         console.error(
-          `Error updating cluster for ${tag}/${category}:`,
+          `Error updating cluster for tag family ID ${tagFamilyId}/${category}:`,
           updateError
         );
         return null;
@@ -177,7 +202,7 @@ export async function createOrUpdateCluster(
     }
   } catch (error) {
     console.error(
-      `Error in createOrUpdateCluster for ${tag}/${category}:`,
+      `Error in createOrUpdateCluster for tag family ID ${tagFamilyId}/${category}:`,
       error
     );
     return null;
@@ -187,15 +212,10 @@ export async function createOrUpdateCluster(
 /**
  * Process tag clustering for a specific tag
  */
-export async function processTagClustering(
-  supabase: SupabaseClient<Database>,
-  tag: string,
-  count: number
-) {
+export async function processTagClustering(tag: string, count: number) {
   try {
     // 1. Create or update the tag family
     const { id: tagFamilyId, countChanged } = await createOrUpdateTagFamily(
-      supabase,
       tag,
       count
     );
@@ -218,7 +238,7 @@ export async function processTagClustering(
     }
 
     // 2. Get notes for this tag grouped by category
-    const notesByCategory = await getNotesForTagByCategory(supabase, tag);
+    const notesByCategory = await getNotesForTagByCategory(tag);
 
     console.log(
       Array.from(notesByCategory.entries()).map(([category, notes]) => ({
@@ -234,8 +254,7 @@ export async function processTagClustering(
     const categoryResults = await Promise.all(
       Array.from(notesByCategory.entries()).map(async ([category, notes]) => {
         const result = await createOrUpdateCluster(
-          supabase,
-          tag,
+          tagFamilyId,
           category,
           notes
         );
@@ -290,10 +309,9 @@ export async function processTagClustering(
 /**
  * Clean up obsolete clusters
  */
-export async function cleanupObsoleteClusters(
-  supabase: SupabaseClient<Database>
-): Promise<number> {
+export async function cleanupObsoleteClusters(): Promise<number> {
   try {
+    const supabase = await createClient();
     const { data: obsoleteClusters, error: obsoleteError } = await supabase
       .from("cosmic_cluster")
       .select("id, tag_family, category");
@@ -307,11 +325,28 @@ export async function cleanupObsoleteClusters(
     const obsoleteChecks = await Promise.all(
       obsoleteClusters.map(async (cluster) => {
         try {
+          // Get the tag string from tag_family table
+          const { data: tagFamily, error: tagFamilyError } = await supabase
+            .from("cosmic_tag_family")
+            .select("tag")
+            .eq("id", cluster.tag_family)
+            .single();
+
+          if (tagFamilyError || !tagFamily) {
+            console.error(
+              `Error fetching tag family for cluster ${cluster.id}:`,
+              tagFamilyError
+            );
+            return null;
+          }
+
+          const tagString = tagFamily.tag;
+
           // Get notes with this tag
           const { data: tagNotes, error: tagError } = await supabase
             .from("cosmic_tags")
             .select("note")
-            .eq("tag", cluster.tag_family);
+            .eq("tag", tagString);
 
           if (tagError || !tagNotes) {
             console.error(

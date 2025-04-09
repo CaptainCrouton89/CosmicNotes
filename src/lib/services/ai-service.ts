@@ -1,3 +1,4 @@
+import { createClient } from "@/lib/supabase/server";
 import { Database } from "@/types/database.types";
 import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
@@ -6,14 +7,52 @@ import { getPromptFunction } from "../prompts/summary.prompt";
 
 type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"];
 
+export async function generateTodos(notes: Note[], tagFamilyId: number) {
+  const supabase = await createClient();
+
+  const { data: existingTodoItems, error: existingTodoItemsError } =
+    await supabase
+      .from("cosmic_todo_item")
+      .select("item")
+      .eq("tag", tagFamilyId);
+
+  if (existingTodoItemsError) {
+    throw new Error(existingTodoItemsError.message);
+  }
+
+  const result = await generateObject({
+    model: openai("gpt-4o-mini"),
+    temperature: 0,
+    system:
+      "You are a helpful assistant that specializes in combining todo items from notes.",
+    prompt: `Here are the existing todo items:
+
+${existingTodoItems.map((item) => `${item.item}`).join("\n")}
+
+# Todo Items in Notes
+
+${notes.map((note) => `${note.content}`).join("\n")}
+
+# Instructions
+
+Based on the notes, return a list of todo items that are not already in the existing todo list.`,
+    schema: z.object({
+      todos: z.array(z.string()).describe("A list of todos"),
+    }),
+  });
+
+  return result.object.todos;
+}
+
 export async function generateNoteSummary(
   notes: Note[],
   existingNote?: string
 ) {
-  const getPrompt = getPromptFunction(
-    notes[0].category.toLowerCase(),
-    existingNote ?? ""
-  );
+  const getPrompt = getPromptFunction(notes[0].category, existingNote ?? "");
+  if (notes[0].category === "To-Do") {
+    return "";
+  }
+
   const { prompt, model, summary } = getPrompt(notes);
 
   console.log(prompt);

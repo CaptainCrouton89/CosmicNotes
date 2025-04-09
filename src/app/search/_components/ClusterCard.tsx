@@ -3,7 +3,8 @@ import React from "react";
 interface ClusterCardProps {
   cluster: {
     id: number;
-    tag_family: string;
+    tag_family: number;
+    tag_family_name: string;
     category: string;
     tag_count: number;
     summary: string;
@@ -12,7 +13,8 @@ interface ClusterCardProps {
   };
   onClick: (cluster: {
     id: number;
-    tag_family: string;
+    tag_family: number;
+    tag_family_name: string;
     category: string;
     tag_count: number;
     summary: string;

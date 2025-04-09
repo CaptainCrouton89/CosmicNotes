@@ -27,18 +27,7 @@ import {
 } from "@/components/ui/sidebar";
 import { clustersApi } from "@/lib/redux/services/clustersApi";
 import { notesApi } from "@/lib/redux/services/notesApi";
-
-// Type for grouping clusters by tag family
-type GroupedClusters = {
-  [tagFamily: string]: Array<{
-    id: number;
-    category: string;
-    tag_count: number;
-    tag_family: string;
-    created_at: string;
-    updated_at: string;
-  }>;
-};
+import { tagFamilyApi } from "@/lib/redux/services/tagFamilyApi";
 
 export function AppSidebar() {
   // Notes query
@@ -51,19 +40,20 @@ export function AppSidebar() {
     limit: 40,
   });
 
-  // Clusters query
+  // Tag Families query
   const {
-    data: clustersData,
-    error: clustersError,
-    isLoading: clustersLoading,
-  } = clustersApi.useGetClustersQuery({
+    data: tagFamiliesData,
+    error: tagFamiliesError,
+    isLoading: tagFamiliesLoading,
+  } = tagFamilyApi.useGetTagFamiliesQuery({
     page: 1,
-    limit: 50, // Increased limit to ensure we get all clusters for grouping
+    limit: 50,
   });
 
   // Gather clusters mutation
   const [gatherClusters, { isLoading: isGathering }] =
     clustersApi.useGatherClustersMutation();
+
   // Handle refresh clusters
   const handleRefreshClusters = async () => {
     try {
@@ -72,22 +62,6 @@ export function AppSidebar() {
       console.error("Error gathering clusters:", error);
     }
   };
-
-  // Group clusters by tag_family
-  const groupClustersByTagFamily = () => {
-    if (!clustersData?.clusters) return {};
-
-    return clustersData.clusters.reduce((grouped: GroupedClusters, cluster) => {
-      const family = cluster.tag_family;
-      if (!grouped[family]) {
-        grouped[family] = [];
-      }
-      grouped[family].push(cluster);
-      return grouped;
-    }, {});
-  };
-
-  const groupedClusters = groupClustersByTagFamily();
 
   return (
     <Sidebar>
@@ -127,7 +101,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Clusters */}
+        {/* Tag Families */}
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center gap-2 justify-between">
             <span className="flex items-center gap-2">
@@ -139,7 +113,7 @@ export function AppSidebar() {
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
-              Clusters
+              Tag Families
             </span>
             <Button
               variant="ghost"
@@ -154,7 +128,7 @@ export function AppSidebar() {
             </Button>
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            {clustersLoading ? (
+            {tagFamiliesLoading ? (
               // Loading state
               <SidebarMenu>
                 {Array.from({ length: 3 }).map((_, index) => (
@@ -163,39 +137,41 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
-            ) : clustersError ? (
+            ) : tagFamiliesError ? (
               <div className="px-4 py-2 text-red-500">An error occurred</div>
-            ) : Object.keys(groupedClusters).length === 0 ? (
+            ) : !tagFamiliesData?.tagFamilies ||
+              tagFamiliesData.tagFamilies.length === 0 ? (
               <div className="px-4 py-2 text-muted-foreground">
-                No clusters found
+                No tag families found
               </div>
             ) : (
               <SidebarMenu>
-                {Object.entries(groupedClusters)
-                  .sort(([a], [b]) => a.localeCompare(b))
-                  .map(([tagFamily, clusters]) => (
-                    <SidebarMenuItem key={tagFamily}>
-                      <SidebarMenuButton
-                        className="w-full text-left font-medium"
-                        asChild
-                      >
-                        <Link
-                          href={`/tag-family/${encodeURIComponent(tagFamily)}`}
-                        >
-                          <span className="flex justify-between items-center w-full">
-                            <span>{tagFamily}</span>
-                            <span className="text-muted-foreground text-xs">
-                              {clusters.length > 1
-                                ? `${clusters.length} categories`
-                                : clusters[0].tag_count > 1
-                                ? `${clusters[0].tag_count} notes`
-                                : `${clusters[0].tag_count} note`}
-                            </span>
-                          </span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                {tagFamiliesData.tagFamilies
+                  ? [...tagFamiliesData.tagFamilies]
+                      .sort((a, b) => a.tag.localeCompare(b.tag))
+                      .map((tagFamily) => (
+                        <SidebarMenuItem key={tagFamily.id}>
+                          <SidebarMenuButton
+                            className="w-full text-left font-medium"
+                            asChild
+                          >
+                            <Link href={`/tag-family/${tagFamily.id}`}>
+                              <span className="flex justify-between items-center w-full">
+                                <span>{tagFamily.tag}</span>
+                                <span className="text-muted-foreground text-xs">
+                                  {tagFamily.clusters &&
+                                  tagFamily.clusters.length > 1
+                                    ? `${tagFamily.clusters.length} categories`
+                                    : tagFamily.tag_count > 1
+                                    ? `${tagFamily.tag_count} notes`
+                                    : `${tagFamily.tag_count} note`}
+                                </span>
+                              </span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))
+                  : null}
               </SidebarMenu>
             )}
           </SidebarGroupContent>

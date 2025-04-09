@@ -1,6 +1,7 @@
 "use client";
 
 import { clustersApi } from "@/lib/redux/services/clustersApi";
+import { tagFamilyApi } from "@/lib/redux/services/tagFamilyApi";
 import {
   setChatVisibility,
   toggleChatVisibility,
@@ -11,7 +12,6 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   ChatButtons,
-  ChatPanel,
   ClusterSummary,
   EmptyState,
   ErrorState,
@@ -19,12 +19,14 @@ import {
   RelatedNotes,
   TagFamilyHeader,
 } from "./_components";
+import { ChatPanel } from "./_components/ChatPanel";
+import { TodoListContainer } from "./TodoListContainer";
 
 export default function TagFamilyPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
-  const tagFamilyId = String(params.id);
+  const tagFamilyId = parseInt(String(params.id), 10);
   const dispatch = useDispatch();
 
   // Use global UI state for chat visibility
@@ -32,7 +34,7 @@ export default function TagFamilyPage() {
     (state: RootState) => state.ui.isChatVisible
   );
 
-  // Only keep the setter function for mobile detection
+  // State for mobile detection and active categories
   const [, setIsMobile] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(
     categoryParam
@@ -41,6 +43,25 @@ export default function TagFamilyPage() {
     null
   );
 
+  // Fetch tag family data
+  const {
+    data: tagFamily,
+    isLoading: tagFamilyLoading,
+    error: tagFamilyError,
+  } = tagFamilyApi.useGetTagFamilyQuery(tagFamilyId, {
+    skip: isNaN(tagFamilyId),
+  });
+
+  // Fetch clusters for this tag family
+  const {
+    data: clustersData,
+    isLoading: clustersLoading,
+    error: clustersError,
+  } = clustersApi.useGetClustersByCriteriaQuery({
+    tagFamily: tagFamilyId,
+    // @ts-ignore - API expects a number but sometimes gets a string
+  });
+
   // Initialize chat visibility based on screen size
   useEffect(() => {
     const checkScreenSize = () => {
@@ -48,7 +69,6 @@ export default function TagFamilyPage() {
       setIsMobile(isMobileView);
 
       // Only update chat visibility on initial load
-      // Use sessionStorage to track if we've already set the initial state
       if (!sessionStorage.getItem("initialUiStateSet")) {
         dispatch(setChatVisibility(!isMobileView));
         sessionStorage.setItem("initialUiStateSet", "true");
@@ -64,15 +84,6 @@ export default function TagFamilyPage() {
     // Cleanup listener
     return () => window.removeEventListener("resize", checkScreenSize);
   }, [dispatch]);
-
-  // Fetch clusters for this tag family
-  const {
-    data: clustersData,
-    isLoading: clustersLoading,
-    error: clustersError,
-  } = clustersApi.useGetClustersByCriteriaQuery({
-    tagFamily: tagFamilyId,
-  });
 
   // Find the active cluster based on category selection or default to first one
   useEffect(() => {
@@ -108,7 +119,7 @@ export default function TagFamilyPage() {
   );
 
   // Get active cluster object
-  const activeCluster = clustersData?.clusters.find(
+  const activeCluster = clustersData?.clusters?.find(
     (c) => c.id === selectedClusterId
   );
 
@@ -120,11 +131,37 @@ export default function TagFamilyPage() {
     setActiveCategory(category);
   };
 
-  // Loading, error, and empty states
-  if (clustersLoading) return <LoadingState />;
-  if (clustersError) return <ErrorState />;
-  if (!clustersData || clustersData.clusters.length === 0)
+  // Loading states
+  if (tagFamilyLoading || clustersLoading) return <LoadingState />;
+
+  // Error states
+  if (tagFamilyError || clustersError) return <ErrorState />;
+
+  // Empty states
+  if (!tagFamily || !clustersData || clustersData.clusters.length === 0)
     return <EmptyState />;
+
+  // Group clusters by category (for the tabs)
+  const clustersByCategory = tagFamily.clusters?.reduce((acc, cluster) => {
+    if (!acc[cluster.category]) {
+      acc[cluster.category] = [];
+    }
+    acc[cluster.category].push(cluster);
+    return acc;
+  }, {} as Record<string, typeof tagFamily.clusters>);
+
+  // Get sorted categories with "To-Do" first if it exists
+  const categories = clustersByCategory
+    ? [...Object.keys(clustersByCategory)].sort((a, b) => {
+        if (a === "To-Do") return -1;
+        if (b === "To-Do") return 1;
+        return a.localeCompare(b);
+      })
+    : [];
+
+  // Check if To-Do exists in categories
+  const hasToDoCategory = categories.includes("To-Do");
+  const todoItems = tagFamily.todo_items || [];
 
   return (
     <div className="flex flex-col md:flex-row min-h-0 h-full relative">
@@ -135,7 +172,7 @@ export default function TagFamilyPage() {
       >
         {/* Header component */}
         <TagFamilyHeader
-          tagFamilyId={tagFamilyId}
+          tagName={tagFamily.tag}
           activeCluster={activeCluster}
           clusters={clustersData.clusters}
           activeCategory={activeCategory}
@@ -144,6 +181,20 @@ export default function TagFamilyPage() {
 
         {/* Cluster summary */}
         <ClusterSummary cluster={activeCluster} />
+
+        {/* To-Do Items Section */}
+        {todoItems.length > 0 && (
+          <>
+            <hr className="my-6 border-t border-gray-200" />
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold mb-4">To-Do Items</h2>
+              <TodoListContainer
+                tagFamilyId={tagFamilyId}
+                initialTodos={todoItems}
+              />
+            </div>
+          </>
+        )}
 
         <hr className="my-6 border-t border-gray-200" />
 
@@ -170,7 +221,7 @@ export default function TagFamilyPage() {
       >
         <ChatPanel
           isVisible={isChatVisible}
-          chatId={tagFamilyId}
+          chatId={tagFamilyId.toString()}
           onToggle={toggleChat}
         />
       </div>

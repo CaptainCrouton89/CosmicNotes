@@ -162,11 +162,19 @@
   ol {
     @apply list-decimal pl-6 mb-4;
   }
+  li > ul {
+    @apply list-[circle];
+  }
   li {
     @apply my-0;
   }
-  li > ul,
   li > ol {
     @apply mb-1;
+  }
+  li:has(> input[type="checkbox"]) {
+    @apply list-none -ml-6 flex items-start gap-2;
+  }
+  li:has(> input[type="checkbox"]) > input[type="checkbox"] {
+    @apply mt-1.5;
   }
 }

@@ -6,9 +6,12 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const page = parseInt(url.searchParams.get("page") || "1", 10);
     const limit = parseInt(url.searchParams.get("limit") || "10", 10);
-    const tagFamily = url.searchParams.get("tagFamily");
+    const tagFamilyParam = url.searchParams.get("tagFamily");
     const category = url.searchParams.get("category");
     const excludeIdsParam = url.searchParams.get("excludeIds");
+
+    // Parse tag family ID if provided
+    const tagFamilyId = tagFamilyParam ? parseInt(tagFamilyParam, 10) : null;
 
     const excludeIds = excludeIdsParam
       ? excludeIdsParam
@@ -22,13 +25,21 @@ export async function GET(req: NextRequest) {
     const supabaseClient = await createClient();
 
     // Build the query
-    let query = supabaseClient
-      .from("cosmic_cluster")
-      .select("*", { count: "exact" });
+    let query = supabaseClient.from("cosmic_cluster").select(
+      `
+        *,
+        tag_families:cosmic_tag_family(
+          id, 
+          tag,
+          todo_items:cosmic_todo_item(id, item, done, created_at, updated_at)
+        )
+      `,
+      { count: "exact" }
+    );
 
     // Apply filters if provided
-    if (tagFamily) {
-      query = query.eq("tag_family", tagFamily);
+    if (tagFamilyId !== null && !isNaN(tagFamilyId)) {
+      query = query.eq("tag_family", tagFamilyId);
     }
 
     if (category) {
@@ -56,11 +67,18 @@ export async function GET(req: NextRequest) {
     }
 
     // Get paginated data with the same filters
-    let dataQuery = supabaseClient.from("cosmic_cluster").select("*");
+    let dataQuery = supabaseClient.from("cosmic_cluster").select(`
+        *,
+        tag_families:cosmic_tag_family(
+          id, 
+          tag,
+          todo_items:cosmic_todo_item(id, item, done, created_at, updated_at)
+        )
+      `);
 
     // Apply the same filters
-    if (tagFamily) {
-      dataQuery = dataQuery.eq("tag_family", tagFamily);
+    if (tagFamilyId !== null && !isNaN(tagFamilyId)) {
+      dataQuery = dataQuery.eq("tag_family", tagFamilyId);
     }
 
     if (category) {
@@ -93,9 +111,16 @@ export async function GET(req: NextRequest) {
     const totalPages = Math.ceil(totalCount / limit);
     const hasMore = page < totalPages;
 
+    // Format response to include tag_family_name and todo_items
+    const formattedClusters = clusters?.map((cluster) => ({
+      ...cluster,
+      tag_family_name: cluster.tag_families?.tag || String(cluster.tag_family),
+      todo_items: cluster.tag_families?.todo_items || [],
+    }));
+
     return new Response(
       JSON.stringify({
-        clusters,
+        clusters: formattedClusters,
         pagination: {
           page,
           limit,

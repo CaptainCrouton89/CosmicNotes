@@ -22,7 +22,8 @@ interface Note {
 
 interface Cluster {
   id: number;
-  tag_family: string;
+  tag_family: number;
+  tag_family_name: string;
   category: string;
   tag_count: number;
   summary: string;
@@ -94,7 +95,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                 highlightedTagFamily={
                   <div
                     dangerouslySetInnerHTML={createMarkup(
-                      highlightSearchTerm(cluster.tag_family)
+                      highlightSearchTerm(cluster.tag_family_name)
                     )}
                   />
                 }

@@ -4,6 +4,7 @@ import { openai } from "@ai-sdk/openai";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { generateObject } from "ai";
 import * as z from "zod";
+import { createClient } from "../supabase/server";
 import { capitalize } from "../utils";
 import { searchClusters } from "./search-service";
 export interface Tag {
@@ -207,7 +208,8 @@ export async function saveTagsToDatabase(
   }
 }
 
-export async function getAllTagsWithCounts(supabase: SupabaseClient<Database>) {
+export async function getAllTagsWithCounts() {
+  const supabase = await createClient();
   const { data: allTags, error: tagsError } = await supabase
     .from("cosmic_tags")
     .select("tag");

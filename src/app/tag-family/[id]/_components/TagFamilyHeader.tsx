@@ -6,7 +6,7 @@ import { Calendar, Clock } from "lucide-react";
 type Cluster = Database["public"]["Tables"]["cosmic_cluster"]["Row"];
 
 interface TagFamilyHeaderProps {
-  tagFamilyId: string;
+  tagName: string;
   activeCluster: Cluster | undefined;
   clusters: Cluster[];
   activeCategory: string | null;
@@ -14,7 +14,7 @@ interface TagFamilyHeaderProps {
 }
 
 export function TagFamilyHeader({
-  tagFamilyId,
+  tagName,
   activeCluster,
   clusters,
   activeCategory,
@@ -24,7 +24,7 @@ export function TagFamilyHeader({
     <div className="mb-6">
       {/* Compact header with title and metadata */}
       <div className="flex flex-wrap items-baseline gap-x-2 mb-2">
-        <h1 className="text-2xl font-bold">{tagFamilyId}</h1>
+        <h1 className="text-2xl font-bold">{tagName}</h1>
         {activeCluster && (
           <span className="text-muted-foreground">
             ({activeCluster.tag_count} notes)

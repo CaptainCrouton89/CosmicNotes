@@ -59,11 +59,33 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Get the tag string from the tag_family table
+    const { data: tagFamily, error: tagFamilyError } = await supabaseClient
+      .from("cosmic_tag_family")
+      .select("tag")
+      .eq("id", cluster.tag_family)
+      .single();
+
+    if (tagFamilyError || !tagFamily) {
+      return new Response(
+        JSON.stringify({
+          error: "Tag family not found",
+          details: tagFamilyError,
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const tagString = tagFamily.tag;
+
     // Get total count of notes with this cluster's tag and category
     const { error: countError } = await supabaseClient
       .from("cosmic_tags")
       .select("note", { count: "exact", head: true })
-      .eq("tag", cluster.tag_family);
+      .eq("tag", tagString);
 
     if (countError) {
       return new Response(
@@ -82,7 +104,7 @@ export async function GET(req: NextRequest) {
     const { data: taggedNotes, error: notesError } = await supabaseClient
       .from("cosmic_tags")
       .select("note")
-      .eq("tag", cluster.tag_family);
+      .eq("tag", tagString);
 
     if (notesError) {
       return new Response(

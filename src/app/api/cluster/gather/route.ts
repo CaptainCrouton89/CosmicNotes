@@ -11,14 +11,14 @@ export async function POST() {
     const supabase = await createClient();
 
     // Get all tags with their counts
-    const tagCounts = await getAllTagsWithCounts(supabase);
+    const tagCounts = await getAllTagsWithCounts();
 
     // Process each tag with count > 1
     const results = await Promise.all(
       Object.entries(tagCounts)
         .filter(([, count]) => count > 1)
         .map(async ([tag, count]) => {
-          return await processTagClustering(supabase, tag, count);
+          return await processTagClustering(tag, count);
         })
     );
 

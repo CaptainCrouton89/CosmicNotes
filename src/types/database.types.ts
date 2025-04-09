@@ -127,33 +127,6 @@ export type Database = {
           },
         ]
       }
-      cosmic_categories: {
-        Row: {
-          created_at: string
-          definition: string
-          id: number
-          name: string
-          prompt: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          definition?: string
-          id?: number
-          name?: string
-          prompt?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          definition?: string
-          id?: number
-          name?: string
-          prompt?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       cosmic_cluster: {
         Row: {
           category: string
@@ -162,7 +135,7 @@ export type Database = {
           id: number
           summary: string
           tag_count: number
-          tag_family: string
+          tag_family: number
           updated_at: string
         }
         Insert: {
@@ -172,7 +145,7 @@ export type Database = {
           id?: number
           summary: string
           tag_count: number
-          tag_family: string
+          tag_family: number
           updated_at?: string
         }
         Update: {
@@ -182,10 +155,18 @@ export type Database = {
           id?: number
           summary?: string
           tag_count?: number
-          tag_family?: string
+          tag_family?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cosmic_cluster_tag_family_fkey"
+            columns: ["tag_family"]
+            isOneToOne: false
+            referencedRelation: "cosmic_tag_family"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cosmic_memory: {
         Row: {
@@ -278,6 +259,41 @@ export type Database = {
             columns: ["note"]
             isOneToOne: false
             referencedRelation: "cosmic_memory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cosmic_todo_item: {
+        Row: {
+          created_at: string
+          done: boolean
+          id: number
+          item: string
+          tag: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          id?: number
+          item: string
+          tag: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          id?: number
+          item?: string
+          tag?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cosmic_todo_requirements_tag_fkey"
+            columns: ["tag"]
+            isOneToOne: false
+            referencedRelation: "cosmic_tag_family"
             referencedColumns: ["id"]
           },
         ]
