@@ -1,0 +1,375 @@
+---
+description: ALWAYS use this when working on a new component or route
+globs: 
+alwaysApply: false
+---
+
+# Next.js App Router Best Practices
+
+## Route Handler Conventions
+
+- **✅ DO:** Use correct parameter types for dynamic routes
+  ```typescript
+  // For routes with dynamic segments like [id]
+  export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) {
+    const id = (await params).id;
+    // ...
+  }
+  ```
+
+- **✅ DO:** Extract URL parameters with standard methods
+  ```typescript
+  export async function GET(request: NextRequest) {
+    const searchParams = request.nextUrl.searchParams;
+    const query = searchParams.get('q');
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    // ...
+  }
+  ```
+
+- **✅ DO:** Return standardized responses
+  ```typescript
+  // For consistent error handling
+  export async function GET() {
+    try {
+      // ...logic
+      return NextResponse.json({ data });
+    } catch (error) {
+      if (error instanceof UserError) {
+        return NextResponse.json(
+          { error: error.message }, 
+          { status: 400 }
+        );
+      }
+      return NextResponse.json(
+        { error: 'An unexpected error occurred' }, 
+        { status: 500 }
+      );
+    }
+  }
+  ```
+
+## Client Components
+
+- **✅ DO:** Mark client components at the top
+  ```typescript
+  'use client';
+  
+  import { useState } from 'react';
+  // ...
+  ```
+
+- **✅ DO:** Separate data fetching from UI components
+  ```typescript
+  // page.tsx - Server Component
+  export default async function Page() {
+    const data = await fetchData();
+    return <ClientComponent initialData={data} />;
+  }
+  
+  // client-component.tsx - Client Component
+  'use client';
+  export function ClientComponent({ initialData }) {
+    // Client-side logic with initialData
+  }
+  ```
+
+- **❌ DON'T:** Fetch data directly in client components if it can be done server-side
+  ```typescript
+  // Don't do this if avoidable
+  'use client';
+  export function BadPattern() {
+    const [data, setData] = useState();
+    
+    useEffect(() => {
+      fetch('/api/data').then(res => res.json()).then(setData);
+    }, []);
+    
+    // ...
+  }
+  ```
+
+## Page Organization
+
+- **✅ DO:** Use the directory structure for organization
+  ```
+  src/app/
+    ├── page.tsx         # Home page (/)
+    ├── layout.tsx       # Root layout
+    ├── note/
+    │   ├── page.tsx     # Notes list page (/note)
+    │   ├── [id]/        # Dynamic route
+    │   │   ├── page.tsx # Individual note page (/note/123)
+    │   │   └── ...
+    └── api/
+        └── ...
+  ```
+
+- **✅ DO:** Prefix private components with underscore
+  ```
+  src/app/note/
+    ├── page.tsx
+    ├── _components/   # Private to /note route
+    │   ├── NoteList.tsx
+    │   └── NoteCard.tsx
+  ```
+
+- **✅ DO:** Use `loading.tsx` for Suspense boundaries
+  ```typescript
+  // app/note/loading.tsx
+  export default function Loading() {
+    return <div>Loading notes...</div>;
+  }
+  ```
+
+## API Route Structure
+
+- **✅ DO:** Structure API routes consistently
+  ```
+  src/app/api/
+    ├── note/
+    │   ├── route.ts               # /api/note (GET, POST)
+    │   ├── [id]/
+    │   │   ├── route.ts           # /api/note/123 (GET, PUT, DELETE)
+    │   │   ├── tags/
+    │   │   │   └── route.ts       # /api/note/123/tags (GET, POST)
+    │   │   └── refresh/
+    │   │       └── route.ts       # /api/note/123/refresh (POST)
+  ```
+
+- **✅ DO:** Follow REST patterns in API routes
+  ```typescript
+  // Collection routes
+  export async function GET() { /* List all notes */ }
+  export async function POST() { /* Create a new note */ }
+  
+  // Resource routes with ID
+  export async function GET() { /* Get a specific note */ }
+  export async function PUT() { /* Update a note */ }
+  export async function DELETE() { /* Delete a note */ }
+  ```
+
+- **✅ DO:** Use typed request bodies
+  ```typescript
+  export async function POST(request: NextRequest) {
+    const body = await request.json() as CreateNoteRequest;
+    // Type validation
+    if (!isValidNote(body)) {
+      return NextResponse.json(
+        { error: 'Invalid note data' }, 
+        { status: 400 }
+      );
+    }
+    // ...
+  }
+  ```
+
+## Error Handling
+
+- **✅ DO:** Create proper error boundaries
+  ```tsx
+  // app/note/[id]/error.tsx
+  'use client';
+  
+  export default function NoteError({
+    error,
+    reset,
+  }: {
+    error: Error;
+    reset: () => void;
+  }) {
+    return (
+      <div className="error-container">
+        <h2>Something went wrong loading this note</h2>
+        <p>{error.message}</p>
+        <button onClick={reset}>Try again</button>
+      </div>
+    );
+  }
+  ```
+
+- **✅ DO:** Use `not-found.tsx` for handling missing resources
+  ```tsx
+  // app/note/[id]/not-found.tsx
+  export default function NoteNotFound() {
+    return <div>Note not found</div>;
+  }
+  
+  // In page.tsx:
+  import { notFound } from 'next/navigation';
+  
+  export default async function NotePage({ params }) {
+    const note = await getNote(params.id);
+    
+    if (!note) {
+      notFound(); // This will render not-found.tsx
+    }
+    
+    // ...
+  }
+  ```
+
+## State Management
+
+- **✅ DO:** Split client/server state appropriately
+  ```typescript
+  // Server state fetched in Server Component
+  const notes = await db.notes.findMany();
+  
+  // Client state managed in Client Component
+  'use client';
+  const [filter, setFilter] = useState('all');
+  ```
+
+- **✅ DO:** Use React Context for shared state
+  ```typescript
+  'use client';
+  // providers.tsx
+  export function Providers({ children }) {
+    return (
+      <ThemeProvider>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </ThemeProvider>
+    );
+  }
+  
+  // layout.tsx
+  import { Providers } from './providers';
+  
+  export default function RootLayout({ children }) {
+    return (
+      <html>
+        <body>
+          <Providers>{children}</Providers>
+        </body>
+      </html>
+    );
+  }
+  ```
+
+- **✅ DO:** Leverage React Query/SWR for server state
+  ```typescript
+  'use client';
+  import { useQuery } from '@tanstack/react-query';
+  
+  export function NotesWithQuery() {
+    const { data, isLoading } = useQuery({
+      queryKey: ['notes'],
+      queryFn: () => fetch('/api/notes').then(res => res.json())
+    });
+    
+    // ...
+  }
+  ```
+
+## Data Fetching Patterns
+
+- **✅ DO:** Use React Server Components for initial data
+  ```tsx
+  // Server Component (page.tsx)
+  export default async function NotesPage() {
+    const notes = await getNotes();
+    
+    return (
+      <main>
+        <h1>Notes</h1>
+        <NotesList initialNotes={notes} />
+      </main>
+    );
+  }
+  ```
+
+- **✅ DO:** Prefer Server Actions for mutations
+  ```tsx
+  // action.ts
+  'use server';
+  
+  export async function createNote(formData: FormData) {
+    const title = formData.get('title');
+    const content = formData.get('content');
+    
+    // Validation and error handling
+    if (!title || !content) {
+      return { error: 'Title and content are required' };
+    }
+    
+    await db.notes.create({ 
+      data: { title: title.toString(), content: content.toString() } 
+    });
+    
+    return { success: true };
+  }
+  
+  // NoteForm.tsx (Client Component)
+  'use client';
+  import { createNote } from './action';
+  
+  export function NoteForm() {
+    return (
+      <form action={createNote}>
+        <input name="title" />
+        <textarea name="content" />
+        <button type="submit">Create Note</button>
+      </form>
+    );
+  }
+  ```
+
+- **❌ DON'T:** Mix fetch calls with useState unnecessarily
+  ```typescript
+  // Avoid this pattern where Server Components could be used
+  'use client';
+  export function Notes() {
+    const [notes, setNotes] = useState([]);
+    
+    useEffect(() => {
+      fetch('/api/notes').then(r => r.json()).then(setNotes);
+    }, []);
+    
+    // ...
+  }
+  ```
+
+## Performance Optimization
+
+- **✅ DO:** Use dynamic imports for code splitting
+  ```typescript
+  import dynamic from 'next/dynamic';
+  
+  const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
+    loading: () => <p>Loading...</p>,
+  });
+  ```
+
+- **✅ DO:** Optimize images with next/image
+  ```tsx
+  import Image from 'next/image';
+  
+  export function OptimizedImage() {
+    return (
+      <Image
+        src="/profile.jpg"
+        alt="Profile Picture"
+        width={300}
+        height={300}
+        priority={true}
+      />
+    );
+  }
+  ```
+
+- **✅ DO:** Use the built-in caching mechanisms
+  ```typescript
+  // Revalidate data at most every 60 seconds
+  export async function getData() {
+    const res = await fetch('https://api.example.com/data', {
+      next: { revalidate: 60 }
+    });
+    return res.json();
+  }
+  ``` 

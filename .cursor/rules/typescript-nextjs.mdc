@@ -1,0 +1,197 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# TypeScript & Next.js Best Practices
+
+## Next.js Route Handler Parameter Types
+
+- **✅ DO:** Use Promise-based types for dynamic route params
+  ```typescript
+  export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) {
+    const id = (await params).id;
+    // ...implementation
+  }
+  ```
+
+- **❌ DON'T:** Use non-Promise types for route parameters
+  ```typescript
+  export async function GET(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+  ) {
+    const { id } = params; // Error: params is a Promise
+    // ...implementation
+  }
+  ```
+
+## Type Definitions for API Data
+
+- **✅ DO:** Create explicit interfaces for database and API data
+  ```typescript
+  // In types/database.types.ts
+  export interface Cluster {
+    id: number;
+    tag_family: string;
+    category: string;
+    tag_count: number;
+    summary: string;
+    created_at: string;
+    updated_at: string;
+    embedding: string;
+  }
+  ```
+
+- **✅ DO:** Use shared types across the application
+  ```typescript
+  import { Cluster } from '@/types/database.types';
+  
+  export function someFunction(cluster: Cluster) {
+    // Implementation using cluster
+  }
+  ```
+
+- **❌ DON'T:** Define the same types multiple times with slight variations
+  ```typescript
+  // Don't define similar types in multiple places:
+  interface ClusterType { /* fields */ } // in component A
+  interface ClusterData { /* similar fields */ } // in component B
+  ```
+
+## Avoiding `any` Type
+
+- **✅ DO:** Use specific types or type unions
+  ```typescript
+  function handleItem(item: Note | Cluster | { type: string; id: number }) {
+    // Type-safe implementation
+  }
+  ```
+
+- **✅ DO:** Use `Record<string, unknown>` for generic objects
+  ```typescript
+  const updateData: Record<string, string | number | unknown> = {};
+  ```
+
+- **❌ DON'T:** Default to `any` for complex parameters
+  ```typescript
+  function handleItem(item: any) { // Avoid
+    // Implementation with no type safety
+  }
+  ```
+
+## Handling Unused Variables
+
+- **✅ DO:** Use underscores for ignored destructuring variables
+  ```typescript
+  // If you don't need the first element:
+  .filter(([, notes]) => notes.length > 1)
+  ```
+
+- **✅ DO:** Omit unused variables from destructuring
+  ```typescript
+  // Instead of:
+  const { data: tags = [], refetch: refetchTags } = useQuery();
+  
+  // If refetchTags isn't used:
+  const { data: tags = [] } = useQuery();
+  ```
+
+- **❌ DON'T:** Leave unused variables in your code
+  ```typescript
+  const [isClient, setIsClient] = useState(false); // Unused but defined
+  ```
+
+## Type Safety in Component Props
+
+- **✅ DO:** Use precise prop interfaces with required/optional annotations
+  ```typescript
+  interface ButtonProps {
+    onClick: () => void;
+    label: string;
+    variant?: 'primary' | 'secondary';
+  }
+  ```
+
+- **✅ DO:** Use callback typing with parameter specificity
+  ```typescript
+  interface CardProps {
+    onClick: (item: { id: number; name: string }) => void;
+  }
+  ```
+
+- **❌ DON'T:** Use overly generic function types
+  ```typescript
+  interface CardProps {
+    onClick: Function; // Avoid
+  }
+  ```
+
+## Redux and State Management Types
+
+- **✅ DO:** Ensure Redux state types match API return types
+  ```typescript
+  // If your API returns clusters with this structure:
+  interface Cluster {
+    id: number;
+    tag_family: string; // Not "tag"
+    // ...other fields
+  }
+  
+  // Your Redux slice should match:
+  interface ClusterState {
+    clusters: Cluster[];
+    // ...other state
+  }
+  ```
+
+- **✅ DO:** Create selector types that match your state shape
+  ```typescript
+  export const selectClusters = (state: RootState) => state.clusters.clusters;
+  ```
+
+## Coordinated Type Updates
+
+- **✅ DO:** Centralize common types in a shared directory
+  ```typescript
+  // types/index.ts
+  export * from './database.types';
+  export * from './api.types';
+  ```
+
+- **✅ DO:** Use barrel exports for related types
+  ```typescript
+  // Import multiple types from a single location
+  import { Note, Tag, Cluster } from '@/types';
+  ```
+
+- **❌ DON'T:** Duplicate types across the codebase
+  ```typescript
+  // Don't define Note in multiple files
+  interface Note { /* fields */ } // in components/Note.tsx
+  interface Note { /* similar fields */ } // in lib/services/note-service.ts
+  ```
+
+## Next.js-Specific Patterns
+
+- **✅ DO:** Type-check page props and params
+  ```typescript
+  export default function Page({ 
+    params 
+  }: { 
+    params: { id: string } 
+  }) {
+    // Implementation
+  }
+  ```
+
+- **✅ DO:** Use strong typing for API responses
+  ```typescript
+  export async function GET() {
+    return NextResponse.json<{ notes: Note[] }>({ notes: [] });
+  }
+  ```
