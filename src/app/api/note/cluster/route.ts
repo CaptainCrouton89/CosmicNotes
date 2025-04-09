@@ -153,7 +153,7 @@ export async function GET(req: NextRequest) {
 
     // Add pagination and sorting
     const { data: notes, error: fetchError } = await notesQuery
-      .order("created_at", { ascending: false })
+      .order("updated_at", { ascending: false, nullsFirst: false })
       .range(offset, offset + limit - 1);
 
     if (fetchError) {

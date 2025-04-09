@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
         category,
         zone,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         embedding,
         metadata,
       })
@@ -159,7 +160,7 @@ export async function GET(req: NextRequest) {
           count: "exact",
         }
       )
-      .order("created_at", { ascending: false })
+      .order("updated_at", { ascending: false, nullsFirst: false })
       .range(offset, offset + limit - 1);
 
     if (error) {

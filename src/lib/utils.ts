@@ -16,3 +16,54 @@ export const linkifySummary = (summary: string, fuzzyMatch = false) => {
 export const capitalize = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
+
+export const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+
+  const year = date.getFullYear();
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  const month = months[date.getMonth()];
+  const day = date.getDate();
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+
+  return `${month} ${day}, ${year} at ${hours}:${minutes}`;
+};
+
+// Format date to show only the date (no time)
+export const formatDateOnly = (dateString: string) => {
+  const date = new Date(dateString);
+
+  const year = date.getFullYear();
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  const month = months[date.getMonth()];
+  const day = date.getDate();
+
+  return `${month} ${day}, ${year}`;
+};

@@ -61,13 +61,10 @@ export default function NotePage() {
     openTagDialog,
   } = useNoteTags(noteId);
 
-  const {
-    updatingField,
-    formatDate,
-    formatDateOnly,
-    updateCategory,
-    updateZone,
-  } = useNoteMetadata(noteId, note?.content);
+  const { updatingField, updateCategory, updateZone } = useNoteMetadata(
+    noteId,
+    note?.content
+  );
 
   const { deleting, deleteNote } = useNoteActions(noteId);
 
@@ -201,10 +198,8 @@ export default function NotePage() {
             {/* Note Metadata */}
             <NoteMetadata
               createdAt={note.created_at}
-              lastSaved={lastSaved}
+              updatedAt={note.updated_at}
               isSaving={saving}
-              formatDate={formatDate}
-              formatDateOnly={formatDateOnly}
             />
 
             {/* Category Selector */}

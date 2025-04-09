@@ -89,12 +89,12 @@ export function AppSidebar() {
       oneWeekAgo.setDate(now.getDate() - 7);
 
       const lastDayNotes = notesData.notes.filter((note) => {
-        const noteDate = new Date(note.created_at || note.updated_at);
+        const noteDate = new Date(note.updated_at);
         return noteDate >= oneDayAgo;
       });
 
       const lastWeekNotes = notesData.notes.filter((note) => {
-        const noteDate = new Date(note.created_at || note.updated_at);
+        const noteDate = new Date(note.updated_at);
         return noteDate >= oneWeekAgo && noteDate < oneDayAgo;
       });
 

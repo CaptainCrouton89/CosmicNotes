@@ -4,25 +4,23 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatDate, formatDateOnly } from "@/lib/utils";
 import { Clock } from "lucide-react";
 
 interface NoteMetadataProps {
   createdAt: string;
-  lastSaved: Date | null;
+  updatedAt: string;
   isSaving: boolean;
-  formatDate: (date: string) => string;
-  formatDateOnly: (date: string) => string;
 }
 
 export function NoteMetadata({
   createdAt,
-  lastSaved,
+  updatedAt,
   isSaving,
-  formatDate,
-  formatDateOnly,
 }: NoteMetadataProps) {
   const createdFullText = formatDate(createdAt);
-  const createdDateOnly = formatDateOnly(createdAt);
+  const updatedFullText = formatDate(updatedAt);
+  const updatedDateOnly = formatDateOnly(updatedAt);
 
   // Prepare tooltip content with both timestamps
   const tooltipContent = (
@@ -30,11 +28,9 @@ export function NoteMetadata({
       <div>
         <strong>Created:</strong> {createdFullText}
       </div>
-      {lastSaved && (
-        <div>
-          <strong>Last updated:</strong> {formatDate(lastSaved.toISOString())}
-        </div>
-      )}
+      <div>
+        <strong>Last updated:</strong> {updatedFullText}
+      </div>
     </div>
   );
 
@@ -44,7 +40,7 @@ export function NoteMetadata({
         <TooltipTrigger asChild>
           <div className="flex items-center gap-2 cursor-help">
             <Clock className="h-4 w-4" />
-            <span>Created: {createdDateOnly}</span>
+            <span>Updated: {updatedDateOnly}</span>
           </div>
         </TooltipTrigger>
         <TooltipContent side="bottom">{tooltipContent}</TooltipContent>
