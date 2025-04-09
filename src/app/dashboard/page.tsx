@@ -93,10 +93,10 @@ export default function Dashboard() {
     sevenDaysAgo.setDate(now.getDate() - 7);
 
     const recentNotes = notesData.notes
-      .filter((note) => new Date(note.created_at) >= sevenDaysAgo)
+      .filter((note) => new Date(note.updated_at) >= sevenDaysAgo)
       .sort(
         (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       )
       .slice(0, 6); // Show only 6 most recent notes
 
@@ -105,7 +105,7 @@ export default function Dashboard() {
       .filter((note) => note.category === "Scratchpad")
       .sort(
         (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       );
 
     return {
