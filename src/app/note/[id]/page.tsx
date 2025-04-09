@@ -57,10 +57,17 @@ export default function NotePage() {
     toggleTagSelection,
     saveSelectedTags,
     handleTagDelete,
+    addCustomTag,
+    openTagDialog,
   } = useNoteTags(noteId);
 
-  const { updatingField, formatDate, updateCategory, updateZone } =
-    useNoteMetadata(noteId, note?.content);
+  const {
+    updatingField,
+    formatDate,
+    formatDateOnly,
+    updateCategory,
+    updateZone,
+  } = useNoteMetadata(noteId, note?.content);
 
   const { deleting, deleteNote } = useNoteActions(noteId);
 
@@ -175,6 +182,7 @@ export default function NotePage() {
         onSaveTags={saveSelectedTags}
         isSaving={saving}
         onSkipTags={() => setShowTagDialog(false)}
+        onAddCustomTag={addCustomTag}
       />
 
       {loading ? (
@@ -196,6 +204,7 @@ export default function NotePage() {
               lastSaved={lastSaved}
               isSaving={saving}
               formatDate={formatDate}
+              formatDateOnly={formatDateOnly}
             />
 
             {/* Category Selector */}
@@ -221,6 +230,21 @@ export default function NotePage() {
               tags={tags}
               onDeleteTag={handleTagDelete}
               deletingTag={tagDeleting}
+              onAddTags={() => {
+                // Open dialog with existing tags as suggestions
+                const existingTags = tags.map((tag) => ({
+                  tag: tag.tag,
+                  confidence: tag.confidence,
+                }));
+
+                // If no tags exist, start with empty suggestions
+                if (existingTags.length === 0) {
+                  setShowTagDialog(true);
+                } else {
+                  // Use existing tags as suggestions
+                  openTagDialog(existingTags);
+                }
+              }}
             />
           </div>
 

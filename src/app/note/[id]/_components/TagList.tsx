@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import { Tag, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Plus, Tag, X } from "lucide-react";
 
 interface TagItem {
   id?: number;
@@ -13,11 +14,15 @@ interface TagListProps {
   tags: TagItem[];
   onDeleteTag: (tag: string) => void;
   deletingTag: string | null;
+  onAddTags?: () => void;
 }
 
-export function TagList({ tags, onDeleteTag, deletingTag }: TagListProps) {
-  if (tags.length === 0) return null;
-
+export function TagList({
+  tags,
+  onDeleteTag,
+  deletingTag,
+  onAddTags,
+}: TagListProps) {
   return (
     <>
       <Tag className="h-4 w-4" />
@@ -50,6 +55,18 @@ export function TagList({ tags, onDeleteTag, deletingTag }: TagListProps) {
             </button>
           </Badge>
         ))}
+
+        {onAddTags && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAddTags}
+            className="text-xs h-6 px-2 gap-1 ml-1"
+          >
+            <Plus className="h-3 w-3" />
+            {tags.length === 0 ? "Add Tags" : "Add More"}
+          </Button>
+        )}
       </div>
     </>
   );

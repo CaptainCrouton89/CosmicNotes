@@ -9,6 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Plus } from "lucide-react";
+import { KeyboardEvent, useState } from "react";
 
 export interface TagSuggestion {
   tag: string;
@@ -26,6 +29,7 @@ interface TagSelectionDialogProps {
   isSaving: boolean;
   title?: string;
   description?: string;
+  onAddCustomTag?: (tag: string) => void;
 }
 
 export function TagSelectionDialog({
@@ -38,7 +42,10 @@ export function TagSelectionDialog({
   isSaving,
   title = "Select Tags",
   description = "Select tags for your note. Tags with high confidence are pre-selected.",
+  onAddCustomTag,
 }: TagSelectionDialogProps) {
+  const [customTagInput, setCustomTagInput] = useState("");
+
   // Handle dialog close events
   const handleOpenChange = (newOpenState: boolean) => {
     // If dialog is being closed and we have a skip handler
@@ -48,6 +55,21 @@ export function TagSelectionDialog({
     onOpenChange(newOpenState);
   };
 
+  // Handle adding a custom tag
+  const handleAddCustomTag = () => {
+    if (customTagInput.trim() && onAddCustomTag) {
+      onAddCustomTag(customTagInput.trim());
+      setCustomTagInput("");
+    }
+  };
+
+  // Handle pressing Enter in the custom tag input
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleAddCustomTag();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -55,6 +77,29 @@ export function TagSelectionDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
+
+        {/* Custom tag input field */}
+        {onAddCustomTag && (
+          <div className="flex items-center gap-2 pt-4">
+            <Input
+              placeholder="Add custom tag..."
+              value={customTagInput}
+              onChange={(e) => setCustomTagInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="flex-1"
+            />
+            <Button
+              size="sm"
+              onClick={handleAddCustomTag}
+              disabled={!customTagInput.trim()}
+              variant="outline"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </div>
+        )}
+
         <div className="py-4">
           <div className="space-y-4 max-h-[300px] overflow-y-auto">
             {suggestedTags.map((tag, index) => (

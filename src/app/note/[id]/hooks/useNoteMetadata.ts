@@ -7,7 +7,7 @@ export function useNoteMetadata(noteId: number, noteContent: string = "") {
   const [updateNote] = notesApi.useUpdateNoteMutation();
   const { refetch } = notesApi.useGetNoteQuery(noteId, { skip: !noteId });
 
-  // Format date for display
+  // Format date for display with time
   const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
 
@@ -32,6 +32,31 @@ export function useNoteMetadata(noteId: number, noteContent: string = "") {
     const minutes = date.getMinutes().toString().padStart(2, "0");
 
     return `${month} ${day}, ${year} at ${hours}:${minutes}`;
+  }, []);
+
+  // Format date to show only the date (no time)
+  const formatDateOnly = useCallback((dateString: string) => {
+    const date = new Date(dateString);
+
+    const year = date.getFullYear();
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    const month = months[date.getMonth()];
+    const day = date.getDate();
+
+    return `${month} ${day}, ${year}`;
   }, []);
 
   // Update category
@@ -81,6 +106,7 @@ export function useNoteMetadata(noteId: number, noteContent: string = "") {
   return {
     updatingField,
     formatDate,
+    formatDateOnly,
     updateCategory,
     updateZone,
   };

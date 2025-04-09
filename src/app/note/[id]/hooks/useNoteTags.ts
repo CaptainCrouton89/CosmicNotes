@@ -28,6 +28,41 @@ export function useNoteTags(noteId: number) {
     );
   }, []);
 
+  // Add a custom tag to the suggestions
+  const addCustomTag = useCallback(
+    (tagName: string) => {
+      // Check if tag already exists
+      const normalizedTag = tagName.trim();
+      if (!normalizedTag) return;
+
+      // Check if tag already exists in suggestions
+      const tagExists = suggestedTags.some(
+        (tag) => tag.tag.toLowerCase() === normalizedTag.toLowerCase()
+      );
+
+      if (!tagExists) {
+        setSuggestedTags((prev) => [
+          ...prev,
+          {
+            tag: normalizedTag,
+            confidence: 1.0, // Custom tags have 100% confidence
+            selected: true, // Auto-select custom tags
+          },
+        ]);
+      } else {
+        // If tag exists, ensure it's selected
+        setSuggestedTags((prev) =>
+          prev.map((tag) =>
+            tag.tag.toLowerCase() === normalizedTag.toLowerCase()
+              ? { ...tag, selected: true }
+              : tag
+          )
+        );
+      }
+    },
+    [suggestedTags]
+  );
+
   // Save selected tags
   const saveSelectedTags = useCallback(async () => {
     if (!noteId) return;
@@ -94,5 +129,6 @@ export function useNoteTags(noteId: number) {
     saveSelectedTags,
     handleTagDelete,
     openTagDialog,
+    addCustomTag,
   };
 }
