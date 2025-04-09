@@ -4,9 +4,13 @@ type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"];
 
 const formatNote = (
   note: Note,
-  options: { date?: boolean; id?: boolean } = { date: false, id: false }
+  options: { date?: boolean; id?: boolean; title?: boolean } = {
+    date: false,
+    id: false,
+    title: false,
+  }
 ) =>
-  `## Note Title: ${note.title}
+  `${options.title ? `## Note Title: ${note.title}` : ""}
 ${options.id ? `ID: [${note.id}] ` : ""}${
     options.date
       ? `Date: ${new Date(note.created_at).toLocaleDateString("en-US", {
@@ -20,12 +24,12 @@ Content: ${note.content}`;
 
 const formatNotes = (
   notes: Note[],
-  formatter: (
-    note: Note,
-    options: { date?: boolean; id?: boolean }
-  ) => string = formatNote,
-  options: { date?: boolean; id?: boolean } = { date: false, id: false }
-) => notes.map((note) => formatter(note, options)).join("\n");
+  options: { date?: boolean; id?: boolean; title?: boolean } = {
+    date: false,
+    id: false,
+    title: false,
+  }
+) => notes.map((note) => formatNote(note, options)).join("\n");
 
 export type SummaryPrompt = {
   model: string;
@@ -47,7 +51,7 @@ export const getDefaultPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `${getNoAlterationsPrompt("all")}
 
 # All Notes
-${formatNotes(notes, formatNote, { date: false, id: false })}`,
+${formatNotes(notes)}`,
   summary:
     "A comprehensive, well-organized summary that combines the key information from all notes",
 });
@@ -63,10 +67,17 @@ ${existingNote}
 Update the todo list based on the following notes:
 
 # All Notes
-${formatNotes(notes, formatNote)}
+${formatNotes(notes)}
 
 # Instructions
-Do not alter the existing todo list, just add new tasks to it if necessary.`,
+Do not alter the existing todo list, just add new tasks to it if necessary. Use the following format:
+
+\`\`\`
+- [x] Task 1
+- [ ] Task 2
+- [ ] Task 3
+\`\`\`
+`,
     summary: "One large todo list in MD format, with each task on a new line.",
   });
 
@@ -75,7 +86,7 @@ export const getScratchpadPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `${getNoAlterationsPrompt("scratchpad")}
 
 # Notes
-${formatNotes(notes, formatNote)}`,
+${formatNotes(notes, { title: true })}`,
   summary:
     "A single, organized scratchpad note with all the information from the notes.",
 });
@@ -85,7 +96,7 @@ export const getCollectionsPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `${getNoAlterationsPrompt("collection")}
 
 # Collection Notes
-${formatNotes(notes, (note) => formatNote(note, { date: false, id: false }))}`,
+${formatNotes(notes)}`,
   summary:
     "A single, organized list containing all the information from the collection notes.",
 });
@@ -95,7 +106,7 @@ export const getBrainstormPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `${getNoAlterationsPrompt("brainstorm")}
 
 # Brainstorm Notes
-${formatNotes(notes, formatNote)}`,
+${formatNotes(notes, { title: true })}`,
   summary:
     "A single, organized brainstorm note with all the information from the notes.",
 });
@@ -105,12 +116,12 @@ export const getJournalPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `Organize these journal notes into a single, organized, markdown formatted note, ordered by the date of the note. Use the following format:
   
 \`\`\`
-# Date - Note Title [ID]
+### [Date] \[id\]
 Accurate, concise, and complete journal notes, in long form.
 \`\`\`
 
 # Journal Notes
-${formatNotes(notes, formatNote, { date: true, id: true })}`,
+${formatNotes(notes, { date: true, id: true })}`,
   summary: "Series of journal entries, one per note, in chronological order.",
 });
 
@@ -119,12 +130,13 @@ export const getMeetingPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `Organize these meeting notes into a single, organized, markdown formatted note, ordered by the date of the note. Use the following format:
   
 \`\`\`
-# Date - Note Title [ID]
+## Note Title \[ID\]
+Date: [Date]
 Organized, concise, and complete meeting notes, in long form.
 \`\`\`
 
 # Meeting Notes
-${formatNotes(notes, formatNote, { date: true, id: true })}`,
+${formatNotes(notes, { title: true, date: true, id: true })}`,
   summary: "Series of meeting notes, one per note, in chronological order.",
 });
 
@@ -153,13 +165,14 @@ export const getFeedbackPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `Organize these feedback notes into a single, organized, markdown formatted note, ordered by the date of the note. Use the following format:
   
 \`\`\`
-# Date - Note Title [ID]
+## Note Title \[ID\]
+Date: [Date]
 Organized, concise, and actionable feedback notes.
 \`\`\`
 
 
 # Feedback Notes
-${formatNotes(notes, formatNote, { date: true, id: true })}`,
+${formatNotes(notes, { date: true, id: true })}`,
   summary: "Series of feedback notes, one per note, in chronological order.",
 });
 
