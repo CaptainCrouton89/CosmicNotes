@@ -96,6 +96,9 @@ export async function PUT(
       }
     });
 
+    // Always update the updated_at timestamp when any changes are made
+    updateData.updated_at = new Date().toISOString();
+
     // If no fields to update, return the current note
     if (Object.keys(updateData).length === 0) {
       const { data: note, error } = await supabase
