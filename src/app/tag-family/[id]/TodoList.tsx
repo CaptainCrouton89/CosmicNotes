@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, TrashIcon } from "lucide-react";
 import { useState } from "react";
 
 interface TodoItem {
@@ -19,6 +19,7 @@ interface TodoListProps {
   tagFamilyId: number;
   onTodoUpdate?: (id: number, done: boolean) => Promise<void>;
   onTodoCreate?: (item: string, tagFamilyId: number) => Promise<void>;
+  onTodoDelete?: (id: number) => Promise<void>;
 }
 
 export const TodoList = ({
@@ -26,9 +27,10 @@ export const TodoList = ({
   tagFamilyId,
   onTodoUpdate,
   onTodoCreate,
+  onTodoDelete,
 }: TodoListProps) => {
-  const [todoItems, setTodoItems] = useState<TodoItem[]>(todos);
   const [loading, setLoading] = useState<Record<number, boolean>>({});
+  const [deleting, setDeleting] = useState<Record<number, boolean>>({});
   const [newTodoText, setNewTodoText] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
@@ -39,15 +41,24 @@ export const TodoList = ({
 
     try {
       await onTodoUpdate(id, !currentStatus);
-      setTodoItems(
-        todoItems.map((todo) =>
-          todo.id === id ? { ...todo, done: !currentStatus } : todo
-        )
-      );
     } catch (error) {
       console.error("Failed to update todo:", error);
     } finally {
       setLoading((prev) => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!onTodoDelete) return;
+
+    setDeleting((prev) => ({ ...prev, [id]: true }));
+
+    try {
+      await onTodoDelete(id);
+    } catch (error) {
+      console.error("Failed to delete todo:", error);
+    } finally {
+      setDeleting((prev) => ({ ...prev, [id]: false }));
     }
   };
 
@@ -59,7 +70,6 @@ export const TodoList = ({
     try {
       await onTodoCreate(newTodoText, tagFamilyId);
       setNewTodoText("");
-      // The new item will be included in the next data refresh
     } catch (error) {
       console.error("Failed to create todo:", error);
     } finally {
@@ -88,10 +98,10 @@ export const TodoList = ({
 
       {/* Todo list */}
       <div className="space-y-2">
-        {todoItems.length === 0 ? (
+        {todos.length === 0 ? (
           <div className="text-muted-foreground py-4">No todo items yet.</div>
         ) : (
-          todoItems.map((todo) => (
+          todos.map((todo) => (
             <div
               key={todo.id}
               className={`flex items-center gap-2 p-3 rounded-md border ${
@@ -105,12 +115,24 @@ export const TodoList = ({
                 className="h-5 w-5"
               />
               <span
+                onClick={() =>
+                  !loading[todo.id] && handleToggle(todo.id, todo.done)
+                }
                 className={`flex-grow ${
                   todo.done ? "line-through text-gray-500" : ""
-                }`}
+                } cursor-pointer hover:bg-gray-50 px-2 py-1 rounded`}
               >
                 {todo.item}
               </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(todo.id)}
+                disabled={deleting[todo.id]}
+                className="h-8 w-8 text-gray-500 hover:text-red-500"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </Button>
             </div>
           ))
         )}

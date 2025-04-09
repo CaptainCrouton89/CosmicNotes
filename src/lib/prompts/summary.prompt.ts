@@ -72,7 +72,7 @@ export const getCollectionsPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `${getNoAlterationsPrompt("collection")}
 
 # Collection Notes
-${formatNotes(notes)}`,
+${formatNotes(notes, { title: true })}`,
   summary:
     "A single, organized list containing all the information from the collection notes.",
 });

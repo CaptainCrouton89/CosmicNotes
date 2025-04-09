@@ -37,5 +37,16 @@ export const todoApi = createApi({
         { type: "Cluster", id: "LIST" },
       ],
     }),
+
+    deleteTodo: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `todo/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Todo", id },
+        { type: "Cluster", id: "LIST" },
+      ],
+    }),
   }),
 });
