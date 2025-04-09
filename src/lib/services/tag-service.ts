@@ -105,7 +105,7 @@ export async function getTagsForNote(
     );
 
     // Generate additional tags using AI if we don't have enough tags yet
-    if (tagMap.size < 4 && cleanedContent.trim()) {
+    if (tagMap.size < 1 && cleanedContent.trim()) {
       try {
         // Generate tags using Vercel AI SDK
         const result = await generateObject({
@@ -226,7 +226,7 @@ export async function getAllTagsWithCounts(supabase: SupabaseClient<Database>) {
 export async function getExistingClusters(supabase: SupabaseClient<Database>) {
   const { data: existingClusters, error: clustersError } = await supabase
     .from("cosmic_cluster")
-    .select("tag, tag_count");
+    .select("tag_family, category");
 
   if (clustersError) {
     throw new Error(
@@ -234,7 +234,7 @@ export async function getExistingClusters(supabase: SupabaseClient<Database>) {
     );
   }
 
-  return new Set(existingClusters.map((c) => `${c.tag}-${c.tag_count}`));
+  return new Set(existingClusters.map((c) => `${c.tag_family}-${c.category}`));
 }
 
 export async function getNotesForTag(

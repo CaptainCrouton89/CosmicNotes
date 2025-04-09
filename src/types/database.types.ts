@@ -156,30 +156,33 @@ export type Database = {
       }
       cosmic_cluster: {
         Row: {
+          category: string
           created_at: string
-          embedding: string | null
+          embedding: string
           id: number
           summary: string
-          tag: string
           tag_count: number
+          tag_family: string
           updated_at: string
         }
         Insert: {
+          category?: string
           created_at?: string
-          embedding?: string | null
+          embedding: string
           id?: number
           summary: string
-          tag: string
           tag_count: number
+          tag_family: string
           updated_at?: string
         }
         Update: {
+          category?: string
           created_at?: string
-          embedding?: string | null
+          embedding?: string
           id?: number
           summary?: string
-          tag?: string
           tag_count?: number
+          tag_family?: string
           updated_at?: string
         }
         Relationships: []
@@ -217,6 +220,33 @@ export type Database = {
           title?: string
           updated_at?: string
           zone?: string
+        }
+        Relationships: []
+      }
+      cosmic_tag_family: {
+        Row: {
+          created_at: string
+          id: number
+          parent_tag: string | null
+          tag: string
+          tag_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          parent_tag?: string | null
+          tag: string
+          tag_count: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          parent_tag?: string | null
+          tag?: string
+          tag_count?: number
+          updated_at?: string
         }
         Relationships: []
       }

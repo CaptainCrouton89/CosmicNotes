@@ -1,4 +1,4 @@
-import { generateNoteTitle } from "@/lib/services/ai-service";
+import { generateNoteFields } from "@/lib/services/ai-service";
 import { getTagsForNote, saveTagsToDatabase } from "@/lib/services/tag-service";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
@@ -25,11 +25,11 @@ export const POST = async (request: NextRequest) => {
     return NextResponse.json({ error: "Note not found" }, { status: 404 });
   }
 
-  const newTitle = await generateNoteTitle(note.content);
+  const { title, zone, category } = await generateNoteFields(note.content);
 
   const { error: updateError } = await supabase
     .from("cosmic_memory")
-    .update({ title: newTitle })
+    .update({ title, zone, category })
     .eq("id", parseInt(id));
 
   if (updateError) {
