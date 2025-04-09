@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { tool } from "ai";
 import { z } from "zod";
 
+import { CATEGORIES } from "@/lib/constants";
 import { Configuration, OpenAIApi } from "openai-edge";
 
 const openAiKey = process.env.OPENAI_API_KEY!;
@@ -149,18 +150,6 @@ export const getNotesWithTagsTool = tool({
     return notesWithTags;
   },
 });
-
-const CATEGORIES = [
-  "To-Do",
-  "Scratchpad",
-  "Collections",
-  "Brainstorm",
-  "Journal",
-  "Meeting",
-  "Research",
-  "Learning",
-  "Feedback",
-];
 
 export const addNoteTool = tool({
   description: "Add a note to the database",

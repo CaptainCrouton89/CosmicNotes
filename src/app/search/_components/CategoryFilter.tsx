@@ -9,6 +9,7 @@ import { CATEGORIES } from "@/lib/constants";
 import {
   Book,
   Check,
+  Filter,
   FolderKanban,
   GraduationCap,
   Layers,
@@ -21,17 +22,15 @@ import {
 } from "lucide-react";
 import { useCallback } from "react";
 
-interface CategorySelectorProps {
-  category?: string;
-  updating: boolean;
-  onUpdateCategory: (category: string) => void;
+interface CategoryFilterProps {
+  selectedCategory: string | null;
+  onSelectCategory: (category: string | null) => void;
 }
 
-export function CategorySelector({
-  category,
-  updating,
-  onUpdateCategory,
-}: CategorySelectorProps) {
+export const CategoryFilter: React.FC<CategoryFilterProps> = ({
+  selectedCategory,
+  onSelectCategory,
+}) => {
   const getCategoryIcon = useCallback(
     (categoryName: string | undefined, selected?: boolean) => {
       const size = selected ? "h-4 w-4" : "h-3.5 w-3.5";
@@ -118,54 +117,58 @@ export function CategorySelector({
     []
   );
 
+  const getCategoryColor = (category: string | null) => {
+    switch (category) {
+      case "To-Do":
+        return "bg-blue-50 text-blue-700 hover:bg-blue-100";
+      case "Scratchpad":
+        return "bg-green-50 text-green-700 hover:bg-green-100";
+      case "Collections":
+        return "bg-pink-50 text-pink-700 hover:bg-pink-100";
+      case "Brainstorm":
+        return "bg-yellow-50 text-yellow-700 hover:bg-yellow-100";
+      case "Journal":
+        return "bg-purple-50 text-purple-700 hover:bg-purple-100";
+      case "Meeting":
+        return "bg-red-50 text-red-700 hover:bg-red-100";
+      case "Research":
+        return "bg-teal-50 text-teal-700 hover:bg-teal-100";
+      case "Learning":
+        return "bg-indigo-50 text-indigo-700 hover:bg-indigo-100";
+      case "Feedback":
+        return "bg-orange-50 text-orange-700 hover:bg-orange-100";
+      default:
+        return "";
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
           size="sm"
-          className={`h-6 w-8 px-1 flex items-center justify-center ${
-            category === "To-Do"
-              ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
-              : category === "Scratchpad"
-              ? "bg-green-50 text-green-700 hover:bg-green-100"
-              : category === "Collections"
-              ? "bg-pink-50 text-pink-700 hover:bg-pink-100"
-              : category === "Brainstorm"
-              ? "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
-              : category === "Journal"
-              ? "bg-purple-50 text-purple-700 hover:bg-purple-100"
-              : category === "Meeting"
-              ? "bg-red-50 text-red-700 hover:bg-red-100"
-              : category === "Research"
-              ? "bg-teal-50 text-teal-700 hover:bg-teal-100"
-              : category === "Learning"
-              ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
-              : category === "Feedback"
-              ? "bg-orange-50 text-orange-700 hover:bg-orange-100"
-              : ""
-          }`}
+          className={`h-8 gap-2 flex items-center justify-center ${getCategoryColor(
+            selectedCategory
+          )}`}
         >
-          {updating ? (
-            <div className="w-3 h-3 border-t-2 border-muted-foreground rounded-full animate-spin" />
-          ) : (
-            getCategoryIcon(category)
-          )}
+          <Filter className="h-4 w-4" />
+          {selectedCategory || "All Categories"}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48">
-        <DropdownMenuItem onClick={() => onUpdateCategory("")}>
-          <span>None</span>
-          {!category && <Check className="ml-auto h-4 w-4" />}
+        <DropdownMenuItem onClick={() => onSelectCategory(null)}>
+          <span>All Categories</span>
+          {!selectedCategory && <Check className="ml-auto h-4 w-4" />}
         </DropdownMenuItem>
         {CATEGORIES.map((cat) => (
-          <DropdownMenuItem key={cat} onClick={() => onUpdateCategory(cat)}>
+          <DropdownMenuItem key={cat} onClick={() => onSelectCategory(cat)}>
             {getCategoryIcon(cat, true)}
             <span className="ml-2">{cat}</span>
-            {category === cat && <Check className="ml-auto h-4 w-4" />}
+            {selectedCategory === cat && <Check className="ml-auto h-4 w-4" />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import React from "react";
+import { CategoryFilter } from "./CategoryFilter";
 
 interface SearchBoxProps {
   searchQuery: string;
@@ -9,6 +10,8 @@ interface SearchBoxProps {
   isSearching: boolean;
   isRefining: boolean;
   handleRefine: () => void;
+  selectedCategory: string | null;
+  onSelectCategory: (category: string | null) => void;
 }
 
 export const SearchBox: React.FC<SearchBoxProps> = ({
@@ -18,17 +21,25 @@ export const SearchBox: React.FC<SearchBoxProps> = ({
   isSearching,
   isRefining,
   handleRefine,
+  selectedCategory,
+  onSelectCategory,
 }) => {
   return (
     <form onSubmit={handleSearch} className="mb-8">
       <div className="flex flex-col gap-4 sm:flex-row">
-        <Input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search notes and clusters..."
-          className="flex-1 px-4 py-3 text-lg focus-visible:ring-blue-500"
-        />
+        <div className="flex-1 flex gap-2">
+          <Input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search notes and clusters..."
+            className="flex-1 px-4 py-3 text-lg focus-visible:ring-blue-500"
+          />
+          <CategoryFilter
+            selectedCategory={selectedCategory}
+            onSelectCategory={onSelectCategory}
+          />
+        </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             type="submit"

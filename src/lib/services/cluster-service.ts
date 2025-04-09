@@ -38,7 +38,7 @@ export async function createOrUpdateTagFamily(
   supabase: SupabaseClient<Database>,
   tag: string,
   count: number
-): Promise<number | null> {
+): Promise<{ id: number | null; countChanged: boolean }> {
   try {
     const { data: existingTagFamily, error: tagFamilyError } = await supabase
       .from("cosmic_tag_family")
@@ -48,7 +48,7 @@ export async function createOrUpdateTagFamily(
 
     if (tagFamilyError) {
       console.error(`Error fetching tag family for ${tag}:`, tagFamilyError);
-      return null;
+      return { id: null, countChanged: false };
     }
 
     if (!existingTagFamily) {
@@ -64,10 +64,10 @@ export async function createOrUpdateTagFamily(
 
       if (insertError || !newTagFamily) {
         console.error(`Error creating tag family for ${tag}:`, insertError);
-        return null;
+        return { id: null, countChanged: false };
       }
 
-      return newTagFamily.id;
+      return { id: newTagFamily.id, countChanged: true };
     } else {
       // Update existing tag family if count changed
       if (existingTagFamily.tag_count !== count) {
@@ -78,15 +78,16 @@ export async function createOrUpdateTagFamily(
 
         if (updateError) {
           console.error(`Error updating tag family for ${tag}:`, updateError);
-          return null;
+          return { id: null, countChanged: false };
         }
+        return { id: existingTagFamily.id, countChanged: true };
       }
 
-      return existingTagFamily.id;
+      return { id: existingTagFamily.id, countChanged: false };
     }
   } catch (error) {
     console.error(`Error in createOrUpdateTagFamily for ${tag}:`, error);
-    return null;
+    return { id: null, countChanged: false };
   }
 }
 
@@ -103,7 +104,7 @@ export async function createOrUpdateCluster(
     // Check if cluster already exists
     const { data: existingCluster, error: clusterError } = await supabase
       .from("cosmic_cluster")
-      .select("id, tag_count")
+      .select("id, tag_count, summary")
       .eq("tag_family", tag)
       .eq("category", category)
       .maybeSingle();
@@ -117,7 +118,10 @@ export async function createOrUpdateCluster(
     }
 
     // Generate data for cluster
-    const summary = await generateNoteSummary(notes);
+    const summary = await generateNoteSummary(
+      notes,
+      existingCluster?.summary ?? ""
+    );
     const linkedSummary = linkifySummary(summary);
     const embedding = await generateEmbedding(
       notes.map((note) => note.content).join("\n")
@@ -190,38 +194,63 @@ export async function processTagClustering(
 ) {
   try {
     // 1. Create or update the tag family
-    const tagFamilyId = await createOrUpdateTagFamily(supabase, tag, count);
+    const { id: tagFamilyId, countChanged } = await createOrUpdateTagFamily(
+      supabase,
+      tag,
+      count
+    );
 
     if (!tagFamilyId) {
       return null;
     }
 
+    // Skip processing if count hasn't changed
+    if (!countChanged) {
+      return {
+        tag,
+        totalCount: count,
+        categoriesProcessed: 0,
+        clustersCreated: 0,
+        clustersUpdated: 0,
+        categoryResults: [],
+        skipped: true,
+      };
+    }
+
     // 2. Get notes for this tag grouped by category
     const notesByCategory = await getNotesForTagByCategory(supabase, tag);
 
+    console.log(
+      Array.from(notesByCategory.entries()).map(([category, notes]) => ({
+        category,
+        count: notes.length,
+        notes: notes.map((note) => ({
+          title: note.title,
+        })),
+      }))
+    );
+
     // 3. Process each category that has more than one note
     const categoryResults = await Promise.all(
-      Array.from(notesByCategory.entries())
-        .filter(([, notes]) => notes.length > 1)
-        .map(async ([category, notes]) => {
-          const result = await createOrUpdateCluster(
-            supabase,
-            tag,
-            category,
-            notes
-          );
+      Array.from(notesByCategory.entries()).map(async ([category, notes]) => {
+        const result = await createOrUpdateCluster(
+          supabase,
+          tag,
+          category,
+          notes
+        );
 
-          if (!result) {
-            return null;
-          }
+        if (!result) {
+          return null;
+        }
 
-          return {
-            tag,
-            category,
-            count: result.count,
-            action: result.action,
-          };
-        })
+        return {
+          tag,
+          category,
+          count: result.count,
+          action: result.action,
+        };
+      })
     );
 
     // Filter out null results and count actions
@@ -250,6 +279,7 @@ export async function processTagClustering(
       clustersCreated: created,
       clustersUpdated: updated,
       categoryResults: validCategoryResults,
+      skipped: false,
     };
   } catch (error) {
     console.error(`Error processing tag ${tag}:`, error);

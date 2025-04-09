@@ -8,12 +8,14 @@ import { Database } from "@/types/database.types";
  * @param query The search query
  * @param matchCount Maximum number of matches to return
  * @param matchThreshold Similarity threshold for matches
+ * @param category Optional category to filter results
  * @returns Array of notes with their tags
  */
 export async function searchNotes(
   query: string,
   matchCount: number = 10,
-  matchThreshold: number = 0.5
+  matchThreshold: number = 0.5,
+  category: string | null = null
 ) {
   // Get embedding for the query
   const embeddingString = await generateEmbedding(query);
@@ -34,9 +36,15 @@ export async function searchNotes(
     });
   }
 
+  // Filter by category if provided
+  let filteredNotes = notes;
+  if (category) {
+    filteredNotes = notes.filter((note) => note.category === category);
+  }
+
   // Get tags for each note
   const notesWithTags = await Promise.all(
-    notes.map(async (note) => {
+    filteredNotes.map(async (note) => {
       const { data: tags } = await supabaseClient
         .from("cosmic_tags")
         .select("*")

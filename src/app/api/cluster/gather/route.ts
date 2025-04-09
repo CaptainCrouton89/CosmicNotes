@@ -28,16 +28,22 @@ export async function POST() {
     // Clean up clusters that no longer have sufficient notes
     const deletedCount = await cleanupObsoleteClusters(supabase);
 
+    // Count skipped clusters
+    const skippedCount = successfulResults.filter((r) => r.skipped).length;
+
+    // Only count created/updated for non-skipped results
+    const nonSkippedResults = successfulResults.filter((r) => !r.skipped);
+
     // Summarize the results
-    const clustersCreated = successfulResults.reduce(
+    const clustersCreated = nonSkippedResults.reduce(
       (total, result) => total + (result?.clustersCreated || 0),
       0
     );
-    const clustersUpdated = successfulResults.reduce(
+    const clustersUpdated = nonSkippedResults.reduce(
       (total, result) => total + (result?.clustersUpdated || 0),
       0
     );
-    const categoriesProcessed = successfulResults.reduce(
+    const categoriesProcessed = nonSkippedResults.reduce(
       (total, result) => total + (result?.categoriesProcessed || 0),
       0
     );
@@ -45,11 +51,12 @@ export async function POST() {
     return NextResponse.json({
       message: "Clustering completed",
       tagsProcessed: successfulResults.length,
+      tagsSkipped: skippedCount,
       categoriesProcessed,
       clustersCreated,
       clustersUpdated,
       clustersDeleted: deletedCount,
-      tagFamiliesCreatedOrUpdated: successfulResults.length,
+      tagFamiliesCreatedOrUpdated: nonSkippedResults.length,
       details: successfulResults,
     });
   } catch (error) {

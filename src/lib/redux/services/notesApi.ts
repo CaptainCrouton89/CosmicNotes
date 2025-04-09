@@ -54,12 +54,22 @@ export const notesApi = createApi({
 
     searchNotes: builder.query<
       { notes: Note[] },
-      { query: string; matchCount?: number; matchThreshold?: number }
+      {
+        query: string;
+        category?: string | null;
+        matchCount?: number;
+        matchThreshold?: number;
+      }
     >({
-      query: ({ query, matchCount = 10, matchThreshold = 0.5 }) =>
-        `note/search?query=${encodeURIComponent(
+      query: ({ query, category, matchCount = 10, matchThreshold = 0.5 }) => {
+        let url = `note/search?query=${encodeURIComponent(
           query
-        )}&matchCount=${matchCount}&matchThreshold=${matchThreshold}`,
+        )}&matchCount=${matchCount}&matchThreshold=${matchThreshold}`;
+        if (category) {
+          url += `&category=${encodeURIComponent(category)}`;
+        }
+        return url;
+      },
       providesTags: (result) =>
         result
           ? [

@@ -109,7 +109,7 @@ export async function getTagsForNote(
       try {
         // Generate tags using Vercel AI SDK
         const result = await generateObject({
-          model: openai("gpt-4o"),
+          model: openai("gpt-4o-mini"),
           temperature: 0,
           system:
             "You are a helpful assistant that extracts relevant tags from content.",

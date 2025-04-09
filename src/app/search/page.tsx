@@ -4,7 +4,10 @@ import { useTagMergeDialog } from "@/hooks/use-tag-merge-dialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { clustersApi } from "@/lib/redux/services/clustersApi";
 import { notesApi } from "@/lib/redux/services/notesApi";
-import { setSearchQuery } from "@/lib/redux/slices/searchSlice";
+import {
+  setSearchQuery,
+  setSelectedCategory,
+} from "@/lib/redux/slices/searchSlice";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SearchBox, SearchResults } from "./_components";
@@ -45,13 +48,25 @@ export default function SearchPage() {
   const dispatch = useAppDispatch();
   const [skip, setSkip] = useState(true); // Skip initial search
   const storedSearchQuery = useAppSelector((state) => state.search.query);
+  const storedSelectedCategory = useAppSelector(
+    (state) => state.search.selectedCategory
+  );
   const [searchQuery, setLocalSearchQuery] = useState(storedSearchQuery || "");
+  const [selectedCategory, setLocalSelectedCategory] = useState(
+    storedSelectedCategory
+  );
 
   // Use the existing API hooks
   const { isLoading: isClustersLoading, data: clustersData } =
     clustersApi.useGetClustersQuery({ page: 1, limit: 100 });
   const { data: searchData, isLoading: isSearching } =
-    notesApi.useSearchNotesQuery({ query: searchQuery }, { skip });
+    notesApi.useSearchNotesQuery(
+      {
+        query: searchQuery,
+        category: selectedCategory,
+      },
+      { skip }
+    );
 
   const clusters = clustersData?.clusters || [];
   const isLoading = isSearching;
@@ -86,6 +101,20 @@ export default function SearchPage() {
   useEffect(() => {
     dispatch(setSearchQuery(searchQuery));
   }, [searchQuery, dispatch]);
+
+  // When selected category changes, update Redux state
+  useEffect(() => {
+    dispatch(setSelectedCategory(selectedCategory));
+  }, [selectedCategory, dispatch]);
+
+  // Handler for category selection
+  const handleCategorySelect = (category: string | null) => {
+    setLocalSelectedCategory(category);
+    if (!skip) {
+      setSkip(true); // Reset skip to trigger a new search
+      setTimeout(() => setSkip(false), 0); // Then search again with the new category
+    }
+  };
 
   // Search button only triggers the API call for notes
   const handleSearch = async (e: React.FormEvent) => {
@@ -168,6 +197,8 @@ export default function SearchPage() {
         isSearching={isSearching}
         isRefining={isRefining}
         handleRefine={handleRefine}
+        selectedCategory={selectedCategory}
+        onSelectCategory={handleCategorySelect}
       />
 
       {/* Include the tag merge dialog component */}

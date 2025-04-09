@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
     // Get query parameters
     const url = new URL(req.url);
     const query = url.searchParams.get("query");
+    const category = url.searchParams.get("category");
     const matchCount = parseInt(url.searchParams.get("matchCount") || "10", 10);
     const matchThreshold = parseFloat(
       url.searchParams.get("matchThreshold") || "0.5"
@@ -19,7 +20,12 @@ export async function GET(req: NextRequest) {
     }
 
     // Use the search service to get matching notes
-    const notesWithTags = await searchNotes(query, matchCount, matchThreshold);
+    const notesWithTags = await searchNotes(
+      query,
+      matchCount,
+      matchThreshold,
+      category
+    );
 
     return new Response(
       JSON.stringify({
