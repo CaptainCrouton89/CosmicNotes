@@ -32,11 +32,13 @@ interface Note {
 
 interface Cluster {
   id: number;
-  tag: string;
+  tag_family: string;
+  category: string;
   tag_count: number;
   summary: string;
   created_at: string;
   updated_at: string;
+  embedding: string;
   type?: string;
 }
 
@@ -61,14 +63,14 @@ export default function SearchPage() {
 
   // Filter clusters based on search query
   const filteredClusters = searchQuery
-    ? clusters
-        .filter((cluster: Cluster) =>
-          cluster.tag.toLowerCase().includes(searchQuery.toLowerCase())
+    ? (clusters
+        .filter((cluster) =>
+          cluster.tag_family.toLowerCase().includes(searchQuery.toLowerCase())
         )
         .map((cluster) => ({
           ...cluster,
           type: "cluster",
-        }))
+        })) as SearchResult[])
     : [];
 
   // Access our tag merge dialog hook
@@ -81,11 +83,11 @@ export default function SearchPage() {
   // Combine clusters and notes for display
   const getCombinedSearchResults = (): SearchResult[] => {
     if (!searchQuery) return [];
-    if (!searchData || !searchData.notes)
-      return filteredClusters as SearchResult[];
+    if (!searchData || !searchData.notes) return filteredClusters;
 
     // Cast notes array to match our Note type
     const notes = searchData.notes as unknown as Note[];
+
     const noteResults = notes.map((note) => ({
       ...note,
       type: "note",
@@ -220,13 +222,18 @@ export default function SearchPage() {
               >
                 {item.type === "cluster" ? "CLUSTER" : "NOTE"}
               </span>
+              {item.type === "cluster" && (
+                <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-700">
+                  {(item as Cluster).category}
+                </span>
+              )}
             </div>
 
             {/* Cluster-specific content */}
             {item.type === "cluster" && (
               <>
                 <h3 className="text-xl font-semibold mb-3">
-                  {(item as Cluster).tag}
+                  {(item as Cluster).tag_family}
                   <span className="text-sm font-normal text-gray-500 ml-2">
                     ({(item as Cluster).tag_count} notes)
                   </span>

@@ -7,6 +7,7 @@ import { clustersApi } from "@/lib/redux/services/clustersApi";
 import { Database } from "@/types/database.types";
 import { format } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
@@ -143,24 +144,28 @@ export default function ClusterPage() {
               <Tabs
                 defaultValue={cluster.category}
                 value={activeCategory || cluster.category}
-                onValueChange={setActiveCategory}
                 className="mt-4"
               >
-                <TabsList>
-                  <TabsTrigger value={cluster.category}>
-                    {cluster.category}
-                  </TabsTrigger>
-                  {relatedClusters.clusters.map((relatedCluster: Cluster) => (
-                    <TabsTrigger
-                      key={relatedCluster.id}
-                      value={relatedCluster.category}
-                      onClick={() =>
-                        (window.location.href = `/cluster/${relatedCluster.id}`)
-                      }
-                    >
-                      {relatedCluster.category}
-                    </TabsTrigger>
-                  ))}
+                <TabsList className="flex">
+                  {/* Combine current cluster with related clusters and sort by category for consistent ordering */}
+                  {[...relatedClusters.clusters, cluster]
+                    .sort((a, b) => a.category.localeCompare(b.category))
+                    .map((tabCluster: Cluster) => (
+                      <TabsTrigger
+                        key={tabCluster.id}
+                        value={tabCluster.category}
+                        asChild
+                      >
+                        <Link
+                          href={`/cluster/${tabCluster.id}`}
+                          className={`${
+                            tabCluster.id === cluster.id ? "font-semibold" : ""
+                          }`}
+                        >
+                          {tabCluster.category}
+                        </Link>
+                      </TabsTrigger>
+                    ))}
                 </TabsList>
               </Tabs>
             )}
@@ -206,12 +211,12 @@ export default function ClusterPage() {
                 <div className="p-4">
                   <p>{truncateContent(note.content)}</p>
                   <div className="mt-4">
-                    <a
+                    <Link
                       href={`/note/${note.id}`}
                       className="text-sm font-medium text-blue-600 hover:underline"
                     >
                       View full note
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>
