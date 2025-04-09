@@ -1,22 +1,18 @@
 import { Database } from "@/types/database.types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+type CosmicTag = {
+  tag: string;
+  confidence: number;
+  created_at: string;
+};
+
 type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"] & {
-  cosmic_tags: {
-    tag: string;
-    confidence: number;
-    created_at: string;
-  }[];
+  cosmic_tags: CosmicTag[];
 };
 
 // Create a more lightweight type for the notes list view
-type NoteListItem = Omit<Note, "content" | "embedding"> & {
-  cosmic_tags: {
-    tag: string;
-    confidence: number;
-    created_at: string;
-  }[];
-};
+type NoteListItem = Omit<Note, "content">;
 
 type NoteInput = Database["public"]["Tables"]["cosmic_memory"]["Insert"];
 
@@ -52,10 +48,8 @@ export const notesApi = createApi({
 
     getNote: builder.query<Note, number>({
       query: (id) => `note/${id}`,
-      transformResponse: (response: { note: Note }) => {
-        return response.note;
-      },
-      providesTags: (result, error, id) => [{ type: "Note", id }],
+      transformResponse: (response: { note: Note }) => response.note,
+      providesTags: (_, __, id) => [{ type: "Note", id }],
     }),
 
     searchNotes: builder.query<
@@ -81,9 +75,8 @@ export const notesApi = createApi({
         method: "POST",
         body: note,
       }),
-      transformResponse: (response: { success: boolean; note: Note }) => {
-        return response.note;
-      },
+      transformResponse: (response: { success: boolean; note: Note }) =>
+        response.note,
       invalidatesTags: [{ type: "Note", id: "LIST" }],
     }),
 
@@ -96,10 +89,8 @@ export const notesApi = createApi({
         method: "PUT",
         body: note,
       }),
-      transformResponse: (response: { note: Note }) => {
-        return response.note;
-      },
-      invalidatesTags: (result, error, { id }) => [
+      transformResponse: (response: { note: Note }) => response.note,
+      invalidatesTags: (_, __, { id }) => [
         { type: "Note", id },
         { type: "Note", id: "LIST" },
       ],
@@ -110,7 +101,7 @@ export const notesApi = createApi({
         url: `note/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (_, __, id) => [
         { type: "Note", id },
         { type: "Note", id: "LIST" },
       ],

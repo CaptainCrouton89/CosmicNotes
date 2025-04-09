@@ -57,5 +57,41 @@ export const tagsApi = createApi({
         { type: "Tag", id: "LIST" },
       ],
     }),
+
+    getTagsByNote: builder.query<Tag[], number>({
+      query: (noteId) => `note/${noteId}/tags`,
+      transformResponse: (response: { tags: Tag[] }) => response.tags,
+      providesTags: (result, error, noteId) => [
+        { type: "Tag", id: `note-${noteId}` },
+        { type: "Tag", id: "LIST" },
+      ],
+    }),
+
+    refreshNote: builder.mutation<void, number>({
+      query: (noteId) => ({
+        url: `note/${noteId}/refresh`,
+        method: "POST",
+        body: { id: noteId },
+      }),
+      invalidatesTags: (result, error, noteId) => [
+        { type: "Tag", id: `note-${noteId}` },
+        { type: "Tag", id: "LIST" },
+      ],
+    }),
+
+    saveTags: builder.mutation<
+      void,
+      { noteId: number; tags: { tag: string; confidence: number }[] }
+    >({
+      query: ({ noteId, tags }) => ({
+        url: `note/${noteId}/save-tags`,
+        method: "POST",
+        body: { tags },
+      }),
+      invalidatesTags: (result, error, { noteId }) => [
+        { type: "Tag", id: `note-${noteId}` },
+        { type: "Tag", id: "LIST" },
+      ],
+    }),
   }),
 });
