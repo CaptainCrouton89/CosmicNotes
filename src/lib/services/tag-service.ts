@@ -57,7 +57,7 @@ function extractHashtags(content: string): [Tag[], string] {
  */
 export async function getTagsForNote(
   content: string,
-  confidence: number = 0.8
+  confidence: number = 0.6
 ): Promise<Tag[]> {
   try {
     // First extract explicit hashtags
@@ -92,7 +92,7 @@ export async function getTagsForNote(
 
       const capitalizedTag = capitalize(cleanedTag);
       const existingConfidence = tagMap.get(capitalizedTag) || 0;
-      if (existingConfidence < 0.8) {
+      if (existingConfidence < 0.5) {
         tagMap.set(capitalizedTag, cluster.score!);
       }
     });
@@ -111,10 +111,10 @@ export async function getTagsForNote(
         // Generate tags using Vercel AI SDK
         const result = await generateObject({
           model: openai("gpt-4o-mini"),
-          temperature: 0,
+          temperature: 0.3,
           system:
             "You are a helpful assistant that extracts relevant tags from content.",
-          prompt: `Identify 1-2 tags that best describe the content. 
+          prompt: `Identify 3-5 tags that best describe the content. Try to include some that are both more and less specific. 
                  
                  Content: ${cleanedContent}`,
           schema: z.object({

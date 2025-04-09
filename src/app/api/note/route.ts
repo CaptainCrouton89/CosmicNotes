@@ -67,13 +67,16 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Generate and save tags for the new note
-    try {
-      const tags = await getTagsForNote(content);
-      await saveTagsToDatabase(supabaseClient, tags, savedNote.id);
-    } catch (tagError) {
-      console.error("Error generating tags:", tagError);
-      // Don't fail the whole request if tag generation fails
+    // Only generate tags for non-scratchpad notes
+    if (savedNote.category !== "Scratchpad") {
+      try {
+        // Generate and save tags for the new note
+        const tags = await getTagsForNote(content);
+        await saveTagsToDatabase(supabaseClient, tags, savedNote.id);
+      } catch (tagError) {
+        console.error("Error generating tags:", tagError);
+        // Don't fail the whole request if tag generation fails
+      }
     }
 
     return new Response(

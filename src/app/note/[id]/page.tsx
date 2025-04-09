@@ -1,17 +1,8 @@
 "use client";
 
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
-import { Badge } from "@/components/ui/badge";
+import { TagSelectionDialog } from "@/components/TagSelectionDialog";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import "@mdxeditor/editor/style.css";
 import { ArrowLeft, Check, X } from "lucide-react";
@@ -175,50 +166,16 @@ export default function NotePage() {
         />
       </div>
 
-      {/* Tag Selection Dialog */}
-      <Dialog open={showTagDialog} onOpenChange={setShowTagDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Select Tags</DialogTitle>
-            <DialogDescription>
-              Select tags for your note. Tags with high confidence are
-              pre-selected.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-4 max-h-[300px] overflow-y-auto">
-              {suggestedTags.map((tag, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`tag-${index}`}
-                    checked={tag.selected}
-                    onCheckedChange={() => toggleTagSelection(index)}
-                  />
-                  <div className="flex items-center justify-between w-full">
-                    <label
-                      htmlFor={`tag-${index}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                    >
-                      {tag.tag}
-                    </label>
-                    <Badge variant="outline" className="ml-auto">
-                      {Math.round(tag.confidence * 100)}%
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowTagDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={saveSelectedTags} disabled={saving}>
-              {saving ? "Saving Tags..." : "Save Tags"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Replace with TagSelectionDialog component */}
+      <TagSelectionDialog
+        open={showTagDialog}
+        onOpenChange={setShowTagDialog}
+        suggestedTags={suggestedTags}
+        onToggleTagSelection={toggleTagSelection}
+        onSaveTags={saveSelectedTags}
+        isSaving={saving}
+        onSkipTags={() => setShowTagDialog(false)}
+      />
 
       {loading ? (
         <div className="h-40 flex items-center justify-center">

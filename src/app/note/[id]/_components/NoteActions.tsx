@@ -8,7 +8,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { RefreshCw, Save, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreVertical, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 interface NoteActionsProps {
@@ -39,18 +45,6 @@ export function NoteActions({
       <Button
         variant="outline"
         size="sm"
-        onClick={onRefresh}
-        disabled={isRefreshing || disabled}
-        className="h-9 px-3"
-      >
-        <RefreshCw
-          className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
-        />
-        {isRefreshing ? "Refreshing..." : "Refresh"}
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
         onClick={onSave}
         disabled={isSaving || !hasChanges || disabled}
         className="h-9 px-3"
@@ -58,6 +52,29 @@ export function NoteActions({
         <Save className="h-4 w-4 mr-2" />
         {isSaving ? "Saving..." : "Save"}
       </Button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 w-9 p-0"
+            disabled={disabled}
+          >
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={onRefresh}
+            disabled={isRefreshing || disabled}
+            className="cursor-pointer"
+          >
+            {isRefreshing ? "Regenerating..." : "Regenerate AI Classifications"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogTrigger asChild>
           <Button

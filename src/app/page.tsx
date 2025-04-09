@@ -1,30 +1,18 @@
 "use client";
 
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
+import {
+  TagSelectionDialog,
+  TagSuggestion,
+} from "@/components/TagSelectionDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { CATEGORIES } from "@/lib/constants";
 import { notesApi } from "@/lib/redux/services/notesApi";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-// Define the TagSuggestion interface
-interface TagSuggestion {
-  tag: string;
-  confidence: number;
-  selected: boolean;
-}
 
 export default function Home() {
   const [note, setNote] = useState("");
@@ -77,6 +65,9 @@ export default function Home() {
       // Store the created note ID for tag operations
       setCreatedNoteId(result.id);
 
+      if (result.category === "Scratchpad") {
+        return;
+      }
       // Get tag suggestions
       try {
         const suggestResponse = await fetch(
@@ -183,7 +174,12 @@ export default function Home() {
     if (editorRef.current) {
       editorRef.current.setMarkdown("");
     }
-  }, []);
+
+    // Navigate to the created note
+    if (createdNoteId) {
+      router.push(`/note/${createdNoteId}`);
+    }
+  }, [createdNoteId, router]);
 
   const focusEditor = useCallback(() => {
     if (editorRef.current) {
@@ -221,50 +217,16 @@ export default function Home() {
         </Button>
       </div>
 
-      {/* Tag Selection Dialog */}
-      <Dialog open={showTagDialog} onOpenChange={setShowTagDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Select Tags</DialogTitle>
-            <DialogDescription>
-              Select tags for your note. Tags with high confidence are
-              pre-selected.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-4 max-h-[300px] overflow-y-auto">
-              {suggestedTags.map((tag, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`tag-${index}`}
-                    checked={tag.selected}
-                    onCheckedChange={() => toggleTagSelection(index)}
-                  />
-                  <div className="flex items-center justify-between w-full">
-                    <label
-                      htmlFor={`tag-${index}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                    >
-                      {tag.tag}
-                    </label>
-                    <Badge variant="outline" className="ml-auto">
-                      {Math.round(tag.confidence * 100)}%
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <DialogFooter className="flex justify-between sm:justify-between">
-            <Button variant="ghost" onClick={skipTags}>
-              Skip Tags
-            </Button>
-            <Button onClick={saveSelectedTags} disabled={savingTags}>
-              {savingTags ? "Saving Tags..." : "Save Tags"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Use the new TagSelectionDialog component */}
+      <TagSelectionDialog
+        open={showTagDialog}
+        onOpenChange={setShowTagDialog}
+        suggestedTags={suggestedTags}
+        onToggleTagSelection={toggleTagSelection}
+        onSaveTags={saveSelectedTags}
+        onSkipTags={skipTags}
+        isSaving={savingTags}
+      />
     </div>
   );
 }
