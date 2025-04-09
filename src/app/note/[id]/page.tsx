@@ -36,7 +36,6 @@ export default function NotePage() {
     loading,
     content,
     saving,
-    lastSaved,
     hasChanges,
     error,
     refreshing,
