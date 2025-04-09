@@ -19,5 +19,6 @@ export interface CommonProps {
   onNoteClick: (noteId: number) => void;
   onTagFamilyClick: (tagFamilyId: number) => void;
   onCreateNote: (category?: string) => void;
+  onDeleteNote?: (noteId: number) => void;
   getTitle: (note: { title?: string; category?: string }) => string;
 }

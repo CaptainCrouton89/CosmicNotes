@@ -1,10 +1,14 @@
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
-import { Edit, List, Plus } from "lucide-react";
+import { differenceInDays, format } from "date-fns";
+import { AlertCircle, List, Plus, Trash2 } from "lucide-react";
+import { useCallback } from "react";
 import { CommonProps, Note } from "./types";
 
 interface ScratchpadNotesProps
-  extends Pick<CommonProps, "onNoteClick" | "onCreateNote" | "getTitle"> {
+  extends Pick<
+    CommonProps,
+    "onNoteClick" | "onCreateNote" | "getTitle" | "onDeleteNote"
+  > {
   notes: Note[];
   isLoading: boolean;
   error: any;
@@ -16,6 +20,7 @@ export function ScratchpadNotes({
   error,
   onNoteClick,
   onCreateNote,
+  onDeleteNote,
   getTitle,
 }: ScratchpadNotesProps) {
   return (
@@ -62,6 +67,7 @@ export function ScratchpadNotes({
               key={note.id}
               note={note}
               onClick={() => onNoteClick(note.id)}
+              onDelete={onDeleteNote ? () => onDeleteNote(note.id) : undefined}
               getTitle={getTitle}
             />
           ))}
@@ -74,29 +80,80 @@ export function ScratchpadNotes({
 interface ScratchpadNoteCardProps {
   note: Note;
   onClick: () => void;
+  onDelete?: () => void;
   getTitle: (note: { title?: string; category?: string }) => string;
 }
 
 function ScratchpadNoteCard({
   note,
   onClick,
+  onDelete,
   getTitle,
 }: ScratchpadNoteCardProps) {
+  // Check if the note is older than a week
+  const isOld = useCallback((dateString: string) => {
+    const noteDate = new Date(dateString);
+    const today = new Date();
+    return differenceInDays(today, noteDate) >= 7;
+  }, []);
+
+  const noteIsOld = isOld(note.created_at);
+
+  // Handle delete button click without triggering the card click
+  const handleDeleteClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onDelete?.();
+    },
+    [onDelete]
+  );
+
   return (
     <div
-      className="border rounded-md p-2 cursor-pointer hover:bg-muted/5 transition-all"
+      className={`border rounded-md p-2 cursor-pointer transition-all
+        ${noteIsOld ? "border-amber-200 bg-amber-50/40" : "hover:bg-slate-50"} 
+        hover:border-slate-300 hover:shadow-sm`}
       onClick={onClick}
     >
-      <div className="flex justify-between items-center">
-        <h3 className="font-medium text-sm truncate max-w-[65%]">
-          {getTitle(note)}
-        </h3>
-        <div className="flex items-center gap-2">
-          <Edit className="h-3 w-3 text-muted-foreground" />
-          <time className="text-[10px] text-muted-foreground whitespace-nowrap">
-            {format(new Date(note.created_at), "MMM d, h:mm")}
-          </time>
+      <div className="flex items-start">
+        <div className="flex-1 min-w-0">
+          <h3
+            className={`font-medium text-sm truncate
+              ${noteIsOld ? "text-amber-800" : ""}`}
+          >
+            {getTitle(note)}
+            {noteIsOld && (
+              <span className="inline-flex ml-1 items-center">
+                <AlertCircle className="h-3 w-3 text-amber-600" />
+              </span>
+            )}
+          </h3>
+          <div className="flex items-center">
+            <time
+              className={`text-[10px] ${
+                noteIsOld ? "text-amber-700" : "text-muted-foreground"
+              }`}
+            >
+              {format(new Date(note.created_at), "MMM d, h:mm a")}
+            </time>
+            {noteIsOld && (
+              <div className="text-[10px] text-amber-600 ml-2">
+                (over a week old)
+              </div>
+            )}
+          </div>
         </div>
+
+        {onDelete && (
+          <button
+            onClick={handleDeleteClick}
+            className="ml-2 p-1.5 hover:bg-red-100 rounded-md transition-colors
+              focus:outline-none focus:ring-2 focus:ring-red-500"
+            aria-label="Delete scratchpad note"
+          >
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </button>
+        )}
       </div>
     </div>
   );

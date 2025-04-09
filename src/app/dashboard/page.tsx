@@ -5,11 +5,12 @@ import { notesApi } from "@/lib/redux/services/notesApi";
 import { tagFamilyApi } from "@/lib/redux/services/tagFamilyApi";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { RecentNotes, ScratchpadNotes, TagFamilies } from "./_components";
 
 export default function Dashboard() {
   const router = useRouter();
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Fetch notes with a larger limit to ensure we have enough data
   const {
@@ -20,6 +21,9 @@ export default function Dashboard() {
     page: 1,
     limit: 50, // Fetch more notes to ensure we have enough for each section
   });
+
+  // API mutation for deleting notes
+  const [deleteNote] = notesApi.useDeleteNoteMutation();
 
   // Fetch tag families
   const {
@@ -58,6 +62,20 @@ export default function Dashboard() {
       }
     },
     [router]
+  );
+
+  // Handle deleting a note
+  const handleDeleteNote = useCallback(
+    async (noteId: number) => {
+      try {
+        setDeleteError(null);
+        await deleteNote(noteId).unwrap();
+      } catch (error) {
+        console.error("Failed to delete note:", error);
+        setDeleteError("Failed to delete note. Please try again.");
+      }
+    },
+    [deleteNote]
   );
 
   // Filter and organize notes data
@@ -132,6 +150,12 @@ export default function Dashboard() {
         </Button>
       </div>
 
+      {deleteError && (
+        <div className="bg-red-100 text-red-700 px-4 py-2 rounded-md mb-4 text-sm">
+          {deleteError}
+        </div>
+      )}
+
       {/* Recent Notes Section */}
       <RecentNotes
         notes={recentNotes}
@@ -158,6 +182,7 @@ export default function Dashboard() {
         error={notesError}
         onNoteClick={handleNoteClick}
         onCreateNote={handleCreateNote}
+        onDeleteNote={handleDeleteNote}
         getTitle={getTitle}
       />
     </div>
