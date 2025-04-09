@@ -177,13 +177,13 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="space-y-8 flex-1 min-h-0 flex flex-col">
+    <div className="space-y-8 flex-1 min-h-0 flex flex-col pt-2 pb-4 md:pt-4">
       {error && (
         <div className="p-4 bg-red-50 text-red-500 rounded-lg">{error}</div>
       )}
 
       <div className="space-y-4 flex-1 min-h-0 flex flex-col">
-        <h2 className="text-xl font-semibold">New Note</h2>
+        <h2 className="text-xl font-semibold mb-1 md:mb-4">New Note</h2>
         <div
           className="w-full border rounded-md overflow-hidden flex-1 min-h-0 cursor-text"
           onClick={focusEditor}
