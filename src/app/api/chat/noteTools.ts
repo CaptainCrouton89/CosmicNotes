@@ -4,6 +4,7 @@ import { tool } from "ai";
 import { z } from "zod";
 
 import { CATEGORIES } from "@/lib/constants";
+import { generateEmbedding } from "@/lib/embeddings";
 import { Configuration, OpenAIApi } from "openai-edge";
 
 const openAiKey = process.env.OPENAI_API_KEY!;
@@ -155,7 +156,8 @@ export const addNoteTool = tool({
   description: "Add a note to the database",
   parameters: z.object({
     content: z.string().describe("Well-formatted content of the note"),
-    tags: z.array(z.string()).describe("The tags to add to the note"),
+    title: z.string().describe("The title of the note"),
+    tags: z.array(z.string()).optional().describe("Tags to add to the note"),
     zone: z
       .enum(["personal", "work", "other"])
       .describe("The zone of the note"),
@@ -163,20 +165,130 @@ export const addNoteTool = tool({
       .enum(CATEGORIES as [string, ...string[]])
       .describe("The category of the note"),
   }),
-  execute: async ({ content, tags }) => {
-    const text = `${content} ${tags.map((tag) => `#${tag}`).join(", ")}`;
-    const result = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/note`, {
-      method: "POST",
-      body: JSON.stringify({ content: text }),
-    });
+  execute: async ({ content, title, tags, zone, category }) => {
+    const client = await createClient();
+    const { error: noteError, data: note } = await client
+      .from("cosmic_memory")
+      .insert({
+        content,
+        title,
+        embedding: await generateEmbedding(content),
+        zone,
+        category,
+      })
+      .select()
+      .single();
 
-    if (!result.ok) {
+    if (noteError) {
       throw new ApplicationError("Failed to add note", {
-        status: result.status,
-        statusText: result.statusText,
+        supabaseError: noteError,
+      });
+    }
+
+    if (tags) {
+      const { error: tagError } = await client.from("cosmic_tags").insert(
+        tags.map((tag) => ({
+          tag,
+          note: note.id,
+        }))
+      );
+
+      if (tagError) {
+        throw new ApplicationError("Failed to add tags", {
+          supabaseError: tagError,
+        });
+      }
+    }
+
+    if (noteError) {
+      throw new ApplicationError("Failed to add note", {
+        supabaseError: noteError,
       });
     }
 
     return "Note added successfully";
+  },
+});
+
+export const addTodoTool = tool({
+  description: "Add a todo item for a tag",
+  parameters: z.object({
+    item: z.string().describe("The content of the todo item"),
+    tagFamilyId: z
+      .number()
+      .optional()
+      .describe("The tag family ID to associate the todo item with"),
+    tag: z
+      .string()
+      .optional()
+      .describe("The tag to associate the todo item with"),
+  }),
+  execute: async ({ item, tagFamilyId, tag }) => {
+    try {
+      if (!tagFamilyId && !tag) {
+        throw new ApplicationError(
+          "Either tagFamilyId or tag must be provided"
+        );
+      }
+
+      // First, find the tag family ID for the given tag
+      const client = await createClient();
+
+      let tagFamily, tagFamilyError;
+      if (tagFamilyId) {
+        const { data: tagFamilyData, error: tagFamilyErrorData } = await client
+          .from("cosmic_tag_family")
+          .select("id")
+          .eq("id", tagFamilyId)
+          .maybeSingle();
+
+        tagFamily = tagFamilyData;
+        tagFamilyError = tagFamilyErrorData;
+      } else if (tag) {
+        const { data: tagFamilyData, error: tagFamilyErrorData } = await client
+          .from("cosmic_tag_family")
+          .select("id")
+          .eq("tag", tag)
+          .maybeSingle();
+
+        tagFamily = tagFamilyData;
+        tagFamilyError = tagFamilyErrorData;
+      }
+
+      if (tagFamilyError) {
+        throw new ApplicationError("Failed to find tag family", {
+          supabaseError: tagFamilyError,
+        });
+      }
+
+      if (!tagFamily) {
+        throw new ApplicationError("Tag family not found", {
+          identifier: tag || tagFamilyId || "unknown",
+        });
+      }
+
+      const supabase = await createClient();
+      const { error: todoItemError } = await supabase
+        .from("cosmic_todo_item")
+        .insert({
+          item,
+          tag: tagFamily.id,
+        });
+
+      if (todoItemError) {
+        throw new ApplicationError("Failed to add todo item", {
+          supabaseError: todoItemError,
+        });
+      }
+
+      return `Todo item "${item}" added successfully for tag "${tag}"`;
+    } catch (error) {
+      if (error instanceof ApplicationError) {
+        throw error;
+      }
+      throw new ApplicationError("Failed to add todo item", {
+        error: String(error),
+      });
+    }
   },
 });

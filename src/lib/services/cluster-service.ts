@@ -122,6 +122,8 @@ export async function createOrUpdateCluster(
 
     let summary = "";
     // Generate data for cluster
+
+    // Skip To-Do category because it doesn't use a summary output format
     if (category !== "To-Do") {
       summary = await generateNoteSummary(notes, existingCluster?.summary);
     }
@@ -250,7 +252,7 @@ export async function processTagClustering(tag: string, count: number) {
       }))
     );
 
-    // 3. Process each category that has more than one note
+    // 3. Process each category that has notes with this tag
     const categoryResults = await Promise.all(
       Array.from(notesByCategory.entries()).map(async ([category, notes]) => {
         const result = await createOrUpdateCluster(
@@ -356,8 +358,8 @@ export async function cleanupObsoleteClusters(): Promise<number> {
             return null;
           }
 
-          // If there are less than 2 notes with this tag, mark for deletion
-          if (tagNotes.length < 2) {
+          // If there are less than 1 note with this tag, mark for deletion
+          if (tagNotes.length < 1) {
             return { id: cluster.id, delete: true };
           }
 
@@ -377,8 +379,8 @@ export async function cleanupObsoleteClusters(): Promise<number> {
             return null;
           }
 
-          // If there are less than 2 notes in this category, mark for deletion
-          if (!notes || notes.length < 2) {
+          // If there are no notes in this category, mark for deletion
+          if (!notes || notes.length < 1) {
             return { id: cluster.id, delete: true };
           }
 

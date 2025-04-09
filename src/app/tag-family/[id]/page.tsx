@@ -42,6 +42,10 @@ export default function TagFamilyPage() {
   const [selectedClusterId, setSelectedClusterId] = useState<number | null>(
     null
   );
+  // Track if we're viewing the To-Do tab specifically
+  const [isViewingTodoTab, setIsViewingTodoTab] = useState<boolean>(
+    categoryParam === "To-Do"
+  );
 
   // Fetch tag family data
   const {
@@ -59,7 +63,6 @@ export default function TagFamilyPage() {
     error: clustersError,
   } = clustersApi.useGetClustersByCriteriaQuery({
     tagFamily: tagFamilyId,
-    // @ts-ignore - API expects a number but sometimes gets a string
   });
 
   // Initialize chat visibility based on screen size
@@ -88,21 +91,39 @@ export default function TagFamilyPage() {
   // Find the active cluster based on category selection or default to first one
   useEffect(() => {
     if (clustersData?.clusters && clustersData.clusters.length > 0) {
-      // Set initial category if not already set
-      if (!activeCategory) {
-        setActiveCategory(clustersData.clusters[0].category);
-        setSelectedClusterId(clustersData.clusters[0].id);
-      } else {
-        // Find cluster matching active category
-        const matchingCluster = clustersData.clusters.find(
-          (c) => c.category === activeCategory
+      // Check if the active category is "To-Do"
+      if (activeCategory === "To-Do") {
+        setIsViewingTodoTab(true);
+        // Try to find a matching cluster
+        const todoCluster = clustersData.clusters.find(
+          (c) => c.category === "To-Do"
         );
-        if (matchingCluster) {
-          setSelectedClusterId(matchingCluster.id);
+        if (todoCluster) {
+          setSelectedClusterId(todoCluster.id);
         } else {
-          // Fallback to first cluster if category not found
+          // If there's no To-Do cluster, just set the first cluster as selected for notes section
+          setSelectedClusterId(clustersData.clusters[0].id);
+        }
+      } else {
+        // Handle regular categories
+        setIsViewingTodoTab(false);
+
+        // Set initial category if not already set
+        if (!activeCategory) {
           setActiveCategory(clustersData.clusters[0].category);
           setSelectedClusterId(clustersData.clusters[0].id);
+        } else {
+          // Find cluster matching active category
+          const matchingCluster = clustersData.clusters.find(
+            (c) => c.category === activeCategory
+          );
+          if (matchingCluster) {
+            setSelectedClusterId(matchingCluster.id);
+          } else {
+            // Fallback to first cluster if category not found
+            setActiveCategory(clustersData.clusters[0].category);
+            setSelectedClusterId(clustersData.clusters[0].id);
+          }
         }
       }
     }
@@ -159,8 +180,7 @@ export default function TagFamilyPage() {
       })
     : [];
 
-  // Check if To-Do exists in categories
-  const hasToDoCategory = categories.includes("To-Do");
+  // Get to-do items from tag family data
   const todoItems = tagFamily.todo_items || [];
 
   return (
@@ -170,7 +190,7 @@ export default function TagFamilyPage() {
           isChatVisible ? "md:w-3/5" : "md:w-full"
         } overflow-y-auto py-6 px-4 md:py-8 md:px-6 transition-all duration-300`}
       >
-        {/* Header component */}
+        {/* Header component with extra hasTodoItems prop */}
         <TagFamilyHeader
           tagName={tagFamily.tag}
           activeCluster={activeCluster}
@@ -179,13 +199,11 @@ export default function TagFamilyPage() {
           onCategoryChange={handleCategoryChange}
         />
 
-        {/* Cluster summary */}
-        <ClusterSummary cluster={activeCluster} />
-
-        {/* To-Do Items Section */}
-        {todoItems.length > 0 && (
+        {/* Display order depends on which tab is active */}
+        {isViewingTodoTab ? (
+          // When viewing To-Do tab, show todo items first
           <>
-            <hr className="my-6 border-t border-gray-200" />
+            {/* To-Do Items Section - always show when in Todo tab */}
             <div className="mb-6">
               <h2 className="text-xl font-semibold mb-4">To-Do Items</h2>
               <TodoListContainer
@@ -193,19 +211,43 @@ export default function TagFamilyPage() {
                 initialTodos={todoItems}
               />
             </div>
+
+            <hr className="my-6 border-t border-gray-200" />
+
+            {/* Cluster summary */}
+            {activeCluster && (
+              <>
+                <ClusterSummary cluster={activeCluster} />
+                <hr className="my-6 border-t border-gray-200" />
+              </>
+            )}
+
+            <h2 className="text-xl font-semibold mb-4">Related Notes</h2>
+
+            {/* Related notes component */}
+            <RelatedNotes
+              notes={notesData?.notes}
+              isLoading={notesLoading}
+              error={notesError}
+            />
+          </>
+        ) : (
+          // Normal view for other tabs
+          <>
+            {/* Cluster summary */}
+            <ClusterSummary cluster={activeCluster} />
+
+            <hr className="my-6 border-t border-gray-200" />
+            <h2 className="text-xl font-semibold mb-4">Related Notes</h2>
+
+            {/* Related notes component */}
+            <RelatedNotes
+              notes={notesData?.notes}
+              isLoading={notesLoading}
+              error={notesError}
+            />
           </>
         )}
-
-        <hr className="my-6 border-t border-gray-200" />
-
-        <h2 className="text-xl font-semibold mb-4">Related Notes</h2>
-
-        {/* Related notes component */}
-        <RelatedNotes
-          notes={notesData?.notes}
-          isLoading={notesLoading}
-          error={notesError}
-        />
       </div>
 
       {/* Chat toggle buttons */}
@@ -221,7 +263,7 @@ export default function TagFamilyPage() {
       >
         <ChatPanel
           isVisible={isChatVisible}
-          chatId={tagFamilyId.toString()}
+          chatId={tagFamily.tag}
           onToggle={toggleChat}
         />
       </div>

@@ -3,11 +3,11 @@ import { NextRequest } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: number }> }
 ) {
   try {
     // Parse ID
-    const id = parseInt(params.id, 10);
+    const { id } = await params;
 
     if (isNaN(id)) {
       return new Response(JSON.stringify({ error: "Invalid tag family ID" }), {

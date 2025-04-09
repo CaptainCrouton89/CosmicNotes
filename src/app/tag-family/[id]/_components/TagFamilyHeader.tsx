@@ -20,6 +20,27 @@ export function TagFamilyHeader({
   activeCategory,
   onCategoryChange,
 }: TagFamilyHeaderProps) {
+  // Get unique categories from clusters
+  const clusterCategories = [...new Set(clusters.map((c) => c.category))];
+
+  // Check if "To-Do" exists in categories
+  const hasToDoCategory = clusterCategories.includes("To-Do");
+
+  // Create a full list of tabs to display, always including "To-Do"
+  const displayCategories = [...clusterCategories];
+
+  // If there's no "To-Do" category, add it to the tabs
+  if (!hasToDoCategory) {
+    displayCategories.unshift("To-Do");
+  }
+
+  // Sort categories with "To-Do" first
+  displayCategories.sort((a, b) => {
+    if (a === "To-Do") return -1;
+    if (b === "To-Do") return 1;
+    return a.localeCompare(b);
+  });
+
   return (
     <div className="mb-6">
       {/* Compact header with title and metadata */}
@@ -46,32 +67,28 @@ export function TagFamilyHeader({
       </div>
 
       {/* Category tabs */}
-      {activeCluster && (
-        <div className="flex items-center mb-4">
-          <Tabs
-            defaultValue={activeCategory || clusters[0].category}
-            value={activeCategory || clusters[0].category}
-            onValueChange={onCategoryChange}
-            className="inline-flex"
-          >
-            <TabsList className="h-8">
-              {[...clusters]
-                .sort((a, b) => a.category.localeCompare(b.category))
-                .map((cluster: Cluster) => (
-                  <TabsTrigger
-                    key={cluster.id}
-                    value={cluster.category}
-                    className={`text-xs px-3 py-1 ${
-                      activeCategory === cluster.category ? "font-semibold" : ""
-                    }`}
-                  >
-                    {cluster.category}
-                  </TabsTrigger>
-                ))}
-            </TabsList>
-          </Tabs>
-        </div>
-      )}
+      <div className="flex items-center mb-4">
+        <Tabs
+          defaultValue={activeCategory || displayCategories[0]}
+          value={activeCategory || displayCategories[0]}
+          onValueChange={onCategoryChange}
+          className="inline-flex"
+        >
+          <TabsList className="h-8">
+            {displayCategories.map((category) => (
+              <TabsTrigger
+                key={category}
+                value={category}
+                className={`text-xs px-3 py-1 ${
+                  activeCategory === category ? "font-semibold" : ""
+                }`}
+              >
+                {category}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
     </div>
   );
 }

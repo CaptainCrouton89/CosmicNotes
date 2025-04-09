@@ -3,13 +3,10 @@ import {
   processTagClustering,
 } from "@/lib/services/cluster-service";
 import { getAllTagsWithCounts } from "@/lib/services/tag-service";
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function POST() {
   try {
-    const supabase = await createClient();
-
     // Get all tags with their counts
     const tagCounts = await getAllTagsWithCounts();
 
@@ -26,7 +23,7 @@ export async function POST() {
     const successfulResults = results.filter((r) => r !== null);
 
     // Clean up clusters that no longer have sufficient notes
-    const deletedCount = await cleanupObsoleteClusters(supabase);
+    const deletedCount = await cleanupObsoleteClusters();
 
     // Count skipped clusters
     const skippedCount = successfulResults.filter((r) => r.skipped).length;

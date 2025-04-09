@@ -3,6 +3,7 @@ import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
 import {
   addNoteTool,
+  addTodoTool,
   getNotesWithTagsTool,
   searchNotesTool,
 } from "../../chat/noteTools";
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
 
     const { data: notes, error: notesError } = await supabase
       .from("cosmic_tags")
-      .select("cosmic_memory(content, created_at, id)")
+      .select("cosmic_memory(content, title, created_at, id)")
       .eq("tag", tagName);
 
     if (!notes) {
@@ -37,7 +38,13 @@ export async function POST(req: Request) {
     const notesContent = notes
       .map(
         (note) =>
-          `ID: ${note.cosmic_memory.id} ${note.cosmic_memory.created_at}: ${note.cosmic_memory.content}`
+          `## Title: ${note.cosmic_memory.title}
+ID: [${note.cosmic_memory.id}] 
+Created: ${note.cosmic_memory.created_at}
+
+${note.cosmic_memory.content}
+
+---`
       )
       .join("\n");
 
@@ -47,6 +54,9 @@ export async function POST(req: Request) {
       
       ## User Notes
       ${notesContent}
+
+      # Metadata
+      Current tag: ${tagName}
       
       ## Instructions
       Help the user in any way they wish. If you use notes to answer the question, cite them like this:
@@ -61,6 +71,7 @@ export async function POST(req: Request) {
         searchNotesTool,
         getNotesWithTagsTool,
         addNoteTool,
+        addTodoTool,
       },
     });
 
