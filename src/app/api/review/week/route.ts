@@ -1,11 +1,11 @@
 import { ApplicationError, UserError } from "@/lib/errors";
 import { generateWeeklyReview } from "@/lib/services/ai-service";
 import { createClient } from "@/lib/supabase/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 export const runtime = "edge";
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     // Initialize Supabase client
     const supabase = await createClient();
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
 }
 
 // Also implement a GET endpoint to retrieve the most recent weekly review
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Initialize Supabase client
     const supabase = await createClient();

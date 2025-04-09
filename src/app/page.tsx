@@ -12,9 +12,10 @@ import { notesApi } from "@/lib/redux/services/notesApi";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
-export default function Home() {
+// Component that uses useSearchParams
+function HomeContent() {
   const [note, setNote] = useState("");
   const [category, setCategory] = useState<string>("");
   const [createNote, { isLoading: isSaving }] =
@@ -228,5 +229,14 @@ export default function Home() {
         isSaving={savingTags}
       />
     </div>
+  );
+}
+
+// Wrap the HomeContent in a Suspense boundary
+export default function Home() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }

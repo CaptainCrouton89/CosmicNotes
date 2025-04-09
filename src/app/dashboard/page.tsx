@@ -91,14 +91,15 @@ export default function Dashboard() {
   }, [notesData]);
 
   // Extract title from note
-  const getTitle = useCallback((note: any) => {
-    if (note.title) {
-      return note.title;
-    }
-
-    // Default if nothing else works
-    return `Untitled ${note.category}`;
-  }, []);
+  const getTitle = useCallback(
+    (note: { title?: string; category?: string }) => {
+      if (note.title) {
+        return note.title;
+      }
+      return `Untitled ${note.category}`;
+    },
+    []
+  );
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">

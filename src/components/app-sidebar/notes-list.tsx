@@ -12,7 +12,7 @@ interface NotesListProps {
   notes: Note[];
   emptyMessage: string;
   loading: boolean;
-  error: any;
+  error: unknown;
   titleFallback?: string;
 }
 
