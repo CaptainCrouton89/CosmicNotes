@@ -44,11 +44,8 @@ Based on the notes, return a list of todo items that are not already in the exis
   return result.object.todos;
 }
 
-export async function generateNoteSummary(
-  notes: Note[],
-  existingNote?: string
-) {
-  const getPrompt = getPromptFunction(notes[0].category, existingNote ?? "");
+export async function generateNoteSummary(notes: Note[]) {
+  const getPrompt = getPromptFunction(notes[0].category);
   if (notes[0].category === "To-Do") {
     return "";
   }

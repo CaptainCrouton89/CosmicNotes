@@ -1,7 +1,6 @@
 import { Database } from "@/types/database.types";
 
 type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"];
-type TodoItem = Database["public"]["Tables"]["cosmic_todo_item"]["Row"];
 
 const formatNote = (
   note: Note,
@@ -153,8 +152,7 @@ ${formatNotes(notes, { date: true, id: true })}`,
 });
 
 export const getPromptFunction = (
-  category: string,
-  existingNote: string
+  category: string
 ): ((notes: Note[]) => SummaryPrompt) => {
   switch (category) {
     case "Scratchpad":

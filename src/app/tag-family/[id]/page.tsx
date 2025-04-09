@@ -162,24 +162,6 @@ export default function TagFamilyPage() {
   if (!tagFamily || !clustersData || clustersData.clusters.length === 0)
     return <EmptyState />;
 
-  // Group clusters by category (for the tabs)
-  const clustersByCategory = tagFamily.clusters?.reduce((acc, cluster) => {
-    if (!acc[cluster.category]) {
-      acc[cluster.category] = [];
-    }
-    acc[cluster.category].push(cluster);
-    return acc;
-  }, {} as Record<string, typeof tagFamily.clusters>);
-
-  // Get sorted categories with "To-Do" first if it exists
-  const categories = clustersByCategory
-    ? [...Object.keys(clustersByCategory)].sort((a, b) => {
-        if (a === "To-Do") return -1;
-        if (b === "To-Do") return 1;
-        return a.localeCompare(b);
-      })
-    : [];
-
   // Get to-do items from tag family data
   const todoItems = tagFamily.todo_items || [];
 

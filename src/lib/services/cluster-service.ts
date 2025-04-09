@@ -125,7 +125,7 @@ export async function createOrUpdateCluster(
 
     // Skip To-Do category because it doesn't use a summary output format
     if (category !== "To-Do") {
-      summary = await generateNoteSummary(notes, existingCluster?.summary);
+      summary = await generateNoteSummary(notes);
     }
     const linkedSummary = linkifySummary(summary);
 
