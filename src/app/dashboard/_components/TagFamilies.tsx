@@ -5,7 +5,7 @@ import { CommonProps, TagFamily } from "./types";
 interface TagFamiliesProps extends Pick<CommonProps, "onTagFamilyClick"> {
   tagFamilies: TagFamily[];
   isLoading: boolean;
-  error: any;
+  error: unknown;
 }
 
 export function TagFamilies({

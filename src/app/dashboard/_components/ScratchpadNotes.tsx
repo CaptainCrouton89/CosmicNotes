@@ -11,7 +11,7 @@ interface ScratchpadNotesProps
   > {
   notes: Note[];
   isLoading: boolean;
-  error: any;
+  error: unknown;
 }
 
 export function ScratchpadNotes({
@@ -115,8 +115,9 @@ function ScratchpadNoteCard({
         hover:border-slate-300 hover:shadow-sm`}
       onClick={onClick}
     >
-      <div className="flex items-start">
-        <div className="flex-1 min-w-0">
+      <div className="flex items-start justify-between">
+        {/* Left: Title and date */}
+        <div className="flex-1 min-w-0 mr-2">
           <h3
             className={`font-medium text-sm truncate
               ${noteIsOld ? "text-amber-800" : ""}`}
@@ -144,11 +145,12 @@ function ScratchpadNoteCard({
           </div>
         </div>
 
+        {/* Right: Delete button */}
         {onDelete && (
           <button
             onClick={handleDeleteClick}
-            className="ml-2 p-1.5 hover:bg-red-100 rounded-md transition-colors
-              focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="p-1.5 hover:bg-red-100 rounded-md transition-colors
+              focus:outline-none focus:ring-2 focus:ring-red-500 flex-shrink-0"
             aria-label="Delete scratchpad note"
           >
             <Trash2 className="h-4 w-4 text-red-500" />

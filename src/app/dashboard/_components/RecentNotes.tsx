@@ -5,7 +5,7 @@ import { CommonProps, Note } from "./types";
 interface RecentNotesProps extends CommonProps {
   notes: Note[];
   isLoading: boolean;
-  error: any;
+  error: unknown;
 }
 
 export function RecentNotes({
