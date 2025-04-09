@@ -72,13 +72,13 @@ export default function NotePage() {
 
   // Update editor content when note data is loaded
   useEffect(() => {
-    if (note && editorRef.current) {
+    if (note?.content && editorRef.current) {
       editorRef.current.setMarkdown(note.content);
     }
   }, [note, editorRef]);
 
   return (
-    <div className="space-y-6 flex flex-col flex-1">
+    <div className="space-y-6 flex flex-col flex-1 py-6">
       <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>

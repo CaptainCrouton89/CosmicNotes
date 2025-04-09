@@ -6,12 +6,14 @@ import { tagsApi } from "./services/tagsApi";
 import clusterReducer from "./slices/clusterSlice";
 import noteReducer from "./slices/noteSlice";
 import searchReducer from "./slices/searchSlice";
+import uiReducer from "./slices/uiSlice";
 
 export const store = configureStore({
   reducer: {
     note: noteReducer,
     search: searchReducer,
     cluster: clusterReducer,
+    ui: uiReducer,
     [notesApi.reducerPath]: notesApi.reducer,
     [tagsApi.reducerPath]: tagsApi.reducer,
     [clustersApi.reducerPath]: clustersApi.reducer,

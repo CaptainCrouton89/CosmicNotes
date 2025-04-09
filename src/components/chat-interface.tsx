@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { linkifySummary } from "@/lib/utils";
 import { useChat } from "@ai-sdk/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -18,30 +18,54 @@ export function ChatInterface({
   endpoint,
   chatId,
 }: Omit<ChatInterfaceProps, "className">) {
+  // Generate a stable chat ID that persists across navigations
+  const chatIdToUse = chatId || "default";
+
   const { messages, input, handleInputChange, handleSubmit, status, error } =
     useChat({
       api: endpoint || "/api/chat",
       onError: (err: Error) => {
         console.error("Chat error:", err);
       },
-      id: `cluster-${chatId}`,
+      id: `cluster-${chatIdToUse}`,
       maxSteps: 15,
       body: {
-        tagName: chatId,
+        tagName: chatIdToUse,
       },
     });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
-  // Scroll to bottom when messages change
+  // Handle scroll events to detect if user has scrolled away from bottom
   useEffect(() => {
-    if (messagesEndRef.current) {
+    const container = chatContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      // Check if user is at bottom (with small tolerance)
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
+      setShouldAutoScroll(isAtBottom);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Scroll to bottom when messages change if shouldAutoScroll is true
+  useEffect(() => {
+    if (shouldAutoScroll && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages, shouldAutoScroll]);
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+      >
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center text-center">
             <div className="text-muted-foreground">

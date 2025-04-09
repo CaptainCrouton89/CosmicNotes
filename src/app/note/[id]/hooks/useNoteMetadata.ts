@@ -1,9 +1,6 @@
 import { notesApi } from "@/lib/redux/services/notesApi";
 import { useCallback, useState } from "react";
-
-// Define the Zone type to match the ZoneSelector component
-const ZONES = ["personal", "work", "other"] as const;
-type Zone = (typeof ZONES)[number] | "";
+import { Zone } from "../../_types";
 
 export function useNoteMetadata(noteId: number, noteContent: string = "") {
   const [updatingField, setUpdatingField] = useState<string | null>(null);

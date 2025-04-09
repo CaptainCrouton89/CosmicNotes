@@ -1,7 +1,6 @@
 import { ApplicationError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
-import { openai } from "@ai-sdk/openai";
-import { generateObject, tool } from "ai";
+import { tool } from "ai";
 import { z } from "zod";
 
 import { Configuration, OpenAIApi } from "openai-edge";
@@ -85,59 +84,10 @@ export const searchNotesTool = tool({
 });
 
 /**
- * Reranks search results using OpenAI to better match the query intent
+ * Rerank using cross-encoder
  */
 async function rerankResults(query: string, notes: Record<string, unknown>[]) {
-  try {
-    // Prepare the notes for scoring - construct a minimal version to save tokens
-    const notesForScoring = notes.map((note) => ({
-      id: note.id,
-      content:
-        typeof note.content === "string" ? note.content.substring(0, 500) : "", // Limit content length to save tokens
-      tags: note.cosmic_tags
-        ? Array.isArray(note.cosmic_tags)
-          ? note.cosmic_tags.map((t: { tag: string }) => t.tag).join(", ")
-          : ""
-        : "",
-    }));
-
-    // Use OpenAI to rerank
-    const result = await generateObject({
-      model: openai("gpt-4o-mini"),
-      temperature: 0,
-      system:
-        'You are a search result reranker. Given a query and search results, assign each result a relevance score from 0-100 based on how well it answers the query. Higher scores mean greater relevance. Return the scores as a JSON object with format: {"results": [{"id": "note_id", "score": numeric_score}, ...]}.',
-      schema: z.object({
-        results: z.array(z.object({ id: z.string(), score: z.number() })),
-      }),
-      messages: [
-        {
-          role: "user",
-          content: `Query: "${query}"\n\nSearch results to rerank:\n${JSON.stringify(
-            notesForScoring
-          )}\n\nFor each result, rate its relevance to the query on a scale of 0-100. Return the scores as a JSON object.`,
-        },
-      ],
-    });
-
-    const scores = result.object;
-
-    // Sort the original notes by their scores
-    return [...notes].sort((a, b) => {
-      // If we have scores, use them; otherwise preserve the original order
-      const scoreA = scores.results.find(
-        (r: { id: unknown; score: number }) => r.id === a.id
-      )?.score;
-      const scoreB = scores.results.find(
-        (r: { id: unknown; score: number }) => r.id === b.id
-      )?.score;
-      return (scoreB ?? 0) - (scoreA ?? 0);
-    });
-  } catch (error) {
-    console.error("Error in reranking:", error);
-    // Return original order if reranking fails
-    return notes;
-  }
+  return notes;
 }
 
 export const getNotesWithTagsTool = tool({
@@ -200,11 +150,29 @@ export const getNotesWithTagsTool = tool({
   },
 });
 
+const CATEGORIES = [
+  "To-Do",
+  "Scratchpad",
+  "Collections",
+  "Brainstorm",
+  "Journal",
+  "Meeting",
+  "Research",
+  "Learning",
+  "Feedback",
+];
+
 export const addNoteTool = tool({
   description: "Add a note to the database",
   parameters: z.object({
     content: z.string().describe("Well-formatted content of the note"),
     tags: z.array(z.string()).describe("The tags to add to the note"),
+    zone: z
+      .enum(["personal", "work", "other"])
+      .describe("The zone of the note"),
+    category: z
+      .enum(CATEGORIES as [string, ...string[]])
+      .describe("The category of the note"),
   }),
   execute: async ({ content, tags }) => {
     const text = `${content} ${tags.map((tag) => `#${tag}`).join(", ")}`;

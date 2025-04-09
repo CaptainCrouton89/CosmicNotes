@@ -1,7 +1,7 @@
 import { notesApi } from "@/lib/redux/services/notesApi";
 import { tagsApi } from "@/lib/redux/services/tagsApi";
 import { MDXEditorMethods } from "@mdxeditor/editor";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useNoteEditor(noteId: number) {
   const [content, setContent] = useState("");
@@ -20,6 +20,13 @@ export function useNoteEditor(noteId: number) {
   } = notesApi.useGetNoteQuery(Number(noteId), {
     skip: !noteId,
   });
+
+  // Set content when note data is loaded
+  useEffect(() => {
+    if (note?.content && !hasChanges) {
+      setContent(note.content);
+    }
+  }, [note, hasChanges]);
 
   const [updateNote] = notesApi.useUpdateNoteMutation();
   const [refreshNoteMutation] = tagsApi.useRefreshNoteMutation();

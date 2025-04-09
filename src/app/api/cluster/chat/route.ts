@@ -44,20 +44,21 @@ export async function POST(req: Request) {
     console.log(notesContent);
 
     const result = streamText({
-      model: openai("gpt-4o"),
-      system: `You are an insightful, intelligent, assistant managing a user's notes, like a personal librarian. Here are their notes for this particular topic: 
+      model: openai("gpt-4o-mini"),
+      system: `You are an insightful, intelligent, partner in a conversation. You are discussing a topic with the user. Here are their notes for this particular topic: 
       
       ## User Notes
       ${notesContent}
       
       ## Instructions
-      Help the user understand their notes and use them to answer the question. If you use notes to answer the question, cite them like this:
+      Help the user in any way they wish. If you use notes to answer the question, cite them like this:
       Blah blah blah [123]. It will be converted to a link by the markdown renderer.
 
-      # Do not search notes unless specifically asked to do so.
+      Keep the included notes in mind when answering the question.
       `,
       messages,
-      temperature: 0.1,
+      temperature: 0.8,
+      topP: 0.95,
       tools: {
         searchNotesTool,
         getNotesWithTagsTool,
