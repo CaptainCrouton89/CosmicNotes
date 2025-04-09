@@ -58,7 +58,7 @@ export async function PUT(
 
     const body = await request.json();
     const supabase = await createClient();
-    const updateData: any = {};
+    const updateData: Record<string, string | number | unknown> = {};
 
     // First, fetch the current note to check what's changing
     const { data: currentNote, error: fetchError } = await supabase

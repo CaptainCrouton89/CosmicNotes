@@ -8,10 +8,10 @@ export const runtime = "edge";
 // POST endpoint to generate tag suggestions for a note
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const id = (await params).id;
 
     if (!id) {
       throw new UserError("Note ID is required");

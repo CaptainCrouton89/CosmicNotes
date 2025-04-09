@@ -10,7 +10,15 @@ interface ClusterCardProps {
     created_at: string;
     type: string;
   };
-  onClick: (cluster: any) => void;
+  onClick: (cluster: {
+    id: number;
+    tag_family: string;
+    category: string;
+    tag_count: number;
+    summary: string;
+    created_at: string;
+    type: string;
+  }) => void;
   formatDate: (dateString: string) => string;
   highlightedTagFamily: React.ReactNode;
   highlightedSummary: React.ReactNode;

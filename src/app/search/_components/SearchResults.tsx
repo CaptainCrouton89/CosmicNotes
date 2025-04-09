@@ -39,7 +39,9 @@ interface SearchResultsProps {
   isClustersLoading: boolean;
   filteredClusters: (Cluster & { type: string })[];
   notes: Note[] | undefined;
-  handleItemClick: (item: any) => void;
+  handleItemClick: (
+    item: Note | Cluster | { type: string; id: number }
+  ) => void;
   formatDate: (dateString: string) => string;
   createMarkup: (content: string) => { __html: string };
   highlightSearchTerm: (text: string) => string;
@@ -62,9 +64,6 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   highlightSearchTerm,
   truncateContent,
 }) => {
-  // Calculate total results count
-  const totalResults = filteredClusters.length + (notes?.length || 0);
-
   return (
     <div>
       {isClustersLoading && (

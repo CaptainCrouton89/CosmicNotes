@@ -15,7 +15,14 @@ interface NoteCardProps {
     category: string;
     zone: string;
   };
-  onClick: (note: any) => void;
+  onClick: (note: {
+    id: number;
+    content: string;
+    created_at: string;
+    cosmic_tags?: CosmicTag[];
+    category: string;
+    zone: string;
+  }) => void;
   formatDate: (dateString: string) => string;
   highlightedContent: React.ReactNode;
 }
@@ -26,10 +33,12 @@ export const NoteCard: React.FC<NoteCardProps> = ({
   formatDate,
   highlightedContent,
 }) => {
+  const handleClick = () => onClick(note);
+
   return (
     <div
-      className="p-5 border rounded-lg hover:border-green-400 hover:shadow-md transition-all cursor-pointer"
-      onClick={onClick}
+      className="p-5 border rounded-lg hover:shadow-md transition-all cursor-pointer"
+      onClick={handleClick}
     >
       {/* Note header with type and metadata */}
       <div className="flex justify-between mb-3">

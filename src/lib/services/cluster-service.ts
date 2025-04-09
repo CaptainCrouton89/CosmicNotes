@@ -5,8 +5,6 @@ import { linkifySummary } from "@/lib/utils";
 import { Database } from "@/types/database.types";
 import { SupabaseClient } from "@supabase/supabase-js";
 
-type ClusterRow = Database["public"]["Tables"]["cosmic_cluster"]["Row"];
-type TagFamilyRow = Database["public"]["Tables"]["cosmic_tag_family"]["Row"];
 type MemoryRow = Database["public"]["Tables"]["cosmic_memory"]["Row"];
 
 /**
@@ -204,7 +202,7 @@ export async function processTagClustering(
     // 3. Process each category that has more than one note
     const categoryResults = await Promise.all(
       Array.from(notesByCategory.entries())
-        .filter(([_, notes]) => notes.length > 1)
+        .filter(([, notes]) => notes.length > 1)
         .map(async ([category, notes]) => {
           const result = await createOrUpdateCluster(
             supabase,

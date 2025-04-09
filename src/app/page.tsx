@@ -86,8 +86,11 @@ export default function Home() {
         // Convert to TagSuggestion format and pre-select tags with high confidence
         // Also filter out any X20 tags that might have slipped through
         const suggestions: TagSuggestion[] = data.tags
-          .filter((tag: any) => tag.tag !== "X20" && !tag.tag.includes("X20"))
-          .map((tag: any) => ({
+          .filter(
+            (tag: { tag: string; confidence: number }) =>
+              tag.tag !== "X20" && !tag.tag.includes("X20")
+          )
+          .map((tag: { tag: string; confidence: number }) => ({
             tag: tag.tag,
             confidence: tag.confidence,
             selected: tag.confidence >= 0.8,

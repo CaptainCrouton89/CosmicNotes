@@ -62,7 +62,6 @@ export default function NotePage() {
     toggleTagSelection,
     saveSelectedTags,
     handleTagDelete,
-    openTagDialog,
   } = useNoteTags(noteId);
 
   const { updatingField, formatDate, updateCategory, updateZone } =

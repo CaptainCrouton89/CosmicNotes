@@ -1,14 +1,6 @@
 import { tagsApi } from "@/lib/redux/services/tagsApi";
 import { useCallback, useState } from "react";
 
-interface Tag {
-  id?: number;
-  note?: number;
-  tag: string;
-  confidence: number;
-  created_at?: string;
-}
-
 interface TagSuggestion {
   tag: string;
   confidence: number;
@@ -21,10 +13,9 @@ export function useNoteTags(noteId: number) {
   const [tagDeleting, setTagDeleting] = useState<string | null>(null);
 
   // Use RTK Query hooks
-  const { data: tags = [], refetch: refetchTags } =
-    tagsApi.useGetTagsByNoteQuery(noteId, {
-      skip: !noteId,
-    });
+  const { data: tags = [] } = tagsApi.useGetTagsByNoteQuery(noteId, {
+    skip: !noteId,
+  });
   const [deleteTag] = tagsApi.useDeleteTagMutation();
   const [saveTags] = tagsApi.useSaveTagsMutation();
 

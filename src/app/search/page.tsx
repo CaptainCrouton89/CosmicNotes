@@ -40,18 +40,6 @@ interface Cluster {
   type?: string;
 }
 
-// Combined search result type
-type SearchResult = (Note | Cluster) & { type: string };
-
-// Type guards to check which type we're dealing with
-function isCluster(item: SearchResult): item is Cluster & { type: string } {
-  return item.type === "cluster";
-}
-
-function isNote(item: SearchResult): item is Note & { type: string } {
-  return item.type === "note";
-}
-
 export default function SearchPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -152,7 +140,9 @@ export default function SearchPage() {
     return { __html: content };
   };
 
-  const handleItemClick = (item: SearchResult) => {
+  const handleItemClick = (
+    item: Note | Cluster | { type: string; id: number }
+  ) => {
     if (item.type === "cluster") {
       const cluster = item as Cluster & { type: string };
       router.push(

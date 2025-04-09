@@ -16,7 +16,7 @@ export async function POST() {
     // Process each tag with count > 1
     const results = await Promise.all(
       Object.entries(tagCounts)
-        .filter(([_, count]) => count > 1)
+        .filter(([, count]) => count > 1)
         .map(async ([tag, count]) => {
           return await processTagClustering(supabase, tag, count);
         })

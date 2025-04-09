@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get total count of notes with this cluster's tag and category
-    const { count, error: countError } = await supabaseClient
+    const { error: countError } = await supabaseClient
       .from("cosmic_tags")
       .select("note", { count: "exact", head: true })
       .eq("tag", cluster.tag_family);

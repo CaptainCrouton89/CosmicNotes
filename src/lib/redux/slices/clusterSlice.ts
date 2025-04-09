@@ -4,11 +4,13 @@ import { clustersApi } from "../services/clustersApi";
 // Define types for cluster
 interface Cluster {
   id: number;
-  tag: string;
+  tag_family: string;
+  category: string;
   tag_count: number;
   summary: string;
   created_at: string;
   updated_at: string;
+  embedding: string;
 }
 
 interface ClusterState {

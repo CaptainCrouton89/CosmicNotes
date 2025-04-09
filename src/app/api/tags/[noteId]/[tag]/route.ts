@@ -7,10 +7,11 @@ export const runtime = "edge";
 // DELETE a specific tag from a note
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { noteId: string; tag: string } }
+  { params }: { params: Promise<{ noteId: string; tag: string }> }
 ) {
   try {
-    const { noteId, tag } = params;
+    const noteId = (await params).noteId;
+    const tag = (await params).tag;
 
     if (!noteId || !tag) {
       throw new UserError("Note ID and tag are required");

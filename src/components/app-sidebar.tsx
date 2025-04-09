@@ -1,6 +1,5 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
 import {
   Clock,
   Home,
@@ -12,7 +11,6 @@ import {
   Tag,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -43,8 +41,6 @@ type GroupedClusters = {
 };
 
 export function AppSidebar() {
-  const [isClient, setIsClient] = useState(false);
-
   // Notes query
   const {
     data: notesData,
@@ -68,18 +64,6 @@ export function AppSidebar() {
   // Gather clusters mutation
   const [gatherClusters, { isLoading: isGathering }] =
     clustersApi.useGatherClustersMutation();
-
-  // Set isClient to true on mount
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Format date only on client side
-  const formatDate = (dateString: string) => {
-    if (!isClient) return "";
-    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
-  };
-
   // Handle refresh clusters
   const handleRefreshClusters = async () => {
     try {
