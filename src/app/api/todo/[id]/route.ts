@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: number }> }
 ) {
   try {
-    const id = Number(params.id);
+    const { id } = await params;
 
     if (isNaN(id)) {
       return NextResponse.json({ error: "Invalid todo ID" }, { status: 400 });
