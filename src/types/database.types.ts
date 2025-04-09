@@ -127,6 +127,33 @@ export type Database = {
           },
         ]
       }
+      cosmic_categories: {
+        Row: {
+          created_at: string
+          definition: string
+          id: number
+          name: string
+          prompt: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          definition?: string
+          id?: number
+          name?: string
+          prompt?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          definition?: string
+          id?: number
+          name?: string
+          prompt?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cosmic_cluster: {
         Row: {
           created_at: string
@@ -159,28 +186,37 @@ export type Database = {
       }
       cosmic_memory: {
         Row: {
+          category: string
           content: string
           created_at: string
           embedding: string
           id: number
           metadata: Json
           title: string
+          updated_at: string
+          zone: string
         }
         Insert: {
+          category?: string
           content?: string
           created_at?: string
           embedding: string
           id?: number
           metadata?: Json
           title?: string
+          updated_at?: string
+          zone?: string
         }
         Update: {
+          category?: string
           content?: string
           created_at?: string
           embedding?: string
           id?: number
           metadata?: Json
           title?: string
+          updated_at?: string
+          zone?: string
         }
         Relationships: []
       }
@@ -710,12 +746,15 @@ export type Database = {
           match_count: number
         }
         Returns: {
+          category: string
           content: string
           created_at: string
           embedding: string
           id: number
           metadata: Json
           title: string
+          updated_at: string
+          zone: string
         }[]
       }
       match_page_sections: {

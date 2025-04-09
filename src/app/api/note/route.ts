@@ -1,6 +1,6 @@
 import { generateEmbedding } from "@/lib/embeddings";
 import { ApplicationError, UserError } from "@/lib/errors";
-import { generateNoteTitle } from "@/lib/services/ai-service";
+import { generateNoteFields } from "@/lib/services/ai-service";
 import { getTagsForNote, saveTagsToDatabase } from "@/lib/services/tag-service";
 import { createClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     const embedding = await generateEmbedding(content);
 
     // Generate and save title for the new note
-    const title = await generateNoteTitle(content);
+    const { title, category, zone } = await generateNoteFields(content);
 
     // Save the note with embedding to the cosmic_memory table
     const { error: insertError, data: savedNote } = await supabaseClient
@@ -51,6 +51,8 @@ export async function POST(req: NextRequest) {
       .insert({
         content,
         title,
+        category,
+        zone,
         created_at: new Date().toISOString(),
         embedding,
         metadata,

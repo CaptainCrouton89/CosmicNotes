@@ -54,7 +54,10 @@ function extractHashtags(content: string): [Tag[], string] {
  * @param content The content to generate tags for
  * @returns Array of generated tags with confidence scores
  */
-export async function getTagsForNote(content: string): Promise<Tag[]> {
+export async function getTagsForNote(
+  content: string,
+  confidence: number = 0.8
+): Promise<Tag[]> {
   try {
     // First extract explicit hashtags
     const [hashTags, cleanedContent] = extractHashtags(content);
@@ -151,8 +154,7 @@ export async function getTagsForNote(content: string): Promise<Tag[]> {
         confidence,
       }));
 
-    console.log("Unique tags:", uniqueTags);
-    return uniqueTags;
+    return uniqueTags.filter((tag) => tag.confidence >= confidence);
   } catch (error) {
     console.error("Error generating tags:", error);
     throw new ApplicationError("Failed to generate tags", {

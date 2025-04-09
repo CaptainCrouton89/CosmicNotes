@@ -13,6 +13,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { notesApi } from "@/lib/redux/services/notesApi";
 import { tagsApi } from "@/lib/redux/services/tagsApi";
 import { Database } from "@/types/database.types";
@@ -20,11 +26,26 @@ import { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 import {
   ArrowLeft,
+  Book,
+  Briefcase,
+  Check,
+  ChevronDown,
   Clock,
+  FolderKanban,
+  Globe,
+  GraduationCap,
+  Home,
+  Layers,
+  Lightbulb,
+  ListTodo,
+  MessageSquare,
+  Pencil,
   RefreshCw,
   Save,
+  Search,
   Tag,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -37,7 +58,24 @@ type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"] & {
     confidence: number;
     created_at: string;
   }[];
+  category?: string;
+  zone?: "personal" | "work" | "other";
 };
+
+// Define available categories and zones
+const CATEGORIES = [
+  "To-Do",
+  "Scratchpad",
+  "Collections",
+  "Brainstorm",
+  "Journal",
+  "Meeting",
+  "Research",
+  "Learning",
+  "Feedback",
+];
+
+const ZONES = ["personal", "work", "other"];
 
 interface Tag {
   id?: number;
@@ -72,6 +110,7 @@ export default function NotePage() {
   const editorRef = useRef<MDXEditorMethods>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [tagDeleting, setTagDeleting] = useState<string | null>(null);
+  const [updatingField, setUpdatingField] = useState<string | null>(null);
 
   // Add Redux hooks
   const {
@@ -120,7 +159,6 @@ export default function NotePage() {
       setContent("");
     } else if (note) {
       setContent(note.content);
-      console.log("Note content:", note.content);
       setLastSaved(new Date());
       setHasChanges(false);
 
@@ -155,40 +193,6 @@ export default function NotePage() {
 
       setLastSaved(new Date());
       setHasChanges(false);
-
-      // Get tag suggestions
-      try {
-        const suggestResponse = await fetch(
-          `/api/note/${noteId}/suggest-tags`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (!suggestResponse.ok) {
-          throw new Error("Failed to get tag suggestions");
-        }
-
-        const data = await suggestResponse.json();
-
-        // Convert to TagSuggestion format and pre-select tags with high confidence
-        const suggestions: TagSuggestion[] = data.tags
-          .filter((tag: Tag) => tag.tag !== "X20" && !tag.tag.includes("X20"))
-          .map((tag: Tag) => ({
-            tag: tag.tag,
-            confidence: tag.confidence,
-            selected: tag.confidence >= 0.8,
-          }));
-
-        setSuggestedTags(suggestions);
-        setShowTagDialog(true);
-      } catch (err) {
-        console.error("Error getting tag suggestions:", err);
-        setError("Failed to get tag suggestions");
-      }
     } catch (err) {
       console.error("Error updating note:", err);
       setError("Failed to save note");
@@ -350,6 +354,146 @@ export default function NotePage() {
     );
   }, []);
 
+  // Function to update category
+  const updateCategory = useCallback(
+    async (category: string) => {
+      if (!note) return;
+
+      try {
+        setUpdatingField("category");
+
+        await updateNote({
+          id: Number(noteId),
+          note: {
+            category,
+            content: note.content, // Include the existing content
+          },
+        }).unwrap();
+
+        // Refetch the note data
+        await refetch();
+      } catch (err) {
+        console.error("Error updating category:", err);
+        setError("Failed to update category");
+      } finally {
+        setUpdatingField(null);
+      }
+    },
+    [note, noteId, updateNote, refetch]
+  );
+
+  // Function to update zone
+  const updateZone = useCallback(
+    async (zone: string) => {
+      if (!note) return;
+
+      try {
+        setUpdatingField("zone");
+
+        await updateNote({
+          id: Number(noteId),
+          note: {
+            zone,
+            content: note.content, // Include the existing content
+          },
+        }).unwrap();
+
+        // Refetch the note data
+        await refetch();
+      } catch (err) {
+        console.error("Error updating zone:", err);
+        setError("Failed to update zone");
+      } finally {
+        setUpdatingField(null);
+      }
+    },
+    [note, noteId, updateNote, refetch]
+  );
+
+  const getCategoryIcon = (
+    category: string | undefined,
+    selected?: boolean
+  ) => {
+    const size = selected ? "h-4 w-4" : "h-3.5 w-3.5";
+
+    switch (category) {
+      case "To-Do":
+        return (
+          <ListTodo
+            className={`${size} ${
+              selected ? "text-blue-600" : "text-muted-foreground"
+            }`}
+          />
+        );
+      case "Scratchpad":
+        return (
+          <Pencil
+            className={`${size} ${
+              selected ? "text-green-600" : "text-muted-foreground"
+            }`}
+          />
+        );
+      case "Collections":
+        return (
+          <Layers
+            className={`${size} ${
+              selected ? "text-pink-600" : "text-muted-foreground"
+            }`}
+          />
+        );
+      case "Brainstorm":
+        return (
+          <Lightbulb
+            className={`${size} ${
+              selected ? "text-yellow-600" : "text-muted-foreground"
+            }`}
+          />
+        );
+      case "Journal":
+        return (
+          <Book
+            className={`${size} ${
+              selected ? "text-purple-600" : "text-muted-foreground"
+            }`}
+          />
+        );
+      case "Meeting":
+        return (
+          <Users
+            className={`${size} ${
+              selected ? "text-red-600" : "text-muted-foreground"
+            }`}
+          />
+        );
+      case "Research":
+        return (
+          <Search
+            className={`${size} ${
+              selected ? "text-teal-600" : "text-muted-foreground"
+            }`}
+          />
+        );
+      case "Learning":
+        return (
+          <GraduationCap
+            className={`${size} ${
+              selected ? "text-indigo-600" : "text-muted-foreground"
+            }`}
+          />
+        );
+      case "Feedback":
+        return (
+          <MessageSquare
+            className={`${size} ${
+              selected ? "text-orange-600" : "text-muted-foreground"
+            }`}
+          />
+        );
+      default:
+        return <FolderKanban className={`${size} text-muted-foreground/50`} />;
+    }
+  };
+
   return (
     <div className="space-y-6 flex flex-col flex-1">
       <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
@@ -482,13 +626,13 @@ export default function NotePage() {
         </div>
       ) : (
         <div className="space-y-4 flex flex-col flex-1">
-          <div className="flex flex-col gap-1 text-muted-foreground text-xs">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground text-xs">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
               <span>Created: {formatDate(note.created_at)}</span>
             </div>
             {lastSaved && (
-              <div className="flex items-center gap-2 ml-6">
+              <div className="flex items-center gap-2">
                 {saving ? (
                   <span>Saving...</span>
                 ) : (
@@ -496,43 +640,145 @@ export default function NotePage() {
                 )}
               </div>
             )}
-          </div>
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 items-center">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Tag className="h-4 w-4" />
-                <span>Tags:</span>
+            {note.category !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Category:</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-6 w-8 px-1 flex items-center justify-center"
+                    >
+                      {updatingField === "category" ? (
+                        <div className="w-3 h-3 border-t-2 border-muted-foreground rounded-full animate-spin" />
+                      ) : (
+                        getCategoryIcon(note.category)
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    <DropdownMenuItem onClick={() => updateCategory("")}>
+                      <span>None</span>
+                      {!note.category && <Check className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                    {CATEGORIES.map((category) => (
+                      <DropdownMenuItem
+                        key={category}
+                        onClick={() => updateCategory(category)}
+                      >
+                        {getCategoryIcon(category, true)}
+                        <span className="ml-2">{category}</span>
+                        {note.category === category && (
+                          <Check className="ml-auto h-4 w-4" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              {tags.map((tag) => (
-                <Badge
-                  key={tag.id}
-                  variant="secondary"
-                  className="text-xs flex items-center gap-1.5 pr-1 group"
-                >
-                  <span>{tag.tag}</span>
-                  <span className="opacity-60">
-                    {Math.round(tag.confidence * 100)}%
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleTagDelete(tag.tag);
-                    }}
-                    className="ml-1 p-0.5 rounded-full opacity-0 group-hover:opacity-70 hover:opacity-100 hover:bg-muted-foreground/10 transition-opacity"
-                    title="Remove tag"
-                    aria-label={`Remove tag ${tag.tag}`}
-                    disabled={tagDeleting === tag.tag}
-                  >
-                    {tagDeleting === tag.tag ? (
-                      <div className="w-3 h-3 border-t-2 border-muted-foreground rounded-full animate-spin"></div>
-                    ) : (
-                      <X className="h-3 w-3" />
-                    )}
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
+            )}
+            {note.zone !== undefined && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Zone:</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`h-6 w-8 px-1 flex items-center justify-center ${
+                        note.zone === "personal"
+                          ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                          : note.zone === "work"
+                          ? "bg-green-50 text-green-700 hover:bg-green-100"
+                          : note.zone === "other"
+                          ? "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                          : ""
+                      }`}
+                    >
+                      {updatingField === "zone" ? (
+                        <div className="w-3 h-3 border-t-2 border-muted-foreground rounded-full animate-spin" />
+                      ) : note.zone === "personal" ? (
+                        <Home className="h-3.5 w-3.5" />
+                      ) : note.zone === "work" ? (
+                        <Briefcase className="h-3.5 w-3.5" />
+                      ) : note.zone === "other" ? (
+                        <Globe className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3 opacity-50" />
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-36">
+                    <DropdownMenuItem onClick={() => updateZone("")}>
+                      <span>None</span>
+                      {!note.zone && <Check className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => updateZone("personal")}>
+                      <Home className="mr-2 h-4 w-4 text-blue-600" />
+                      <span>Personal</span>
+                      {note.zone === "personal" && (
+                        <Check className="ml-auto h-4 w-4" />
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => updateZone("work")}>
+                      <Briefcase className="mr-2 h-4 w-4 text-green-600" />
+                      <span>Work</span>
+                      {note.zone === "work" && (
+                        <Check className="ml-auto h-4 w-4" />
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => updateZone("other")}>
+                      <Globe className="mr-2 h-4 w-4 text-gray-600" />
+                      <span>Other</span>
+                      {note.zone === "other" && (
+                        <Check className="ml-auto h-4 w-4" />
+                      )}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+            {tags.length > 0 && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  <span className="font-medium">Tags:</span>
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {tags.map((tag) => (
+                    <Badge
+                      key={tag.id}
+                      variant="secondary"
+                      className="text-xs flex items-center gap-1.5 pr-1 group"
+                    >
+                      <span>{tag.tag}</span>
+                      <span className="opacity-60">
+                        {Math.round(tag.confidence * 100)}%
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleTagDelete(tag.tag);
+                        }}
+                        className="ml-1 p-0.5 rounded-full opacity-0 group-hover:opacity-70 hover:opacity-100 hover:bg-muted-foreground/10 transition-opacity"
+                        title="Remove tag"
+                        aria-label={`Remove tag ${tag.tag}`}
+                        disabled={tagDeleting === tag.tag}
+                      >
+                        {tagDeleting === tag.tag ? (
+                          <div className="w-3 h-3 border-t-2 border-muted-foreground rounded-full animate-spin"></div>
+                        ) : (
+                          <X className="h-3 w-3" />
+                        )}
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
           <div
             className="w-full border rounded-md overflow-hidden flex-1 cursor-text"
             onClick={focusEditor}

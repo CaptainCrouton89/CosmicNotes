@@ -16,8 +16,6 @@ export async function GET(
       throw new UserError("Note ID is required");
     }
 
-    console.log("id", id);
-
     const supabase = await createClient();
     const { data: note, error } = await supabase
       .from("cosmic_memory")
@@ -59,33 +57,70 @@ export async function PUT(
     }
 
     const body = await request.json();
+    const supabase = await createClient();
+    const updateData: any = {};
 
-    if (!body.content && body.content !== "") {
-      throw new UserError("Note content is required");
+    // First, fetch the current note to check what's changing
+    const { data: currentNote, error: fetchError } = await supabase
+      .from("cosmic_memory")
+      .select("content")
+      .eq("id", parseInt(id))
+      .single();
+
+    if (fetchError) {
+      throw new ApplicationError("Failed to fetch note for update");
     }
 
-    const supabase = await createClient();
+    if (!currentNote) {
+      throw new UserError("Note not found");
+    }
 
-    // Generate new embedding for the updated content
-    const embedding = await generateEmbedding(body.content);
+    // Handle content update (with embedding regeneration) only if content is provided and different
+    if (body.content !== undefined) {
+      // Only validate content if it's being updated
+      if (body.content === "" && currentNote.content !== "") {
+        throw new UserError("Note content cannot be empty");
+      }
 
-    // Update the note with new content and embedding
+      // Only regenerate embedding if content has changed
+      if (body.content !== currentNote.content) {
+        updateData.content = body.content;
+        updateData.embedding = await generateEmbedding(body.content);
+      }
+    }
+
+    // Add other fields that might be updated
+    ["title", "category", "zone"].forEach((field) => {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field];
+      }
+    });
+
+    // If no fields to update, return the current note
+    if (Object.keys(updateData).length === 0) {
+      const { data: note, error } = await supabase
+        .from("cosmic_memory")
+        .select("*, cosmic_tags(tag, confidence, created_at)")
+        .eq("id", parseInt(id))
+        .single();
+
+      if (error) {
+        throw new ApplicationError("Failed to fetch updated note");
+      }
+
+      return NextResponse.json({ note });
+    }
+
+    // Update the note with only the changed fields
     const { data: note, error } = await supabase
       .from("cosmic_memory")
-      .update({
-        content: body.content,
-        embedding,
-      })
+      .update(updateData)
       .eq("id", parseInt(id))
-      .select()
+      .select("*, cosmic_tags(tag, confidence, created_at)")
       .single();
 
     if (error) {
       throw new ApplicationError("Failed to update note");
-    }
-
-    if (!note) {
-      throw new UserError("Note not found");
     }
 
     return NextResponse.json({ note });
