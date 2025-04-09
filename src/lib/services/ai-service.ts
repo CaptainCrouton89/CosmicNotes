@@ -161,3 +161,43 @@ export async function generateNoteFields(content: string) {
     zone: result.object.zone,
   };
 }
+
+export async function generateWeeklyReview(notes: Note[]) {
+  const result = await generateObject({
+    model: openai("gpt-4o-mini"),
+    temperature: 0.3,
+    topP: 0.1,
+    system:
+      "You are a thoughtful assistant that helps users reflect on their notes from the past week. Create a helpful summary that identifies themes, patterns, and insights.",
+    prompt: `
+# Weekly Notes Review
+
+Below are notes from the past week:
+
+${notes
+  .map(
+    (note) => `
+## ${note.title} (${note.category}, ${note.zone})
+${note.content}
+`
+  )
+  .join("\n\n")}
+
+# Instructions
+1. Create a comprehensive weekly summary that identifies main themes across the notes
+2. Highlight important insights, patterns, or trends
+3. Group related topics together
+4. Format as a well-structured markdown document with sections and bullet points where appropriate
+5. Keep your summary concise but thorough, capturing the most valuable information
+`,
+    schema: z.object({
+      weeklyReview: z
+        .string()
+        .describe(
+          "A weekly summary of the user's notes, formatted in markdown"
+        ),
+    }),
+  });
+
+  return result.object.weeklyReview;
+}

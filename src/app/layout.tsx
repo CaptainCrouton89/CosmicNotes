@@ -1,4 +1,4 @@
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/app-sidebar/app-sidebar";
 import { Providers } from "@/components/providers";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import { PWAMeta } from "@/components/pwa-meta";

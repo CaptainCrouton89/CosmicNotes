@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  ChevronDown,
-  ChevronRight,
+  BookOpen,
   Clock,
   Home,
   Layers,
+  LayoutDashboard,
   MessageCircle,
   Plus,
   RefreshCw,
@@ -14,7 +14,6 @@ import {
   Tag,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -33,11 +32,10 @@ import { clustersApi } from "@/lib/redux/services/clustersApi";
 import { notesApi } from "@/lib/redux/services/notesApi";
 import { tagFamilyApi } from "@/lib/redux/services/tagFamilyApi";
 import { useMemo } from "react";
+import { ExpandableSection } from "./expandable-section";
+import { NotesList } from "./notes-list";
 
 export function AppSidebar() {
-  // Collection notes section state
-  const [isCollectionExpanded, setIsCollectionExpanded] = useState(true);
-
   // Notes query
   const {
     data: notesData,
@@ -72,35 +70,49 @@ export function AppSidebar() {
   };
 
   // Filter notes by time periods and category
-  const { lastDayNotes, lastWeekNotes, collectionNotes } = useMemo(() => {
-    if (!notesData?.notes) {
-      return { lastDayNotes: [], lastWeekNotes: [], collectionNotes: [] };
-    }
+  const { lastDayNotes, lastWeekNotes, collectionNotes, journalNotes } =
+    useMemo(() => {
+      if (!notesData?.notes) {
+        return {
+          lastDayNotes: [],
+          lastWeekNotes: [],
+          collectionNotes: [],
+          journalNotes: [],
+        };
+      }
 
-    const now = new Date();
-    const oneDayAgo = new Date(now);
-    oneDayAgo.setDate(now.getDate() - 1);
+      const now = new Date();
+      const oneDayAgo = new Date(now);
+      oneDayAgo.setDate(now.getDate() - 1);
 
-    const oneWeekAgo = new Date(now);
-    oneWeekAgo.setDate(now.getDate() - 7);
+      const oneWeekAgo = new Date(now);
+      oneWeekAgo.setDate(now.getDate() - 7);
 
-    const lastDayNotes = notesData.notes.filter((note) => {
-      const noteDate = new Date(note.created_at || note.updated_at);
-      return noteDate >= oneDayAgo;
-    });
+      const lastDayNotes = notesData.notes.filter((note) => {
+        const noteDate = new Date(note.created_at || note.updated_at);
+        return noteDate >= oneDayAgo;
+      });
 
-    const lastWeekNotes = notesData.notes.filter((note) => {
-      const noteDate = new Date(note.created_at || note.updated_at);
-      return noteDate >= oneWeekAgo && noteDate < oneDayAgo;
-    });
+      const lastWeekNotes = notesData.notes.filter((note) => {
+        const noteDate = new Date(note.created_at || note.updated_at);
+        return noteDate >= oneWeekAgo && noteDate < oneDayAgo;
+      });
 
-    // Filter notes with Collections category
-    const collectionNotes = notesData.notes.filter(
-      (note) => note.category === "Collections"
-    );
+      const collectionNotes = notesData.notes.filter((note) => {
+        return note.category === "Collections";
+      });
 
-    return { lastDayNotes, lastWeekNotes, collectionNotes };
-  }, [notesData]);
+      const journalNotes = notesData.notes.filter((note) => {
+        return note.category === "Journal";
+      });
+
+      return {
+        lastDayNotes,
+        lastWeekNotes,
+        collectionNotes,
+        journalNotes,
+      };
+    }, [notesData]);
 
   return (
     <Sidebar>
@@ -117,6 +129,14 @@ export function AppSidebar() {
                   <Link href="/">
                     <Home className="h-4 w-4" />
                     <span>Home</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span>Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -141,60 +161,32 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Collections Section */}
-        <SidebarGroup>
-          <SidebarGroupLabel
-            className="flex items-center gap-2 justify-between cursor-pointer"
-            onClick={() => setIsCollectionExpanded(!isCollectionExpanded)}
-          >
-            <span className="flex items-center gap-2">
-              <Layers className="h-4 w-4" />
-              <span>Collections</span>
-            </span>
-            {isCollectionExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </SidebarGroupLabel>
-          {isCollectionExpanded && (
-            <SidebarGroupContent>
-              {notesLoading ? (
-                <SidebarMenu>
-                  {Array.from({ length: 3 }).map((_, index) => (
-                    <SidebarMenuItem key={index}>
-                      <SidebarMenuSkeleton showIcon />
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              ) : notesError ? (
-                <div className="px-4 py-2 text-red-500">An error occurred</div>
-              ) : collectionNotes.length === 0 ? (
-                <div className="px-4 py-2 text-muted-foreground">
-                  No collection notes found
-                </div>
-              ) : (
-                <SidebarMenu>
-                  {collectionNotes.map((note) => (
-                    <SidebarMenuItem key={note.id}>
-                      <SidebarMenuButton className="w-full text-left" asChild>
-                        <Link
-                          href={`/note/${note.id}`}
-                          className="flex justify-between"
-                        >
-                          <span>
-                            {note.title ||
-                              note.cosmic_tags?.[0]?.tag ||
-                              "Untitled Collection"}
-                          </span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              )}
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
+        <ExpandableSection
+          title="Collections"
+          icon={<Layers className="h-4 w-4" />}
+        >
+          <NotesList
+            notes={collectionNotes}
+            emptyMessage="No collection notes found"
+            loading={notesLoading}
+            error={notesError}
+            titleFallback="Untitled Collection"
+          />
+        </ExpandableSection>
+
+        {/* Journal Section */}
+        <ExpandableSection
+          title="Journal"
+          icon={<BookOpen className="h-4 w-4" />}
+        >
+          <NotesList
+            notes={journalNotes}
+            emptyMessage="No journal entries found"
+            loading={notesLoading}
+            error={notesError}
+            titleFallback="Untitled Entry"
+          />
+        </ExpandableSection>
 
         {/* Tag Families */}
         <SidebarGroup>
@@ -279,41 +271,12 @@ export function AppSidebar() {
             Last Day
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            {notesLoading ? (
-              // Loading state
-              <SidebarMenu>
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <SidebarMenuItem key={index}>
-                    <SidebarMenuSkeleton showIcon />
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            ) : notesError ? (
-              <div className="px-4 py-2 text-red-500">An error occurred</div>
-            ) : lastDayNotes.length === 0 ? (
-              <div className="px-4 py-2 text-muted-foreground">
-                No notes in the last 24 hours
-              </div>
-            ) : (
-              <SidebarMenu>
-                {lastDayNotes.map((note) => (
-                  <SidebarMenuItem key={note.id}>
-                    <SidebarMenuButton className="w-full text-left" asChild>
-                      <Link
-                        href={`/note/${note.id}`}
-                        className="flex justify-between"
-                      >
-                        <span>
-                          {note.title ||
-                            note.cosmic_tags?.[0]?.tag ||
-                            "Untitled"}
-                        </span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            )}
+            <NotesList
+              notes={lastDayNotes}
+              emptyMessage="No notes in the last 24 hours"
+              loading={notesLoading}
+              error={notesError}
+            />
           </SidebarGroupContent>
         </SidebarGroup>
 
@@ -324,41 +287,12 @@ export function AppSidebar() {
             Last Week
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            {notesLoading ? (
-              // Loading state
-              <SidebarMenu>
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <SidebarMenuItem key={index}>
-                    <SidebarMenuSkeleton showIcon />
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            ) : notesError ? (
-              <div className="px-4 py-2 text-red-500">An error occurred</div>
-            ) : lastWeekNotes.length === 0 ? (
-              <div className="px-4 py-2 text-muted-foreground">
-                No notes in the last week
-              </div>
-            ) : (
-              <SidebarMenu>
-                {lastWeekNotes.map((note) => (
-                  <SidebarMenuItem key={note.id}>
-                    <SidebarMenuButton className="w-full text-left" asChild>
-                      <Link
-                        href={`/note/${note.id}`}
-                        className="flex justify-between"
-                      >
-                        <span>
-                          {note.title ||
-                            note.cosmic_tags?.[0]?.tag ||
-                            "Untitled"}
-                        </span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            )}
+            <NotesList
+              notes={lastWeekNotes}
+              emptyMessage="No notes in the last week"
+              loading={notesLoading}
+              error={notesError}
+            />
           </SidebarGroupContent>
         </SidebarGroup>
 

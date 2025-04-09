@@ -12,11 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CATEGORIES } from "@/lib/constants";
 import { notesApi } from "@/lib/redux/services/notesApi";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
-import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // Define the TagSuggestion interface
 interface TagSuggestion {
@@ -27,6 +28,7 @@ interface TagSuggestion {
 
 export default function Home() {
   const [note, setNote] = useState("");
+  const [category, setCategory] = useState<string>("");
   const [createNote, { isLoading: isSaving }] =
     notesApi.useCreateNoteMutation();
   const editorRef = useRef<MDXEditorMethods>(null);
@@ -36,6 +38,15 @@ export default function Home() {
   const [savingTags, setSavingTags] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Get category from URL if present
+  useEffect(() => {
+    const categoryParam = searchParams.get("category");
+    if (categoryParam && CATEGORIES.includes(categoryParam)) {
+      setCategory(categoryParam);
+    }
+  }, [searchParams]);
 
   const handleEditorChange = useCallback((markdown: string) => {
     setNote(markdown);
@@ -56,10 +67,11 @@ export default function Home() {
       // Get the latest content from the editor
       const currentContent = editorRef.current?.getMarkdown() || note;
 
-      // Create the note
+      // Create the note with category if specified
       const result = await createNote({
         content: currentContent,
         embedding: "",
+        category: category || undefined, // Only include if set
       }).unwrap();
 
       // Store the created note ID for tag operations
@@ -104,6 +116,7 @@ export default function Home() {
 
         // Clear the editor even if tag suggestions fail
         setNote("");
+        setCategory(""); // Reset category too
         if (editorRef.current) {
           editorRef.current.setMarkdown("");
         }
@@ -147,6 +160,7 @@ export default function Home() {
 
       // Clear the editor after successful save
       setNote("");
+      setCategory(""); // Reset category too
       if (editorRef.current) {
         editorRef.current.setMarkdown("");
       }
@@ -165,6 +179,7 @@ export default function Home() {
     // Just close the dialog and clear the editor
     setShowTagDialog(false);
     setNote("");
+    setCategory(""); // Reset category too
     if (editorRef.current) {
       editorRef.current.setMarkdown("");
     }
@@ -183,7 +198,10 @@ export default function Home() {
       )}
 
       <div className="space-y-4 flex-1 min-h-0 flex flex-col">
-        <h2 className="text-xl font-semibold mb-1 md:mb-4">New Note</h2>
+        <div className="flex items-center justify-between mb-1 md:mb-4">
+          <h2 className="text-xl font-semibold">New Note</h2>
+          {category && <Badge className="ml-2">{category}</Badge>}
+        </div>
         <div
           className="w-full border rounded-md overflow-hidden flex-1 min-h-0 cursor-text"
           onClick={focusEditor}

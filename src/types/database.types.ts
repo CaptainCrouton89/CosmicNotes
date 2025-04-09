@@ -204,6 +204,24 @@ export type Database = {
         }
         Relationships: []
       }
+      cosmic_note_review: {
+        Row: {
+          created_at: string
+          id: number
+          review: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          review: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          review?: string
+        }
+        Relationships: []
+      }
       cosmic_tag_family: {
         Row: {
           created_at: string

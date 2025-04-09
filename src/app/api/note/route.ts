@@ -151,7 +151,7 @@ export async function GET(req: NextRequest) {
     } = await supabaseClient
       .from("cosmic_memory")
       .select(
-        "id, title, created_at, updated_at, metadata, cosmic_tags(tag, confidence, created_at)",
+        "id, title, created_at, updated_at, metadata, category, zone, cosmic_tags(tag, confidence, created_at)",
         {
           count: "exact",
         }
