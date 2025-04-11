@@ -207,7 +207,11 @@ export default function TagPage() {
         {/* Cluster summary and/or Generate Cluster button */}
         {activeCluster && (
           <>
-            <ClusterSummary cluster={activeCluster} />
+            <ClusterSummary
+              cluster={activeCluster}
+              notes={categoryNotes}
+              tagId={tagId}
+            />
 
             {/* Show generate button if cluster is dirty */}
             {activeCluster.dirty && (

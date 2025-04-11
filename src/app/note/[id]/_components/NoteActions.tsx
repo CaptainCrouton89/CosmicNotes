@@ -15,7 +15,6 @@ interface NoteActionsProps {
   hasChanges: boolean;
   isRefreshing: boolean;
   isSaving: boolean;
-  isDeleting: boolean;
   disabled: boolean;
 }
 
@@ -26,7 +25,6 @@ export function NoteActions({
   hasChanges,
   isRefreshing,
   isSaving,
-  isDeleting,
   disabled,
 }: NoteActionsProps) {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);

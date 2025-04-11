@@ -15,7 +15,7 @@ export const GET = async (
     const items = await itemService.getItemsByNoteId(noteId);
 
     return NextResponse.json(items, { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch items" },
       { status: 500 }

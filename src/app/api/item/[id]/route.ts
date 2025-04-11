@@ -25,7 +25,7 @@ export async function DELETE(
     // First get the item to ensure it exists
     try {
       await itemService.getItem(itemId);
-    } catch (error) {
+    } catch {
       throw new UserError("Item not found");
     }
 

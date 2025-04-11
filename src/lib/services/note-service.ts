@@ -77,7 +77,7 @@ export class NoteService {
 
     return {
       ...data,
-      metadata: data.metadata as any,
+      metadata: data.metadata as Record<string, unknown>,
       tags: tags || [],
       items: data.cosmic_collection_item || [],
     } as NoteWithTagsAndItems;
@@ -123,7 +123,7 @@ export class NoteService {
   }
 
   private async upsertTags(tags?: string[]): Promise<number[]> {
-    let tagIds: number[] = [];
+    const tagIds: number[] = [];
     if (tags && tags.length > 0) {
       const { data: existingTags, error: tagsError } = await this.supabase
         .from("cosmic_tags")
@@ -157,7 +157,7 @@ export class NoteService {
     tags?: string[],
     tagIds?: number[]
   ): Promise<void> {
-    let allTagIds = tagIds || [];
+    const allTagIds = tagIds || [];
     allTagIds.push(...(await this.upsertTags(tags)));
 
     if (allTagIds.length > 0) {
@@ -300,7 +300,7 @@ export class NoteService {
   }
 
   async deleteNote(id: number): Promise<void> {
-    const { data: noteTagMaps, error: noteTagMapsError } = await this.supabase
+    const { error: noteTagMapsError } = await this.supabase
       .from("cosmic_memory_tag_map")
       .delete()
       .eq("note", id);
@@ -332,7 +332,7 @@ export class NoteService {
 
     return data.map((note) => ({
       ...note,
-      metadata: note.metadata as any,
+      metadata: note.metadata as Record<string, unknown>,
       tags: note.cosmic_memory_tag_map?.map((map) => map.tag) || [],
     })) as Note[];
   }
@@ -354,7 +354,7 @@ export class NoteService {
 
     return data.map((note) => ({
       ...note,
-      metadata: note.metadata as any,
+      metadata: note.metadata as Record<string, unknown>,
       tags: note.cosmic_memory_tag_map?.map((map) => map.tag) || [],
     })) as Note[];
   }
@@ -381,7 +381,7 @@ export class NoteService {
       .filter((note) => note !== null)
       .map((note) => ({
         ...note,
-        metadata: note.metadata as any,
+        metadata: note.metadata as Record<string, unknown>,
         tags: note.cosmic_memory_tag_map?.map((map) => map.tag) || [],
       })) as Note[];
   }
@@ -403,7 +403,7 @@ export class NoteService {
 
     return data.map((note) => ({
       ...note,
-      metadata: note.metadata as any,
+      metadata: note.metadata as Record<string, unknown>,
       tags: note.cosmic_memory_tag_map?.map((map) => map.tag) || [],
     })) as Note[];
   }

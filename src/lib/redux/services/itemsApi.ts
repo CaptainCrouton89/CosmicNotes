@@ -29,7 +29,7 @@ export const itemsApi = createApi({
         url: `item/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [{ type: "Item", id: "LIST" }],
+      invalidatesTags: () => [{ type: "Item", id: "LIST" }],
     }),
     getItemsByNoteId: builder.query<Item[], number>({
       query: (noteId) => `note/${noteId}/item`,

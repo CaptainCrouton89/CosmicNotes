@@ -111,21 +111,6 @@ export default function Dashboard() {
     };
   }, [notesData]);
 
-  // Get recent tag families
-  const recentTags = useMemo(() => {
-    if (!tagsData) {
-      return [];
-    }
-
-    // Sort by created_at and take the 6 most recent
-    return [...tagsData]
-      .sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
-      .slice(0, 6);
-  }, [tagsData]);
-
   // Extract title from note
   const getTitle = useCallback(
     (note: { title?: string; category?: string }) => {

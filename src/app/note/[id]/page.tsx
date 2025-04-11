@@ -51,8 +51,7 @@ export default function NotePage() {
     updateNoteTitle,
   } = useNoteEditor(noteId);
 
-  const { tags, tagDeleting, handleTagDelete, addCustomTag, addTag } =
-    useNoteTags(noteId);
+  const { tags, tagDeleting, handleTagDelete, addTag } = useNoteTags(noteId);
 
   const { updatingField, updateCategory, updateZone } = useNoteMetadata(
     noteId,
@@ -187,7 +186,6 @@ export default function NotePage() {
           hasChanges={hasChanges}
           isRefreshing={refreshing}
           isSaving={saving}
-          isDeleting={deleting}
           disabled={!note || isEditingTitle}
         />
       </div>

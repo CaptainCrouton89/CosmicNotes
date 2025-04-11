@@ -1,7 +1,7 @@
 import { initializeServices } from "@/lib/services";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export const GET = async (request: NextRequest) => {
+export const GET = async () => {
   try {
     // Initialize services with proper dependency setup
     const { tagService } = await initializeServices();

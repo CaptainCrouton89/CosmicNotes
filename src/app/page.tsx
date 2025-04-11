@@ -12,20 +12,18 @@ import { CATEGORIES, Category, Zone } from "@/types/types";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 import { SaveIcon } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 // Component that uses useSearchParams
 function HomeContent() {
   const [note, setNote] = useState("");
   const [category, setCategory] = useState<Category>("scratchpad");
-  const [zone, setZone] = useState<Zone>("personal");
+  const [zone] = useState<Zone>("personal");
   const [createNote, { isLoading: isSaving }] =
     notesApi.useCreateNoteMutation();
-  const [updateNote, { isLoading: isUpdating }] =
-    notesApi.useUpdateNoteMutation();
-  const [suggestTags, { isLoading: isLoadingTags }] =
-    tagsApi.useSuggestTagsMutation();
+  const [updateNote] = notesApi.useUpdateNoteMutation();
+  const [suggestTags] = tagsApi.useSuggestTagsMutation();
   const editorRef = useRef<MDXEditorMethods>(null);
   const [suggestedTags, setSuggestedTags] = useState<
     TagSuggestionWithSelected[]
@@ -33,9 +31,7 @@ function HomeContent() {
   const [showTagDialog, setShowTagDialog] = useState(false);
   const [createdNoteId, setCreatedNoteId] = useState<number | null>(null);
   const [savingTags, setSavingTags] = useState(false);
-  const [loadingTagSuggestions, setLoadingTagSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   // Get category from URL if present
@@ -207,7 +203,6 @@ function HomeContent() {
         onSaveTags={saveSelectedTags}
         onSkipTags={skipTags}
         isSaving={savingTags}
-        isLoading={loadingTagSuggestions}
       />
     </>
   );
