@@ -1,3 +1,4 @@
+import { ClusterService } from "@/lib/services/cluster-service";
 import { createClient } from "@/lib/supabase/server";
 import type { NextRequest } from "next/server";
 
@@ -9,52 +10,11 @@ export async function GET(
     const { id } = await params;
     const clusterId = parseInt(id, 10);
 
-    if (isNaN(clusterId)) {
-      return new Response(
-        JSON.stringify({
-          error: "Invalid cluster ID",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
+    const supabase = await createClient();
+    const clusterService = new ClusterService(supabase);
+    const cluster = await clusterService.getClusterById(clusterId);
 
-    const supabaseClient = await createClient();
-
-    const { data, error } = await supabaseClient
-      .from("cosmic_cluster")
-      .select("*")
-      .eq("id", clusterId)
-      .single();
-
-    if (error) {
-      return new Response(
-        JSON.stringify({
-          error: "Failed to fetch cluster",
-          details: error,
-        }),
-        {
-          status: error.code === "PGRST116" ? 404 : 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    if (!data) {
-      return new Response(
-        JSON.stringify({
-          error: "Cluster not found",
-        }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify(cluster), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

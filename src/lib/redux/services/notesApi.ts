@@ -1,31 +1,8 @@
 import { Database } from "@/types/database.types";
+import { CompleteNote, Note, PaginatedResponse } from "@/types/types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-type CosmicTag = {
-  tag: string;
-  confidence: number;
-  created_at: string;
-};
-
-type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"] & {
-  cosmic_tags: CosmicTag[];
-};
-
-// Create a more lightweight type for the notes list view
-type NoteListItem = Omit<Note, "content">;
-
 type NoteInput = Database["public"]["Tables"]["cosmic_memory"]["Insert"];
-
-interface PaginatedResponse {
-  notes: NoteListItem[];
-  pagination: {
-    page: number;
-    limit: number;
-    totalCount: number;
-    totalPages: number;
-    hasMore: boolean;
-  };
-}
 
 export const notesApi = createApi({
   reducerPath: "notesApi",
@@ -33,22 +10,25 @@ export const notesApi = createApi({
   tagTypes: ["Note"],
   endpoints: (builder) => ({
     getNotes: builder.query<
-      PaginatedResponse,
+      PaginatedResponse<Note>,
       { page?: number; limit?: number }
     >({
       query: ({ page = 1, limit = 10 }) => `note?page=${page}&limit=${limit}`,
       providesTags: (result) =>
         result
           ? [
-              ...result.notes.map(({ id }) => ({ type: "Note" as const, id })),
+              ...result.content.map(({ id }) => ({
+                type: "Note" as const,
+                id,
+              })),
               { type: "Note", id: "LIST" },
             ]
           : [{ type: "Note", id: "LIST" }],
     }),
 
-    getNote: builder.query<Note, number>({
+    getNote: builder.query<CompleteNote, number>({
       query: (id) => `note/${id}`,
-      transformResponse: (response: { note: Note }) => response.note,
+      transformResponse: (response: { note: CompleteNote }) => response.note,
       providesTags: (_, __, id) => [{ type: "Note", id }],
     }),
 
@@ -79,27 +59,32 @@ export const notesApi = createApi({
           : [{ type: "Note", id: "LIST" }],
     }),
 
-    createNote: builder.mutation<Note, NoteInput>({
+    createNote: builder.mutation<
+      CompleteNote,
+      NoteInput & { tags?: string[]; tagIds?: number[] }
+    >({
       query: (note) => ({
         url: "note",
         method: "POST",
         body: note,
       }),
-      transformResponse: (response: { success: boolean; note: Note }) =>
+      transformResponse: (response: { success: boolean; note: CompleteNote }) =>
         response.note,
       invalidatesTags: [{ type: "Note", id: "LIST" }],
     }),
 
     updateNote: builder.mutation<
-      Note,
-      { id: number; note: Partial<NoteInput> }
+      CompleteNote,
+      {
+        id: number;
+        note: Partial<NoteInput> & { tags?: string[]; tagIds?: number[] };
+      }
     >({
       query: ({ id, note }) => ({
         url: `note/${id}`,
         method: "PUT",
         body: note,
       }),
-      transformResponse: (response: { note: Note }) => response.note,
       invalidatesTags: (_, __, { id }) => [
         { type: "Note", id },
         { type: "Note", id: "LIST" },

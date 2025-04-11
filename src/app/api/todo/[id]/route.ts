@@ -15,7 +15,7 @@ export async function DELETE(
     const supabase = await createClient();
 
     const { error } = await supabase
-      .from("cosmic_todo_item")
+      .from("cosmic_collection_item")
       .delete()
       .eq("id", id);
 

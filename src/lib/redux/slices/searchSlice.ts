@@ -1,10 +1,18 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { notesApi } from "../services/notesApi";
 
+interface SearchResult {
+  id: number;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface SearchState {
   query: string;
   selectedCategory: string | null;
-  results: Record<string, unknown>[]; // Using Record for better typing than any
+  results: SearchResult[];
   hasSearched: boolean;
 }
 
@@ -37,7 +45,13 @@ const searchSlice = createSlice({
       notesApi.endpoints.searchNotes.matchFulfilled,
       (state, { payload }) => {
         if (payload && payload.notes) {
-          state.results = payload.notes;
+          state.results = payload.notes.map((note) => ({
+            id: note.id,
+            title: note.title,
+            content: note.content ?? "",
+            created_at: note.created_at,
+            updated_at: note.updated_at,
+          }));
           state.hasSearched = true;
         }
       }

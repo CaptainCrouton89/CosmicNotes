@@ -4,11 +4,11 @@ import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
 import { TagSelectionDialog } from "@/components/TagSelectionDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Zone } from "@/types/types";
 import "@mdxeditor/editor/style.css";
 import { ArrowLeft, Check, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { KeyboardEvent, useEffect, useState } from "react";
-import { Zone } from "../_types";
 import {
   CategorySelector,
   NoteActions,
@@ -62,7 +62,7 @@ export default function NotePage() {
 
   const { updatingField, updateCategory, updateZone } = useNoteMetadata(
     noteId,
-    note?.content
+    note?.content ?? ""
   );
 
   const { deleting, deleteNote } = useNoteActions(noteId);
@@ -227,8 +227,8 @@ export default function NotePage() {
               onAddTags={() => {
                 // Open dialog with existing tags as suggestions
                 const existingTags = tags.map((tag) => ({
-                  tag: tag.tag,
-                  confidence: tag.confidence,
+                  tag: tag.name,
+                  confidence: 1,
                 }));
 
                 // If no tags exist, start with empty suggestions
@@ -236,7 +236,12 @@ export default function NotePage() {
                   setShowTagDialog(true);
                 } else {
                   // Use existing tags as suggestions
-                  openTagDialog(existingTags);
+                  openTagDialog(
+                    existingTags.map((tag) => ({
+                      tag: tag.tag,
+                      confidence: 1,
+                    }))
+                  );
                 }
               }}
             />

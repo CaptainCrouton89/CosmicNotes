@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   MessageCircle,
   Plus,
-  RefreshCw,
   Search,
   Settings,
   Tag,
@@ -28,9 +27,8 @@ import {
   SidebarMenuItem,
   SidebarMenuSkeleton,
 } from "@/components/ui/sidebar";
-import { clustersApi } from "@/lib/redux/services/clustersApi";
 import { notesApi } from "@/lib/redux/services/notesApi";
-import { tagFamilyApi } from "@/lib/redux/services/tagFamilyApi";
+import { tagsApi } from "@/lib/redux/services/tagsApi";
 import { useMemo } from "react";
 import { ExpandableSection } from "./expandable-section";
 import { NotesList } from "./notes-list";
@@ -43,36 +41,20 @@ export function AppSidebar() {
     isLoading: notesLoading,
   } = notesApi.useGetNotesQuery({
     page: 1,
-    limit: 40,
+    limit: 100,
   });
 
   // Tag Families query
   const {
-    data: tagFamiliesData,
-    error: tagFamiliesError,
-    isLoading: tagFamiliesLoading,
-  } = tagFamilyApi.useGetTagFamiliesQuery({
-    page: 1,
-    limit: 50,
-  });
-
-  // Gather clusters mutation
-  const [gatherClusters, { isLoading: isGathering }] =
-    clustersApi.useGatherClustersMutation();
-
-  // Handle refresh clusters
-  const handleRefreshClusters = async () => {
-    try {
-      await gatherClusters().unwrap();
-    } catch (error) {
-      console.error("Error gathering clusters:", error);
-    }
-  };
+    data: tagsData,
+    error: tagsError,
+    isLoading: tagsLoading,
+  } = tagsApi.useGetAllTagsQuery();
 
   // Filter notes by time periods and category
   const { lastDayNotes, lastWeekNotes, collectionNotes, journalNotes } =
     useMemo(() => {
-      if (!notesData?.notes) {
+      if (!notesData?.content) {
         return {
           lastDayNotes: [],
           lastWeekNotes: [],
@@ -88,22 +70,22 @@ export function AppSidebar() {
       const oneWeekAgo = new Date(now);
       oneWeekAgo.setDate(now.getDate() - 7);
 
-      const lastDayNotes = notesData.notes.filter((note) => {
+      const lastDayNotes = notesData.content.filter((note) => {
         const noteDate = new Date(note.updated_at);
         return noteDate >= oneDayAgo;
       });
 
-      const lastWeekNotes = notesData.notes.filter((note) => {
+      const lastWeekNotes = notesData.content.filter((note) => {
         const noteDate = new Date(note.updated_at);
         return noteDate >= oneWeekAgo && noteDate < oneDayAgo;
       });
 
-      const collectionNotes = notesData.notes.filter((note) => {
-        return note.category === "Collections";
+      const collectionNotes = notesData.content.filter((note) => {
+        return note.category === "collection";
       });
 
-      const journalNotes = notesData.notes.filter((note) => {
-        return note.category === "Journal";
+      const journalNotes = notesData.content.filter((note) => {
+        return note.category === "journal";
       });
 
       return {
@@ -188,7 +170,7 @@ export function AppSidebar() {
           />
         </ExpandableSection>
 
-        {/* Tag Families */}
+        {/* Tags */}
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center gap-2 justify-between">
             <span className="flex items-center gap-2">
@@ -200,9 +182,9 @@ export function AppSidebar() {
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
-              Tag Families
+              Tags
             </span>
-            <Button
+            {/* <Button
               variant="ghost"
               size="icon"
               className="h-6 w-6"
@@ -212,10 +194,10 @@ export function AppSidebar() {
               <RefreshCw
                 className={`h-3.5 w-3.5 ${isGathering ? "animate-spin" : ""}`}
               />
-            </Button>
+            </Button> */}
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            {tagFamiliesLoading ? (
+            {tagsLoading ? (
               // Loading state
               <SidebarMenu>
                 {Array.from({ length: 3 }).map((_, index) => (
@@ -224,34 +206,30 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
-            ) : tagFamiliesError ? (
+            ) : tagsError ? (
               <div className="px-4 py-2 text-red-500">An error occurred</div>
-            ) : !tagFamiliesData?.tagFamilies ||
-              tagFamiliesData.tagFamilies.length === 0 ? (
+            ) : !tagsData || tagsData.length === 0 ? (
               <div className="px-4 py-2 text-muted-foreground">
-                No tag families found
+                No tags found
               </div>
             ) : (
               <SidebarMenu>
-                {tagFamiliesData.tagFamilies
-                  ? [...tagFamiliesData.tagFamilies]
-                      .sort((a, b) => a.tag.localeCompare(b.tag))
-                      .map((tagFamily) => (
-                        <SidebarMenuItem key={tagFamily.id}>
+                {tagsData
+                  ? [...tagsData]
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((tag) => (
+                        <SidebarMenuItem key={tag.id}>
                           <SidebarMenuButton
                             className="w-full text-left font-medium"
                             asChild
                           >
-                            <Link href={`/tag-family/${tagFamily.id}`}>
+                            <Link href={`/tag/${tag.id}`}>
                               <span className="flex justify-between items-center w-full">
-                                <span>{tagFamily.tag}</span>
+                                <span>{tag.name}</span>
                                 <span className="text-muted-foreground text-xs">
-                                  {tagFamily.clusters &&
-                                  tagFamily.clusters.length > 1
-                                    ? `${tagFamily.clusters.length} categories`
-                                    : tagFamily.tag_count > 1
-                                    ? `${tagFamily.tag_count} notes`
-                                    : `${tagFamily.tag_count} note`}
+                                  {tag.note_count > 1
+                                    ? `${tag.note_count} notes`
+                                    : `${tag.note_count} note`}
                                 </span>
                               </span>
                             </Link>

@@ -5,12 +5,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CATEGORIES } from "@/lib/constants";
+import { CATEGORIES, Category } from "@/types/types";
 import {
   Book,
   Check,
   Filter,
-  FolderKanban,
   GraduationCap,
   Layers,
   Lightbulb,
@@ -23,8 +22,8 @@ import {
 import { useCallback } from "react";
 
 interface CategoryFilterProps {
-  selectedCategory: string | null;
-  onSelectCategory: (category: string | null) => void;
+  selectedCategory: Category;
+  onSelectCategory: (category: Category) => void;
 }
 
 export const CategoryFilter: React.FC<CategoryFilterProps> = ({
@@ -32,11 +31,11 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   onSelectCategory,
 }) => {
   const getCategoryIcon = useCallback(
-    (categoryName: string | undefined, selected?: boolean) => {
+    (categoryName: Category, selected?: boolean) => {
       const size = selected ? "h-4 w-4" : "h-3.5 w-3.5";
 
       switch (categoryName) {
-        case "To-Do":
+        case "to-do":
           return (
             <ListTodo
               className={`${size} ${
@@ -44,7 +43,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
               }`}
             />
           );
-        case "Scratchpad":
+        case "scratchpad":
           return (
             <Pencil
               className={`${size} ${
@@ -52,7 +51,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
               }`}
             />
           );
-        case "Collections":
+        case "collection":
           return (
             <Layers
               className={`${size} ${
@@ -60,7 +59,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
               }`}
             />
           );
-        case "Brainstorm":
+        case "brainstorm":
           return (
             <Lightbulb
               className={`${size} ${
@@ -68,7 +67,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
               }`}
             />
           );
-        case "Journal":
+        case "journal":
           return (
             <Book
               className={`${size} ${
@@ -76,7 +75,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
               }`}
             />
           );
-        case "Meeting":
+        case "meeting":
           return (
             <Users
               className={`${size} ${
@@ -84,7 +83,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
               }`}
             />
           );
-        case "Research":
+        case "research":
           return (
             <Search
               className={`${size} ${
@@ -92,7 +91,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
               }`}
             />
           );
-        case "Learning":
+        case "learning":
           return (
             <GraduationCap
               className={`${size} ${
@@ -100,7 +99,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
               }`}
             />
           );
-        case "Feedback":
+        case "feedback":
           return (
             <MessageSquare
               className={`${size} ${
@@ -108,34 +107,30 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
               }`}
             />
           );
-        default:
-          return (
-            <FolderKanban className={`${size} text-muted-foreground/50`} />
-          );
       }
     },
     []
   );
 
-  const getCategoryColor = (category: string | null) => {
+  const getCategoryColor = (category: Category | null) => {
     switch (category) {
-      case "To-Do":
+      case "to-do":
         return "bg-blue-50 text-blue-700 hover:bg-blue-100";
-      case "Scratchpad":
+      case "scratchpad":
         return "bg-green-50 text-green-700 hover:bg-green-100";
-      case "Collections":
+      case "collection":
         return "bg-pink-50 text-pink-700 hover:bg-pink-100";
-      case "Brainstorm":
+      case "brainstorm":
         return "bg-yellow-50 text-yellow-700 hover:bg-yellow-100";
-      case "Journal":
+      case "journal":
         return "bg-purple-50 text-purple-700 hover:bg-purple-100";
-      case "Meeting":
+      case "meeting":
         return "bg-red-50 text-red-700 hover:bg-red-100";
-      case "Research":
+      case "research":
         return "bg-teal-50 text-teal-700 hover:bg-teal-100";
-      case "Learning":
+      case "learning":
         return "bg-indigo-50 text-indigo-700 hover:bg-indigo-100";
-      case "Feedback":
+      case "feedback":
         return "bg-orange-50 text-orange-700 hover:bg-orange-100";
       default:
         return "";
@@ -157,10 +152,6 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48">
-        <DropdownMenuItem onClick={() => onSelectCategory(null)}>
-          <span>All Categories</span>
-          {!selectedCategory && <Check className="ml-auto h-4 w-4" />}
-        </DropdownMenuItem>
         {CATEGORIES.map((cat) => (
           <DropdownMenuItem key={cat} onClick={() => onSelectCategory(cat)}>
             {getCategoryIcon(cat, true)}

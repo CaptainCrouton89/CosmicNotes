@@ -1,6 +1,4 @@
-import { Database } from "@/types/database.types";
-
-type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"];
+import { Note } from "@/types/types";
 
 const formatNote = (
   note: Note,
@@ -155,24 +153,22 @@ export const getPromptFunction = (
   category: string
 ): ((notes: Note[]) => SummaryPrompt) => {
   switch (category) {
-    case "Scratchpad":
+    case "scratchpad":
       return getScratchpadPrompt;
-    case "Collections":
+    case "collection":
       return getCollectionsPrompt;
-    case "Brainstorm":
+    case "brainstorm":
       return getBrainstormPrompt;
-    case "Journal":
+    case "journal":
       return getJournalPrompt;
-    case "Meeting":
+    case "meeting":
       return getMeetingPrompt;
-    case "Research":
+    case "research":
       return getResearchPrompt;
-    case "Learning":
+    case "learning":
       return getLearningPrompt;
-    case "Feedback":
+    case "feedback":
       return getFeedbackPrompt;
-    case "Learning":
-      return getLearningPrompt;
     default:
       throw new Error(`Unknown category: ${category}`);
   }

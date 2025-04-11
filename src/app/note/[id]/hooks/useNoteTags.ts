@@ -1,3 +1,4 @@
+import { notesApi } from "@/lib/redux/services/notesApi";
 import { tagsApi } from "@/lib/redux/services/tagsApi";
 import { useCallback, useState } from "react";
 
@@ -10,14 +11,12 @@ interface TagSuggestion {
 export function useNoteTags(noteId: number) {
   const [suggestedTags, setSuggestedTags] = useState<TagSuggestion[]>([]);
   const [showTagDialog, setShowTagDialog] = useState(false);
-  const [tagDeleting, setTagDeleting] = useState<string | null>(null);
+  const [tagDeleting, setTagDeleting] = useState<number | null>(null);
 
   // Use RTK Query hooks
-  const { data: tags = [] } = tagsApi.useGetTagsByNoteQuery(noteId, {
-    skip: !noteId,
-  });
+  const { data: note } = notesApi.useGetNoteQuery(noteId);
   const [deleteTag] = tagsApi.useDeleteTagMutation();
-  const [saveTags] = tagsApi.useSaveTagsMutation();
+  const [updateNote] = notesApi.useUpdateNoteMutation();
 
   // Toggle a tag selection in the suggestions dialog
   const toggleTagSelection = useCallback((index: number) => {
@@ -78,21 +77,24 @@ export function useNoteTags(noteId: number) {
           confidence: tag.confidence,
         }));
 
-      await saveTags({ noteId, tags: tagsToSave }).unwrap();
+      await updateNote({
+        id: noteId,
+        note: { tags: tagsToSave.map((tag) => tag.tag) },
+      }).unwrap();
       setShowTagDialog(false);
     } catch (err) {
       console.error("Error saving tags:", err);
     }
-  }, [noteId, suggestedTags, saveTags]);
+  }, [noteId, suggestedTags, updateNote]);
 
   // Handle tag deletion
   const handleTagDelete = useCallback(
-    async (tag: string) => {
+    async (tagId: number) => {
       if (!noteId) return;
 
       try {
-        setTagDeleting(tag);
-        await deleteTag({ noteId, tag }).unwrap();
+        setTagDeleting(tagId);
+        await deleteTag({ noteId, tagId }).unwrap();
       } catch (err) {
         console.error("Error deleting tag:", err);
       } finally {
@@ -120,7 +122,7 @@ export function useNoteTags(noteId: number) {
   );
 
   return {
-    tags,
+    tags: note?.tags ?? [],
     suggestedTags,
     showTagDialog,
     tagDeleting,

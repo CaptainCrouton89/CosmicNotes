@@ -129,80 +129,157 @@ export type Database = {
       }
       cosmic_cluster: {
         Row: {
-          category: string
+          category: Database["public"]["Enums"]["note_category"]
           created_at: string
+          dirty: boolean
           embedding: string
           id: number
           summary: string
-          tag_count: number
-          tag_family: number
+          tag: number
           updated_at: string
         }
         Insert: {
-          category?: string
+          category?: Database["public"]["Enums"]["note_category"]
           created_at?: string
+          dirty?: boolean
           embedding: string
           id?: number
           summary: string
-          tag_count: number
-          tag_family: number
+          tag: number
           updated_at?: string
         }
         Update: {
-          category?: string
+          category?: Database["public"]["Enums"]["note_category"]
           created_at?: string
+          dirty?: boolean
           embedding?: string
           id?: number
           summary?: string
-          tag_count?: number
-          tag_family?: number
+          tag?: number
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "cosmic_cluster_tag_family_fkey"
-            columns: ["tag_family"]
+            foreignKeyName: "cosmic_cluster_tag_fkey"
+            columns: ["tag"]
             isOneToOne: false
-            referencedRelation: "cosmic_tag_family"
+            referencedRelation: "cosmic_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cosmic_collection_item: {
+        Row: {
+          created_at: string
+          done: boolean
+          embedding: string | null
+          id: number
+          item: string
+          memory: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          embedding?: string | null
+          id?: number
+          item: string
+          memory?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          embedding?: string | null
+          id?: number
+          item?: string
+          memory?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cosmic_collection_item_memory_fkey"
+            columns: ["memory"]
+            isOneToOne: false
+            referencedRelation: "cosmic_memory"
             referencedColumns: ["id"]
           },
         ]
       }
       cosmic_memory: {
         Row: {
-          category: string
+          category: Database["public"]["Enums"]["note_category"]
           content: string
           created_at: string
           embedding: string
           id: number
           metadata: Json
           title: string
+          type: Database["public"]["Enums"]["cosmic_memory_type"]
           updated_at: string
-          zone: string
+          zone: Database["public"]["Enums"]["note_zone"]
         }
         Insert: {
-          category?: string
+          category?: Database["public"]["Enums"]["note_category"]
           content?: string
           created_at?: string
           embedding: string
           id?: number
           metadata?: Json
           title?: string
+          type?: Database["public"]["Enums"]["cosmic_memory_type"]
           updated_at?: string
-          zone?: string
+          zone: Database["public"]["Enums"]["note_zone"]
         }
         Update: {
-          category?: string
+          category?: Database["public"]["Enums"]["note_category"]
           content?: string
           created_at?: string
           embedding?: string
           id?: number
           metadata?: Json
           title?: string
+          type?: Database["public"]["Enums"]["cosmic_memory_type"]
           updated_at?: string
-          zone?: string
+          zone?: Database["public"]["Enums"]["note_zone"]
         }
         Relationships: []
+      }
+      cosmic_memory_tag_map: {
+        Row: {
+          created_at: string
+          id: number
+          note: number
+          tag: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          note: number
+          tag: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          note?: number
+          tag?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cosmic_memory_tag_map_tag_fkey"
+            columns: ["tag"]
+            isOneToOne: false
+            referencedRelation: "cosmic_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cosmic_tags_note_fkey"
+            columns: ["note"]
+            isOneToOne: false
+            referencedRelation: "cosmic_memory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cosmic_note_review: {
         Row: {
@@ -222,99 +299,32 @@ export type Database = {
         }
         Relationships: []
       }
-      cosmic_tag_family: {
+      cosmic_tags: {
         Row: {
           created_at: string
+          dirty: boolean
           id: number
+          name: string
           parent_tag: string | null
-          tag: string
-          tag_count: number
           updated_at: string
         }
         Insert: {
           created_at?: string
+          dirty?: boolean
           id?: number
+          name: string
           parent_tag?: string | null
-          tag: string
-          tag_count: number
           updated_at?: string
         }
         Update: {
           created_at?: string
+          dirty?: boolean
           id?: number
+          name?: string
           parent_tag?: string | null
-          tag?: string
-          tag_count?: number
           updated_at?: string
         }
         Relationships: []
-      }
-      cosmic_tags: {
-        Row: {
-          confidence: number
-          created_at: string
-          id: number
-          note: number
-          tag: string
-        }
-        Insert: {
-          confidence?: number
-          created_at?: string
-          id?: number
-          note: number
-          tag: string
-        }
-        Update: {
-          confidence?: number
-          created_at?: string
-          id?: number
-          note?: number
-          tag?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cosmic_tags_note_fkey"
-            columns: ["note"]
-            isOneToOne: false
-            referencedRelation: "cosmic_memory"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cosmic_todo_item: {
-        Row: {
-          created_at: string
-          done: boolean
-          id: number
-          item: string
-          tag: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          done?: boolean
-          id?: number
-          item: string
-          tag: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          done?: boolean
-          id?: number
-          item?: string
-          tag?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cosmic_todo_requirements_tag_fkey"
-            columns: ["tag"]
-            isOneToOne: false
-            referencedRelation: "cosmic_tag_family"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       cosmic_user_settings: {
         Row: {
@@ -809,17 +819,7 @@ export type Database = {
           match_threshold: number
           match_count: number
         }
-        Returns: {
-          category: string
-          content: string
-          created_at: string
-          embedding: string
-          id: number
-          metadata: Json
-          title: string
-          updated_at: string
-          zone: string
-        }[]
+        Returns: Database["public"]["CompositeTypes"]["matched_note"][]
       }
       match_page_sections: {
         Args: {
@@ -875,6 +875,18 @@ export type Database = {
       }
     }
     Enums: {
+      cosmic_memory_type: "note" | "collection"
+      note_category:
+        | "to-do"
+        | "scratchpad"
+        | "collection"
+        | "brainstorm"
+        | "journal"
+        | "meeting"
+        | "research"
+        | "learning"
+        | "feedback"
+      note_zone: "personal" | "work" | "other"
       priority: "low" | "medium" | "high"
       requirement_priority: "low" | "medium" | "high" | "critical"
       requirement_status:
@@ -894,9 +906,19 @@ export type Database = {
     CompositeTypes: {
       matched_cluster: {
         id: number | null
-        tag: string | null
-        tag_count: number | null
+        tag: number | null
         summary: string | null
+        created_at: string | null
+        updated_at: string | null
+        embedding: string | null
+        score: number | null
+      }
+      matched_note: {
+        id: number | null
+        title: string | null
+        content: string | null
+        zone: Database["public"]["Enums"]["note_zone"] | null
+        category: Database["public"]["Enums"]["note_category"] | null
         created_at: string | null
         updated_at: string | null
         embedding: string | null
@@ -1014,6 +1036,19 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cosmic_memory_type: ["note", "collection"],
+      note_category: [
+        "to-do",
+        "scratchpad",
+        "collection",
+        "brainstorm",
+        "journal",
+        "meeting",
+        "research",
+        "learning",
+        "feedback",
+      ],
+      note_zone: ["personal", "work", "other"],
       priority: ["low", "medium", "high"],
       requirement_priority: ["low", "medium", "high", "critical"],
       requirement_status: [

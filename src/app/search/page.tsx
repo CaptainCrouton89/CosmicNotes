@@ -8,41 +8,10 @@ import {
   setSearchQuery,
   setSelectedCategory,
 } from "@/lib/redux/slices/searchSlice";
+import { Cluster, Note } from "@/types/types";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SearchBox, SearchResults } from "./_components";
-
-// Define types for the cosmic tags
-interface CosmicTag {
-  tag: string;
-  confidence: number;
-  created_at: string;
-}
-
-// Define types for notes and clusters
-interface Note {
-  id: number;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  cosmic_tags?: CosmicTag[];
-  category: string;
-  zone: string;
-  type?: string;
-}
-
-interface SearchCluster {
-  id: number;
-  tag_family: number;
-  tag_family_name: string;
-  category: string;
-  tag_count: number;
-  summary: string;
-  created_at: string;
-  updated_at: string;
-  embedding: string;
-  type?: string;
-}
 
 export default function SearchPage() {
   const router = useRouter();
@@ -74,16 +43,16 @@ export default function SearchPage() {
 
   // Filter clusters based on search query
   const filteredClusters = searchQuery
-    ? (clusters
+    ? clusters
         .filter((cluster) =>
-          String(cluster.tag_family_name)
+          String(cluster.tag?.name)
             .toLowerCase()
             .includes(searchQuery.toLowerCase())
         )
         .map((cluster) => ({
           ...cluster,
           type: "cluster",
-        })) as (SearchCluster & { type: string })[])
+        }))
     : [];
 
   // Access our tag merge dialog hook
@@ -173,13 +142,16 @@ export default function SearchPage() {
   };
 
   const handleItemClick = (
-    item: Note | SearchCluster | { type: string; id: number }
+    item:
+      | (Note & { type: string })
+      | (Cluster & { type: string })
+      | { type: string; id: number }
   ) => {
     if (item.type === "cluster") {
-      const cluster = item as SearchCluster & { type: string };
+      const cluster = item as Cluster & { type: string };
       router.push(
-        `/tag-family/${encodeURIComponent(
-          String(cluster.tag_family)
+        `/tag/${encodeURIComponent(
+          String(cluster.tag?.id)
         )}?category=${encodeURIComponent(cluster.category)}`
       );
     } else {
@@ -213,7 +185,10 @@ export default function SearchPage() {
         isLoading={isLoading}
         isClustersLoading={isClustersLoading}
         filteredClusters={filteredClusters}
-        notes={searchData?.notes as unknown as Note[]}
+        notes={searchData?.notes.map((note) => ({
+          ...note,
+          type: "note",
+        }))}
         handleItemClick={handleItemClick}
         formatDate={formatDate}
         createMarkup={createMarkup}

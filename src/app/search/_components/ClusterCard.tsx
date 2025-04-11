@@ -1,28 +1,11 @@
+import { Cluster } from "@/types/types";
 import React from "react";
 
 interface ClusterCardProps {
-  cluster: {
-    id: number;
-    tag_family: number;
-    tag_family_name: string;
-    category: string;
-    tag_count: number;
-    summary: string;
-    created_at: string;
-    type: string;
-  };
-  onClick: (cluster: {
-    id: number;
-    tag_family: number;
-    tag_family_name: string;
-    category: string;
-    tag_count: number;
-    summary: string;
-    created_at: string;
-    type: string;
-  }) => void;
+  cluster: Cluster;
+  onClick: (cluster: Cluster) => void;
   formatDate: (dateString: string) => string;
-  highlightedTagFamily: React.ReactNode;
+  highlightedTag: React.ReactNode;
   highlightedSummary: React.ReactNode;
 }
 
@@ -30,7 +13,7 @@ export const ClusterCard: React.FC<ClusterCardProps> = ({
   cluster,
   onClick,
   formatDate,
-  highlightedTagFamily,
+  highlightedTag,
   highlightedSummary,
 }) => {
   return (
@@ -47,9 +30,9 @@ export const ClusterCard: React.FC<ClusterCardProps> = ({
         </span>
       </div>
       <h3 className="text-xl font-semibold mb-2 text-gray-900">
-        {highlightedTagFamily}
+        {highlightedTag}
         <span className="text-sm font-normal text-gray-600 ml-2">
-          ({cluster.tag_count} notes)
+          ({cluster.note_count} notes)
         </span>
       </h3>
       <div className="text-md mb-3">

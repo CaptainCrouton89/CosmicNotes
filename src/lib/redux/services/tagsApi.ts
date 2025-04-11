@@ -1,44 +1,33 @@
 import { Database } from "@/types/database.types";
+import { Category, CompleteTag, Tag } from "@/types/types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { notesApi } from "./notesApi";
 
-type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"];
-type Tag = Database["public"]["Tables"]["cosmic_tags"]["Row"];
 type TagInput = Database["public"]["Tables"]["cosmic_tags"]["Insert"];
-
-interface TagCount {
-  tag: string;
-  count: number;
-}
 
 export const tagsApi = createApi({
   reducerPath: "tagsApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
   tagTypes: ["Tag"],
   endpoints: (builder) => ({
-    getAllTags: builder.query<Tag[], void>({
-      query: () => "tags",
-      providesTags: [{ type: "Tag", id: "LIST" }],
+    getTag: builder.query<CompleteTag, number>({
+      query: (tagId) => `tag/${tagId}`,
+      providesTags: (result, error, tagId) => [{ type: "Tag", id: tagId }],
     }),
-
-    getTagsWithCounts: builder.query<TagCount[], void>({
-      query: () => "tags/counts",
+    getAllTags: builder.query<(Tag & { note_count: number })[], void>({
+      query: () => "tag",
       providesTags: [{ type: "Tag", id: "LIST" }],
-    }),
-
-    getNotesForTag: builder.query<Note[], string>({
-      query: (tag) => `tags/${encodeURIComponent(tag)}/notes`,
-      providesTags: (result, error, tag) => [{ type: "Tag", id: tag }],
     }),
 
     refineTags: builder.mutation<{ results: Tag[] }, void>({
       query: () => ({
-        url: "tags/refine",
+        url: "tag/refine",
         method: "POST",
       }),
       invalidatesTags: [{ type: "Tag", id: "LIST" }],
     }),
 
-    createTag: builder.mutation<Tag, TagInput>({
+    createTag: builder.mutation<CompleteTag, TagInput>({
       query: (tag) => ({
         url: "tags",
         method: "POST",
@@ -47,24 +36,24 @@ export const tagsApi = createApi({
       invalidatesTags: [{ type: "Tag", id: "LIST" }],
     }),
 
-    deleteTag: builder.mutation<void, { noteId: number; tag: string }>({
-      query: ({ noteId, tag }) => ({
-        url: `tags/${noteId}/${encodeURIComponent(tag)}`,
+    deleteTag: builder.mutation<void, { noteId: number; tagId: number }>({
+      query: ({ noteId, tagId }) => ({
+        url: `note/${noteId}/tag/${tagId}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, { tag }) => [
-        { type: "Tag", id: tag },
+      invalidatesTags: (result, error, { tagId }) => [
+        { type: "Tag", id: tagId },
         { type: "Tag", id: "LIST" },
       ],
-    }),
-
-    getTagsByNote: builder.query<Tag[], number>({
-      query: (noteId) => `note/${noteId}/tags`,
-      transformResponse: (response: { tags: Tag[] }) => response.tags,
-      providesTags: (result, error, noteId) => [
-        { type: "Tag", id: `note-${noteId}` },
-        { type: "Tag", id: "LIST" },
-      ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Invalidate tags from noteApi
+          dispatch(
+            notesApi.util.invalidateTags([{ type: "Note", id: arg.noteId }])
+          );
+        } catch {}
+      },
     }),
 
     refreshNote: builder.mutation<void, number>({
@@ -79,17 +68,27 @@ export const tagsApi = createApi({
       ],
     }),
 
-    saveTags: builder.mutation<
-      void,
-      { noteId: number; tags: { tag: string; confidence: number }[] }
-    >({
-      query: ({ noteId, tags }) => ({
-        url: `note/${noteId}/save-tags`,
+    generateClusters: builder.mutation<void, number>({
+      query: (tagId) => ({
+        url: `tag/${tagId}/cluster`,
         method: "POST",
-        body: { tags },
       }),
-      invalidatesTags: (result, error, { noteId }) => [
-        { type: "Tag", id: `note-${noteId}` },
+      invalidatesTags: (result, error, tagId) => [
+        { type: "Tag", id: tagId },
+        { type: "Tag", id: "LIST" },
+      ],
+    }),
+
+    generateClusterForCategory: builder.mutation<
+      void,
+      { tagId: number; category: Category }
+    >({
+      query: ({ tagId, category }) => ({
+        url: `tag/${tagId}/cluster/${category}`,
+        method: "POST",
+      }),
+      invalidatesTags: (result, error, { tagId }) => [
+        { type: "Tag", id: tagId },
         { type: "Tag", id: "LIST" },
       ],
     }),

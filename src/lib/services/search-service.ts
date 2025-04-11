@@ -1,8 +1,8 @@
 import { generateEmbedding } from "@/lib/embeddings";
 import { ApplicationError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
-import { Database } from "@/types/database.types";
-
+import { Database, Json } from "@/types/database.types";
+import { Note, Tag } from "@/types/types";
 /**
  * Search for notes that match the given query using vector similarity
  * @param query The search query
@@ -16,7 +16,7 @@ export async function searchNotes(
   matchCount: number = 10,
   matchThreshold: number = 0.5,
   category: string | null = null
-) {
+): Promise<(Note & { tags: Tag[]; score: number })[]> {
   // Get embedding for the query
   const embeddingString = await generateEmbedding(query);
   const embedding = JSON.parse(embeddingString);
@@ -43,21 +43,30 @@ export async function searchNotes(
   }
 
   // Get tags for each note
-  const notesWithTags = await Promise.all(
-    filteredNotes.map(async (note) => {
-      const { data: tags } = await supabaseClient
-        .from("cosmic_tags")
-        .select("*")
-        .eq("note", note.id);
+  const notesWithTagsPromises = filteredNotes.map(async (note) => {
+    const { data: tagMappings } = await supabaseClient
+      .from("cosmic_memory_tag_map")
+      .select("tag(*)")
+      .eq("memory_id", note.id as number);
 
-      return {
-        ...note,
-        cosmic_tags: tags,
-      };
-    })
-  );
+    // Convert RPC result to a valid Note object
+    const noteResult: Note & { tags: Tag[]; score: number } = {
+      id: note.id!,
+      title: note.title!,
+      content: note.content!,
+      zone: note.zone!,
+      category: note.category!,
+      created_at: note.created_at!,
+      updated_at: note.updated_at!,
+      metadata: {} as Json,
+      tags: tagMappings?.map((mapping) => mapping.tag) || [],
+      score: note.score!,
+    };
 
-  return notesWithTags;
+    return noteResult;
+  });
+
+  return await Promise.all(notesWithTagsPromises);
 }
 
 /**

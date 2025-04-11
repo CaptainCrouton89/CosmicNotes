@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CATEGORIES } from "@/lib/constants";
+import { CATEGORIES, Category } from "@/types/types";
 import {
   Book,
   Check,
@@ -22,9 +22,9 @@ import {
 import { useCallback } from "react";
 
 interface CategorySelectorProps {
-  category?: string;
+  category?: Category;
   updating: boolean;
-  onUpdateCategory: (category: string) => void;
+  onUpdateCategory: (category: Category) => void;
 }
 
 export function CategorySelector({
@@ -37,7 +37,7 @@ export function CategorySelector({
       const size = selected ? "h-4 w-4" : "h-3.5 w-3.5";
 
       switch (categoryName) {
-        case "To-Do":
+        case "to-do":
           return (
             <ListTodo
               className={`${size} ${
@@ -45,7 +45,7 @@ export function CategorySelector({
               }`}
             />
           );
-        case "Scratchpad":
+        case "scratchpad":
           return (
             <Pencil
               className={`${size} ${
@@ -53,7 +53,7 @@ export function CategorySelector({
               }`}
             />
           );
-        case "Collections":
+        case "collection":
           return (
             <Layers
               className={`${size} ${
@@ -61,7 +61,7 @@ export function CategorySelector({
               }`}
             />
           );
-        case "Brainstorm":
+        case "brainstorm":
           return (
             <Lightbulb
               className={`${size} ${
@@ -69,7 +69,7 @@ export function CategorySelector({
               }`}
             />
           );
-        case "Journal":
+        case "journal":
           return (
             <Book
               className={`${size} ${
@@ -77,7 +77,7 @@ export function CategorySelector({
               }`}
             />
           );
-        case "Meeting":
+        case "meeting":
           return (
             <Users
               className={`${size} ${
@@ -85,7 +85,7 @@ export function CategorySelector({
               }`}
             />
           );
-        case "Research":
+        case "research":
           return (
             <Search
               className={`${size} ${
@@ -93,7 +93,7 @@ export function CategorySelector({
               }`}
             />
           );
-        case "Learning":
+        case "learning":
           return (
             <GraduationCap
               className={`${size} ${
@@ -101,7 +101,7 @@ export function CategorySelector({
               }`}
             />
           );
-        case "Feedback":
+        case "feedback":
           return (
             <MessageSquare
               className={`${size} ${
@@ -125,23 +125,23 @@ export function CategorySelector({
           variant="outline"
           size="sm"
           className={`h-6 w-8 px-1 flex items-center justify-center ${
-            category === "To-Do"
+            category === "to-do"
               ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
-              : category === "Scratchpad"
+              : category === "scratchpad"
               ? "bg-green-50 text-green-700 hover:bg-green-100"
-              : category === "Collections"
+              : category === "collection"
               ? "bg-pink-50 text-pink-700 hover:bg-pink-100"
-              : category === "Brainstorm"
+              : category === "brainstorm"
               ? "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
-              : category === "Journal"
+              : category === "journal"
               ? "bg-purple-50 text-purple-700 hover:bg-purple-100"
-              : category === "Meeting"
+              : category === "meeting"
               ? "bg-red-50 text-red-700 hover:bg-red-100"
-              : category === "Research"
+              : category === "research"
               ? "bg-teal-50 text-teal-700 hover:bg-teal-100"
-              : category === "Learning"
+              : category === "learning"
               ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
-              : category === "Feedback"
+              : category === "feedback"
               ? "bg-orange-50 text-orange-700 hover:bg-orange-100"
               : ""
           }`}
@@ -154,10 +154,6 @@ export function CategorySelector({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48">
-        <DropdownMenuItem onClick={() => onUpdateCategory("")}>
-          <span>None</span>
-          {!category && <Check className="ml-auto h-4 w-4" />}
-        </DropdownMenuItem>
         {CATEGORIES.map((cat) => (
           <DropdownMenuItem key={cat} onClick={() => onUpdateCategory(cat)}>
             {getCategoryIcon(cat, true)}

@@ -1,6 +1,6 @@
 import { notesApi } from "@/lib/redux/services/notesApi";
+import { Category, Zone } from "@/types/types";
 import { useCallback, useState } from "react";
-import { Zone } from "../../_types";
 
 export function useNoteMetadata(noteId: number, noteContent: string = "") {
   const [updatingField, setUpdatingField] = useState<string | null>(null);
@@ -9,7 +9,7 @@ export function useNoteMetadata(noteId: number, noteContent: string = "") {
 
   // Update category
   const updateCategory = useCallback(
-    async (category: string) => {
+    async (category: Category) => {
       try {
         setUpdatingField("category");
         await updateNote({

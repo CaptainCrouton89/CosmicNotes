@@ -1,11 +1,10 @@
+import { generateEmbedding } from "@/lib/embeddings";
 import { ApplicationError } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
+import { CATEGORIES } from "@/types/types";
 import { tool } from "ai";
-import { z } from "zod";
-
-import { CATEGORIES } from "@/lib/constants";
-import { generateEmbedding } from "@/lib/embeddings";
 import { Configuration, OpenAIApi } from "openai-edge";
+import { z } from "zod";
 
 const openAiKey = process.env.OPENAI_API_KEY!;
 
@@ -43,8 +42,8 @@ export const searchNotesTool = tool({
     const client = await createClient();
     const { data: notes, error } = await client.rpc("match_notes", {
       query_embedding: embedding,
-      match_threshold: 0.5,
-      match_count: 20, // Retrieve more results initially for reranking
+      match_threshold: 0.8,
+      match_count: 5, // Retrieve more results initially for reranking
     });
 
     if (error) {
@@ -53,35 +52,21 @@ export const searchNotesTool = tool({
       });
     }
 
-    const notesWithTags = await Promise.all(
-      notes.map(async (note) => {
-        const { data: tags } = await client
-          .from("cosmic_tags")
-          .select("tag")
-          .eq("note", note.id);
-
-        return {
-          ...note,
-          cosmic_tags: tags,
-        };
-      })
-    );
-
     // Rerank the results using OpenAI
-    if (notesWithTags.length > 0) {
+    if (notes.length > 0) {
       try {
-        const rerankedResults = await rerankResults(query, notesWithTags);
+        const rerankedResults = await rerankResults(query, notes);
 
         // Limit to top results
         return rerankedResults.slice(0, limit);
       } catch (rerankError) {
         console.error("Error during reranking:", rerankError);
         // Fall back to original vector similarity order if reranking fails
-        return notesWithTags.slice(0, limit);
+        return notes.slice(0, limit);
       }
     }
 
-    return notesWithTags;
+    return notes;
   },
 });
 
@@ -92,80 +77,27 @@ async function rerankResults(query: string, notes: Record<string, unknown>[]) {
   return notes;
 }
 
-export const getNotesWithTagsTool = tool({
-  description: "Get the notes with tags",
-  parameters: z.object({
-    tag: z.string().describe("The tag to get the notes for"),
-    limit: z
-      .number()
-      .optional()
-      .default(10)
-      .describe("Maximum number of notes to return"),
-  }),
-  execute: async ({ tag, limit = 10 }) => {
-    const client = await createClient();
-    const { data: tagResults, error } = await client
-      .from("cosmic_tags")
-      .select("note")
-      .eq("tag", tag)
-      .limit(limit);
-
-    if (error) {
-      throw new ApplicationError("Failed to get notes with tags", {
-        supabaseError: error,
-      });
-    }
-
-    if (!tagResults || tagResults.length === 0) {
-      return [];
-    }
-
-    // Get the actual notes from the note IDs
-    const noteIds = tagResults.map((result) => result.note);
-    const { data: notes, error: notesError } = await client
-      .from("cosmic_memory")
-      .select("*")
-      .in("id", noteIds);
-
-    if (notesError) {
-      throw new ApplicationError("Failed to get notes by IDs", {
-        supabaseError: notesError,
-      });
-    }
-
-    // For each note, get its tags
-    const notesWithTags = await Promise.all(
-      notes.map(async (note) => {
-        const { data: tags } = await client
-          .from("cosmic_tags")
-          .select("tag")
-          .eq("note", note.id);
-
-        return {
-          ...note,
-          cosmic_tags: tags,
-        };
-      })
-    );
-
-    return notesWithTags;
-  },
-});
-
 export const addNoteTool = tool({
   description: "Add a note to the database",
   parameters: z.object({
     content: z.string().describe("Well-formatted content of the note"),
     title: z.string().describe("The title of the note"),
-    tags: z.array(z.string()).optional().describe("Tags to add to the note"),
+    tags: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Parent tag names to add to the note (as alternative to tagIds)"
+      ),
+    tagIds: z
+      .array(z.number())
+      .optional()
+      .describe("Tag IDs to add to the note (as alternative to tags)"),
     zone: z
       .enum(["personal", "work", "other"])
       .describe("The zone of the note"),
-    category: z
-      .enum(CATEGORIES as [string, ...string[]])
-      .describe("The category of the note"),
+    category: z.enum(CATEGORIES).describe("The category of the note"),
   }),
-  execute: async ({ content, title, tags, zone, category }) => {
+  execute: async ({ content, title, tags, tagIds, zone, category }) => {
     const client = await createClient();
     const { error: noteError, data: note } = await client
       .from("cosmic_memory")
@@ -185,13 +117,59 @@ export const addNoteTool = tool({
       });
     }
 
-    if (tags) {
-      const { error: tagError } = await client.from("cosmic_tags").insert(
-        tags.map((tag) => ({
-          tag,
-          note: note.id,
-        }))
+    if (tags || tagIds) {
+      let existingTags: { id: number; name: string }[] = [];
+      if (tags) {
+        const { data: existingTagsFromNames } = await client
+          .from("cosmic_tags")
+          .select("id, name")
+          .in("name", tags);
+
+        if (existingTagsFromNames) {
+          existingTags = existingTagsFromNames;
+        }
+      }
+      if (tagIds) {
+        const { data: existingTagsFromIds } = await client
+          .from("cosmic_tags")
+          .select("id, name")
+          .in("id", tagIds);
+
+        if (existingTagsFromIds) {
+          existingTags = existingTagsFromIds;
+        }
+      }
+
+      const newTags = tags?.filter(
+        (tag) => !existingTags.map((t) => t.name).includes(tag)
       );
+
+      if (newTags) {
+        const { error: tagError, data: newTagsData } = await client
+          .from("cosmic_tags")
+          .insert(
+            newTags.map((tag) => ({
+              name: tag,
+              tag_count: 0,
+            }))
+          )
+          .select("id, name");
+        if (tagError) {
+          throw new ApplicationError("Failed to add tags", {
+            supabaseError: tagError,
+          });
+        }
+        existingTags = existingTags.concat(newTagsData);
+      }
+
+      const { error: tagError } = await client
+        .from("cosmic_memory_tag_map")
+        .insert(
+          existingTags.map((tag) => ({
+            note: note.id,
+            tag: tag.id,
+          }))
+        );
 
       if (tagError) {
         throw new ApplicationError("Failed to add tags", {
@@ -199,7 +177,6 @@ export const addNoteTool = tool({
         });
       }
     }
-
     if (noteError) {
       throw new ApplicationError("Failed to add note", {
         supabaseError: noteError,
@@ -210,85 +187,85 @@ export const addNoteTool = tool({
   },
 });
 
-export const addTodoTool = tool({
-  description: "Add a todo item for a tag",
-  parameters: z.object({
-    item: z.string().describe("The content of the todo item"),
-    tagFamilyId: z
-      .number()
-      .optional()
-      .describe("The tag family ID to associate the todo item with"),
-    tag: z
-      .string()
-      .optional()
-      .describe("The tag to associate the todo item with"),
-  }),
-  execute: async ({ item, tagFamilyId, tag }) => {
-    try {
-      if (!tagFamilyId && !tag) {
-        throw new ApplicationError(
-          "Either tagFamilyId or tag must be provided"
-        );
-      }
+// export const addTodoTool = tool({
+//   description: "Add a todo item for a tag",
+//   parameters: z.object({
+//     item: z.string().describe("The content of the todo item"),
+//     tagFamilyId: z
+//       .number()
+//       .optional()
+//       .describe("The tag family ID to associate the todo item with"),
+//     tag: z
+//       .string()
+//       .optional()
+//       .describe("The tag to associate the todo item with"),
+//   }),
+//   execute: async ({ item, tagFamilyId, tag }) => {
+//     try {
+//       if (!tagFamilyId && !tag) {
+//         throw new ApplicationError(
+//           "Either tagFamilyId or tag must be provided"
+//         );
+//       }
 
-      // First, find the tag family ID for the given tag
-      const client = await createClient();
+//       // First, find the tag family ID for the given tag
+//       const client = await createClient();
 
-      let tagFamily, tagFamilyError;
-      if (tagFamilyId) {
-        const { data: tagFamilyData, error: tagFamilyErrorData } = await client
-          .from("cosmic_tag_family")
-          .select("id")
-          .eq("id", tagFamilyId)
-          .maybeSingle();
+//       let tagFamily, tagFamilyError;
+//       if (tagFamilyId) {
+//         const { data: tagFamilyData, error: tagFamilyErrorData } = await client
+//           .from("cosmic_tags")
+//           .select("tag_family_id")
+//           .eq("id", tagFamilyId)
+//           .maybeSingle();
 
-        tagFamily = tagFamilyData;
-        tagFamilyError = tagFamilyErrorData;
-      } else if (tag) {
-        const { data: tagFamilyData, error: tagFamilyErrorData } = await client
-          .from("cosmic_tag_family")
-          .select("id")
-          .eq("tag", tag)
-          .maybeSingle();
+//         tagFamily = tagFamilyData;
+//         tagFamilyError = tagFamilyErrorData;
+//       } else if (tag) {
+//         const { data: tagFamilyData, error: tagFamilyErrorData } = await client
+//           .from("cosmic_tags")
+//           .select("tag_family_id")
+//           .eq("name", tag)
+//           .maybeSingle();
 
-        tagFamily = tagFamilyData;
-        tagFamilyError = tagFamilyErrorData;
-      }
+//         tagFamily = tagFamilyData;
+//         tagFamilyError = tagFamilyErrorData;
+//       }
 
-      if (tagFamilyError) {
-        throw new ApplicationError("Failed to find tag family", {
-          supabaseError: tagFamilyError,
-        });
-      }
+//       if (tagFamilyError) {
+//         throw new ApplicationError("Failed to find tag family", {
+//           supabaseError: tagFamilyError,
+//         });
+//       }
 
-      if (!tagFamily) {
-        throw new ApplicationError("Tag family not found", {
-          identifier: tag || tagFamilyId || "unknown",
-        });
-      }
+//       if (!tagFamily) {
+//         throw new ApplicationError("Tag family not found", {
+//           identifier: tag || tagFamilyId || "unknown",
+//         });
+//       }
 
-      const supabase = await createClient();
-      const { error: todoItemError } = await supabase
-        .from("cosmic_todo_item")
-        .insert({
-          item,
-          tag: tagFamily.id,
-        });
+//       const supabase = await createClient();
+//       const { error: todoItemError } = await supabase
+//         .from("cosmic_collection_item")
+//         .insert({
+//           item,
+//           tag: tagFamily.id,
+//         });
 
-      if (todoItemError) {
-        throw new ApplicationError("Failed to add todo item", {
-          supabaseError: todoItemError,
-        });
-      }
+//       if (todoItemError) {
+//         throw new ApplicationError("Failed to add todo item", {
+//           supabaseError: todoItemError,
+//         });
+//       }
 
-      return `Todo item "${item}" added successfully for tag "${tag}"`;
-    } catch (error) {
-      if (error instanceof ApplicationError) {
-        throw error;
-      }
-      throw new ApplicationError("Failed to add todo item", {
-        error: String(error),
-      });
-    }
-  },
-});
+//       return `Todo item "${item}" added successfully for tag "${tag}"`;
+//     } catch (error) {
+//       if (error instanceof ApplicationError) {
+//         throw error;
+//       }
+//       throw new ApplicationError("Failed to add todo item", {
+//         error: String(error),
+//       });
+//     }
+//   },
+// });

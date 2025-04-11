@@ -1,28 +1,9 @@
+import { Note, Tag } from "@/types/types";
 import React from "react";
 
-interface CosmicTag {
-  tag: string;
-  confidence: number;
-  created_at: string;
-}
-
 interface NoteCardProps {
-  note: {
-    id: number;
-    content: string;
-    created_at: string;
-    cosmic_tags?: CosmicTag[];
-    category: string;
-    zone: string;
-  };
-  onClick: (note: {
-    id: number;
-    content: string;
-    created_at: string;
-    cosmic_tags?: CosmicTag[];
-    category: string;
-    zone: string;
-  }) => void;
+  note: Note;
+  onClick: (note: Note) => void;
   formatDate: (dateString: string) => string;
   highlightedContent: React.ReactNode;
 }
@@ -56,14 +37,14 @@ export const NoteCard: React.FC<NoteCardProps> = ({
       </div>
 
       {/* Tags section */}
-      {note.cosmic_tags && note.cosmic_tags.length > 0 && (
+      {note.tags && note.tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
-          {note.cosmic_tags.map((tag: CosmicTag, tagIndex: number) => (
+          {note.tags.map((tag: Tag, tagIndex: number) => (
             <span
               key={tagIndex}
               className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"
             >
-              {tag.tag}
+              {tag.name}
             </span>
           ))}
         </div>

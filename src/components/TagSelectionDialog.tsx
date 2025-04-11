@@ -70,9 +70,17 @@ export function TagSelectionDialog({
     }
   };
 
+  // Handle Command+Enter to save tags
+  const handleDialogKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !isSaving) {
+      e.preventDefault();
+      onSaveTags();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" onKeyDown={handleDialogKeyDown}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>

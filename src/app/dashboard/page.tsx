@@ -2,11 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { notesApi } from "@/lib/redux/services/notesApi";
-import { tagFamilyApi } from "@/lib/redux/services/tagFamilyApi";
+import { tagsApi } from "@/lib/redux/services/tagsApi";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import { RecentNotes, ScratchpadNotes, TagFamilies } from "./_components";
+import { RecentNotes, ScratchpadNotes, Tags } from "./_components";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -27,13 +27,10 @@ export default function Dashboard() {
 
   // Fetch tag families
   const {
-    data: tagFamiliesData,
-    error: tagFamiliesError,
-    isLoading: tagFamiliesLoading,
-  } = tagFamilyApi.useGetTagFamiliesQuery({
-    page: 1,
-    limit: 10, // Fetch recent tag families
-  });
+    data: tagsData,
+    error: tagsError,
+    isLoading: tagsLoading,
+  } = tagsApi.useGetAllTagsQuery();
 
   // Handle navigation to note detail
   const handleNoteClick = useCallback(
@@ -43,10 +40,10 @@ export default function Dashboard() {
     [router]
   );
 
-  // Handle navigation to tag family
-  const handleTagFamilyClick = useCallback(
-    (tagFamilyId: number) => {
-      router.push(`/tag-family/${tagFamilyId}`);
+  // Handle navigation to tag
+  const handleTagClick = useCallback(
+    (tagId: number) => {
+      router.push(`/tag/${tagId}`);
     },
     [router]
   );
@@ -80,7 +77,7 @@ export default function Dashboard() {
 
   // Filter and organize notes data
   const { recentNotes, scratchpadNotes } = useMemo(() => {
-    if (!notesData?.notes) {
+    if (!notesData?.content) {
       return {
         recentNotes: [],
         scratchpadNotes: [],
@@ -92,7 +89,7 @@ export default function Dashboard() {
     const sevenDaysAgo = new Date(now);
     sevenDaysAgo.setDate(now.getDate() - 7);
 
-    const recentNotes = notesData.notes
+    const recentNotes = notesData.content
       .filter((note) => new Date(note.updated_at) >= sevenDaysAgo)
       .sort(
         (a, b) =>
@@ -101,8 +98,8 @@ export default function Dashboard() {
       .slice(0, 6); // Show only 6 most recent notes
 
     // Get scratchpad notes
-    const scratchpadNotes = notesData.notes
-      .filter((note) => note.category === "Scratchpad")
+    const scratchpadNotes = notesData.content
+      .filter((note) => note.category === "scratchpad")
       .sort(
         (a, b) =>
           new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
@@ -115,19 +112,19 @@ export default function Dashboard() {
   }, [notesData]);
 
   // Get recent tag families
-  const recentTagFamilies = useMemo(() => {
-    if (!tagFamiliesData?.tagFamilies) {
+  const recentTags = useMemo(() => {
+    if (!tagsData) {
       return [];
     }
 
     // Sort by created_at and take the 6 most recent
-    return [...tagFamiliesData.tagFamilies]
+    return [...tagsData]
       .sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
       .slice(0, 6);
-  }, [tagFamiliesData]);
+  }, [tagsData]);
 
   // Extract title from note
   const getTitle = useCallback(
@@ -162,17 +159,17 @@ export default function Dashboard() {
         isLoading={notesLoading}
         error={notesError}
         onNoteClick={handleNoteClick}
-        onTagFamilyClick={handleTagFamilyClick}
         onCreateNote={handleCreateNote}
         getTitle={getTitle}
+        onTagClick={handleTagClick}
       />
 
-      {/* Tag Families Section */}
-      <TagFamilies
-        tagFamilies={recentTagFamilies}
-        isLoading={tagFamiliesLoading}
-        error={tagFamiliesError}
-        onTagFamilyClick={handleTagFamilyClick}
+      {/* Tags Section */}
+      <Tags
+        tags={tagsData ?? []}
+        isLoading={tagsLoading}
+        error={tagsError}
+        onTagClick={handleTagClick}
       />
 
       {/* Scratchpad Notes Section */}

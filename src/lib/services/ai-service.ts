@@ -1,20 +1,27 @@
 import { createClient } from "@/lib/supabase/server";
-import { Database } from "@/types/database.types";
+import { CATEGORIES, Category, Note, Zone, ZONES } from "@/types/types";
 import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import * as z from "zod";
 import { getPromptFunction } from "../prompts/summary.prompt";
 
-type Note = Database["public"]["Tables"]["cosmic_memory"]["Row"];
-
-export async function generateTodos(notes: Note[], tagFamilyId: number) {
+const CATEGORY_DESCRIPTIONS = `- to-do: The note contains a list of things to do.
+    - collections: The note contains a list of related ideas or thoughts.
+    - brainstorm: The note contains ideas for features or products.
+    - journal: The note is a journal entry or personal reflection.
+    - meeting: The note contains notes from a meeting.
+    - research: The note contains research notes.
+    - learning: The note contains notes from a class or course.
+    - feedback: The note contains feedback for a product or service.
+    - scratchpad: The note contains random thoughts or ideas, or the content doesn't fit into other categories.`;
+export async function generateTodos(notes: Note[], tagId: number) {
   const supabase = await createClient();
 
   const { data: existingTodoItems, error: existingTodoItemsError } =
     await supabase
-      .from("cosmic_todo_item")
+      .from("cosmic_collection_item")
       .select("item")
-      .eq("tag", tagFamilyId);
+      .eq("tag", tagId);
 
   if (existingTodoItemsError) {
     throw new Error(existingTodoItemsError.message);
@@ -44,15 +51,13 @@ Based on the notes, return a list of todo items that are not already in the exis
   return result.object.todos;
 }
 
-export async function generateNoteSummary(notes: Note[]) {
-  const getPrompt = getPromptFunction(notes[0].category);
-  if (notes[0].category === "To-Do") {
+export async function generateNoteSummary(notes: Note[], category: Category) {
+  const getPrompt = getPromptFunction(category);
+  if (category === "to-do") {
     return "";
   }
 
   const { prompt, model, summary } = getPrompt(notes);
-
-  console.log(prompt);
 
   const result = await generateObject({
     model: openai(model),
@@ -85,10 +90,13 @@ export async function generateNoteTitle(content: string) {
   return result.object.title;
 }
 
-export async function generateNoteCategory(content: string) {
+export async function generateNoteCategory(
+  content: string,
+  similarNotes: (Note & { tags: { name: string }[] })[]
+): Promise<Category> {
   const result = await generateObject({
     model: openai("gpt-4o-mini"),
-    temperature: 0.2,
+    temperature: 0.1,
     system:
       "You are an assistant that helps categorize notes into a few broad categories.",
     prompt: `Determine the most likely category for the following note:
@@ -97,26 +105,33 @@ export async function generateNoteCategory(content: string) {
     ${content}
              
     # Categories
-    - To-Do: The note contains a list of things to do.
-    - Scratchpad: The note contains random thoughts or ideas.
-    - Collections: The note contains a list of related ideas or thoughts.
-    - Brainstorm: The note contains ideas for features or products.
-    - Journal: The note contains personal journal entries.
-    - Meeting: The note contains notes from a meeting.
-    - Research: The note contains research notes.
-    - Learning: The note contains notes from a class or course.
-    - Feedback: The note contains feedback for a product or service.
+    ${CATEGORY_DESCRIPTIONS}
+
+    # Other Information
+    Similar notes were categorized as follows:
+    ${similarNotes
+      .map(
+        (note) =>
+          `${note.title}, tags: [${note.tags
+            .map((tag) => tag.name)
+            .join(", ")}], category: ${note.category}`
+      )
+      .join("\n")}
              
     Choose the most likely category for the note`,
     schema: z.object({
-      category: z.string().describe("The category"),
+      category: z.enum(CATEGORIES).describe("The category"),
     }),
   });
 
-  return result.object.category;
+  return result.object.category as Category;
 }
 
-export async function generateNoteFields(content: string) {
+export async function generateNoteFields(content: string): Promise<{
+  title: string;
+  category: Category;
+  zone: Zone;
+}> {
   const result = await generateObject({
     model: openai("gpt-4o-mini"),
     temperature: 0.2,
@@ -128,15 +143,7 @@ export async function generateNoteFields(content: string) {
     ${content}
              
     # Categories
-    - To-Do: The note contains a list of things to do.
-    - Scratchpad: The note contains random thoughts or ideas.
-    - Collections: The note contains a list of related ideas or thoughts.
-    - Brainstorm: The note contains ideas for features or products.
-    - Journal: The note contains personal journal entries.
-    - Meeting: The note contains notes from a meeting.
-    - Research: The note contains research notes.
-    - Learning: The note contains notes from a class or course.
-    - Feedback: The note contains feedback for a product or service.
+    ${CATEGORY_DESCRIPTIONS}
     
     # Zones
     - personal: The note is related to personal life, hobbies, or non-work activities.
@@ -145,10 +152,10 @@ export async function generateNoteFields(content: string) {
     schema: z.object({
       title: z.string().describe("A concise title for the note"),
       category: z
-        .string()
+        .enum(CATEGORIES)
         .describe("The most appropriate category for the note"),
       zone: z
-        .string()
+        .enum(ZONES)
         .describe(
           "The most appropriate zone for the note (personal, work, or other)"
         ),
@@ -200,4 +207,25 @@ ${note.content}
   });
 
   return result.object.weeklyReview;
+}
+
+export async function convertContentToItems(
+  content: string,
+  category: Category
+): Promise<string[]> {
+  const result = await generateObject({
+    model: openai("gpt-4o-mini"),
+    temperature: 0,
+    system: `You are a helpful assistant that specializes in converting disorganized ${category} notes into a list of items.`,
+    prompt: `Convert the following ${category} note into a list of items:
+
+    # Note
+    ${content}
+    `,
+    schema: z.object({
+      items: z.array(z.string()).describe("A list of items"),
+    }),
+  });
+
+  return result.object.items;
 }

@@ -1,4 +1,3 @@
-import { Zone } from "@/app/note/_types";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -6,6 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Zone } from "@/types/types";
 import { Briefcase, Check, ChevronDown, Globe, Home } from "lucide-react";
 
 interface ZoneSelectorProps {
@@ -49,10 +49,6 @@ export function ZoneSelector({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-36">
-        <DropdownMenuItem onClick={() => onUpdateZone("")}>
-          <span>None</span>
-          {!zone && <Check className="ml-auto h-4 w-4" />}
-        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onUpdateZone("personal")}>
           <Home className="mr-2 h-4 w-4 text-blue-600" />
           <span>Personal</span>

@@ -17,7 +17,7 @@ export async function PUT(req: NextRequest) {
     const supabase = await createClient();
 
     const { data, error } = await supabase
-      .from("cosmic_todo_item")
+      .from("cosmic_collection_item")
       .update({ done, updated_at: new Date().toISOString() })
       .eq("id", id)
       .select()
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString();
     const { data, error } = await supabase
-      .from("cosmic_todo_item")
+      .from("cosmic_collection_item")
       .insert({
         item,
         tag,

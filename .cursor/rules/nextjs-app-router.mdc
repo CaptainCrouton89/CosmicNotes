@@ -260,7 +260,7 @@ alwaysApply: false
   export function NotesWithQuery() {
     const { data, isLoading } = useQuery({
       queryKey: ['notes'],
-      queryFn: () => fetch('/api/notes').then(res => res.json())
+      queryFn: () => fetch('/api/note').then(res => res.json())
     });
     
     // ...
@@ -328,7 +328,7 @@ alwaysApply: false
     const [notes, setNotes] = useState([]);
     
     useEffect(() => {
-      fetch('/api/notes').then(r => r.json()).then(setNotes);
+      fetch('/api/note').then(r => r.json()).then(setNotes);
     }, []);
     
     // ...

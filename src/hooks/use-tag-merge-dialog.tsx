@@ -23,7 +23,7 @@ export function useTagMergeDialog() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/tags/refine", {
+      const response = await fetch("/api/tag/refine", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -57,7 +57,7 @@ export function useTagMergeDialog() {
   // Function to apply selected merges
   const applyMerges = async (selectedMerges: MergeSuggestion[]) => {
     try {
-      const response = await fetch("/api/tags/apply-merges", {
+      const response = await fetch("/api/tag/apply-merges", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

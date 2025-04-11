@@ -1,10 +1,6 @@
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
-import {
-  addNoteTool,
-  getNotesWithTagsTool,
-  searchNotesTool,
-} from "./noteTools";
+import { addNoteTool, searchNotesTool } from "./noteTools";
 
 const openAiKey = process.env.OPENAI_API_KEY;
 
@@ -30,7 +26,6 @@ export async function POST(req: Request) {
       messages,
       tools: {
         addNoteTool,
-        getNotesWithTagsTool,
         searchNotesTool,
       },
     });

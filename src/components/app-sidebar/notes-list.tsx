@@ -52,9 +52,7 @@ export const NotesList = ({
         <SidebarMenuItem key={note.id}>
           <SidebarMenuButton className="w-full text-left" asChild>
             <Link href={`/note/${note.id}`} className="flex justify-between">
-              <span>
-                {note.title || note.cosmic_tags?.[0]?.tag || titleFallback}
-              </span>
+              <span>{note.title || note.tags?.[0]?.name || titleFallback}</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>

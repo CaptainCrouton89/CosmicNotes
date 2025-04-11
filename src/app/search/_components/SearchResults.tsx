@@ -1,37 +1,8 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { Cluster, Note } from "@/types/types";
 import React from "react";
 import { ClusterCard } from "./ClusterCard";
 import { NoteCard } from "./NoteCard";
-
-interface CosmicTag {
-  tag: string;
-  confidence: number;
-  created_at: string;
-}
-
-interface Note {
-  id: number;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  cosmic_tags?: CosmicTag[];
-  category: string;
-  zone: string;
-  type?: string;
-}
-
-interface Cluster {
-  id: number;
-  tag_family: number;
-  tag_family_name: string;
-  category: string;
-  tag_count: number;
-  summary: string;
-  created_at: string;
-  updated_at: string;
-  embedding: string;
-  type?: string;
-}
 
 interface SearchResultsProps {
   searchQuery: string;
@@ -39,9 +10,12 @@ interface SearchResultsProps {
   isLoading: boolean;
   isClustersLoading: boolean;
   filteredClusters: (Cluster & { type: string })[];
-  notes: Note[] | undefined;
+  notes: (Note & { type: string })[] | undefined;
   handleItemClick: (
-    item: Note | Cluster | { type: string; id: number }
+    item:
+      | (Note & { type: string })
+      | (Cluster & { type: string })
+      | { type: string; id: number }
   ) => void;
   formatDate: (dateString: string) => string;
   createMarkup: (content: string) => { __html: string };
@@ -90,12 +64,12 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
               <ClusterCard
                 key={`cluster-${cluster.id}-${index}`}
                 cluster={cluster}
-                onClick={handleItemClick}
+                onClick={() => handleItemClick({ ...cluster, type: "cluster" })}
                 formatDate={formatDate}
-                highlightedTagFamily={
+                highlightedTag={
                   <div
                     dangerouslySetInnerHTML={createMarkup(
-                      highlightSearchTerm(cluster.tag_family_name)
+                      highlightSearchTerm(cluster.tag?.name || "")
                     )}
                   />
                 }
@@ -143,7 +117,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
               highlightedContent={
                 <div
                   dangerouslySetInnerHTML={createMarkup(
-                    truncateContent(highlightSearchTerm(note.content))
+                    truncateContent(highlightSearchTerm(note.content ?? ""))
                   )}
                 />
               }

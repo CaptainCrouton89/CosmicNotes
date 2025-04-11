@@ -2,12 +2,8 @@
 import {
   BlockTypeSelect,
   BoldItalicUnderlineToggles,
-  codeBlockPlugin,
-  codeMirrorPlugin,
   CodeToggle,
   CreateLink,
-  diffSourcePlugin,
-  frontmatterPlugin,
   headingsPlugin,
   imagePlugin,
   InsertImage,
@@ -46,21 +42,6 @@ export default function InitializedMDXEditor({
         linkDialogPlugin(),
         imagePlugin(),
         tablePlugin(),
-        codeBlockPlugin(),
-        codeMirrorPlugin({
-          codeBlockLanguages: {
-            js: "JavaScript",
-            ts: "TypeScript",
-            css: "CSS",
-            html: "HTML",
-            json: "JSON",
-            jsx: "JSX",
-            tsx: "TSX",
-            md: "Markdown",
-          },
-        }),
-        frontmatterPlugin(),
-        diffSourcePlugin(),
         toolbarPlugin({
           toolbarContents: () => (
             <div className="flex items-center flex-wrap">

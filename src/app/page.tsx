@@ -1,14 +1,11 @@
 "use client";
 
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
-import {
-  TagSelectionDialog,
-  TagSuggestion,
-} from "@/components/TagSelectionDialog";
+import { TagSuggestion } from "@/components/TagSelectionDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES } from "@/lib/constants";
 import { notesApi } from "@/lib/redux/services/notesApi";
+import { CATEGORIES, Category } from "@/types/types";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -17,7 +14,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 // Component that uses useSearchParams
 function HomeContent() {
   const [note, setNote] = useState("");
-  const [category, setCategory] = useState<string>("");
+  const [category, setCategory] = useState<Category>("scratchpad");
   const [createNote, { isLoading: isSaving }] =
     notesApi.useCreateNoteMutation();
   const editorRef = useRef<MDXEditorMethods>(null);
@@ -32,8 +29,8 @@ function HomeContent() {
   // Get category from URL if present
   useEffect(() => {
     const categoryParam = searchParams.get("category");
-    if (categoryParam && CATEGORIES.includes(categoryParam)) {
-      setCategory(categoryParam);
+    if (categoryParam && CATEGORIES.includes(categoryParam as Category)) {
+      setCategory(categoryParam as Category);
     }
   }, [searchParams]);
 
@@ -60,13 +57,13 @@ function HomeContent() {
       const result = await createNote({
         content: currentContent,
         embedding: "",
-        category: category || undefined, // Only include if set
+        category: category as Category, // Only include if set
       }).unwrap();
 
       // Store the created note ID for tag operations
       setCreatedNoteId(result.id);
 
-      if (result.category === "Scratchpad") {
+      if (result.category === "scratchpad") {
         return;
       }
       // Get tag suggestions
@@ -108,7 +105,7 @@ function HomeContent() {
 
         // Clear the editor even if tag suggestions fail
         setNote("");
-        setCategory(""); // Reset category too
+        setCategory("scratchpad"); // Reset category too
         if (editorRef.current) {
           editorRef.current.setMarkdown("");
         }
@@ -118,70 +115,6 @@ function HomeContent() {
       setError("Failed to save note");
     }
   };
-
-  const saveSelectedTags = useCallback(async () => {
-    if (!createdNoteId) return;
-
-    try {
-      setSavingTags(true);
-
-      // Filter selected tags and also ensure no X20 tags are saved
-      const tagsToSave = suggestedTags
-        .filter(
-          (tag) => tag.selected && tag.tag !== "X20" && !tag.tag.includes("X20")
-        )
-        .map((tag) => ({
-          tag: tag.tag,
-          confidence: tag.confidence,
-        }));
-
-      const response = await fetch(`/api/note/${createdNoteId}/save-tags`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ tags: tagsToSave }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save tags");
-      }
-
-      // Close the dialog and navigate to the note page
-      setShowTagDialog(false);
-
-      // Clear the editor after successful save
-      setNote("");
-      setCategory(""); // Reset category too
-      if (editorRef.current) {
-        editorRef.current.setMarkdown("");
-      }
-
-      // Optionally navigate to the created note
-      router.push(`/note/${createdNoteId}`);
-    } catch (err) {
-      console.error("Error saving tags:", err);
-      setError("Failed to save tags");
-    } finally {
-      setSavingTags(false);
-    }
-  }, [createdNoteId, suggestedTags, router]);
-
-  const skipTags = useCallback(() => {
-    // Just close the dialog and clear the editor
-    setShowTagDialog(false);
-    setNote("");
-    setCategory(""); // Reset category too
-    if (editorRef.current) {
-      editorRef.current.setMarkdown("");
-    }
-
-    // Navigate to the created note
-    if (createdNoteId) {
-      router.push(`/note/${createdNoteId}`);
-    }
-  }, [createdNoteId, router]);
-
   const focusEditor = useCallback(() => {
     if (editorRef.current) {
       editorRef.current.focus();
@@ -219,7 +152,7 @@ function HomeContent() {
       </div>
 
       {/* Use the new TagSelectionDialog component */}
-      <TagSelectionDialog
+      {/* <TagSelectionDialog
         open={showTagDialog}
         onOpenChange={setShowTagDialog}
         suggestedTags={suggestedTags}
@@ -227,7 +160,7 @@ function HomeContent() {
         onSaveTags={saveSelectedTags}
         onSkipTags={skipTags}
         isSaving={savingTags}
-      />
+      /> */}
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
+import { Note } from "@/types/types";
 import { differenceInDays, format } from "date-fns";
 import { AlertCircle, List, Plus, Trash2 } from "lucide-react";
 import { useCallback } from "react";
-import { CommonProps, Note } from "./types";
+import { CommonProps } from "./types";
 
 interface ScratchpadNotesProps
   extends Pick<

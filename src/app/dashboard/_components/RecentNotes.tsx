@@ -1,6 +1,7 @@
+import { Note } from "@/types/types";
 import { format } from "date-fns";
 import { Clock, Edit } from "lucide-react";
-import { CommonProps, Note } from "./types";
+import { CommonProps } from "./types";
 
 interface RecentNotesProps extends CommonProps {
   notes: Note[];

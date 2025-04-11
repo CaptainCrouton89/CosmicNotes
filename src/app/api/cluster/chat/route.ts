@@ -1,28 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
-import {
-  addNoteTool,
-  addTodoTool,
-  getNotesWithTagsTool,
-  searchNotesTool,
-} from "../../chat/noteTools";
+import { addNoteTool, searchNotesTool } from "../../chat/noteTools";
 
 export const runtime = "edge";
 
 export async function POST(req: Request) {
   try {
-    const { messages, tagName }: { messages: Message[]; tagName: string } =
+    const { messages, tagId }: { messages: Message[]; tagId: number } =
       await req.json();
 
     const supabase = await createClient();
 
-    console.log("tagName", tagName);
-
     const { data: notes, error: notesError } = await supabase
-      .from("cosmic_tags")
+      .from("cosmic_memory_tag_map")
       .select("cosmic_memory(content, title, created_at, id)")
-      .eq("tag", tagName);
+      .eq("tag", tagId);
 
     if (!notes) {
       return Response.json({ error: "Cluster not found" }, { status: 404 });
@@ -56,7 +49,7 @@ ${note.cosmic_memory.content}
       ${notesContent}
 
       # Metadata
-      Current tag: ${tagName}
+      Current tag: ${tagId}
       
       ## Instructions
       Help the user in any way they wish. If you use notes to answer the question, cite them like this:
@@ -69,9 +62,9 @@ ${note.cosmic_memory.content}
       topP: 0.95,
       tools: {
         searchNotesTool,
-        getNotesWithTagsTool,
+        // getNotesWithTagsTool,
         addNoteTool,
-        addTodoTool,
+        // addTodoTool,
       },
     });
 

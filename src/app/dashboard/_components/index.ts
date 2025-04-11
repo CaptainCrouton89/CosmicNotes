@@ -1,4 +1,4 @@
 export * from "./RecentNotes";
 export * from "./ScratchpadNotes";
-export * from "./TagFamilies";
+export * from "./Tags";
 export * from "./types";

@@ -1,22 +1,20 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { clustersApi } from "../services/clustersApi";
 
-// Define types for cluster
-interface Cluster {
-  id: number;
-  tag_family: number;
-  category: string;
-  tag_count: number;
-  summary: string;
-  created_at: string;
-  updated_at: string;
-  embedding: string;
-}
-
-interface ClusterState {
-  clusters: Cluster[];
+// Define a simplified version of Cluster for state management
+// to avoid recursive type instantiation
+type ClusterState = {
+  clusters: {
+    id: number;
+    category: string;
+    summary: string;
+    tag_count: number;
+    created_at: string;
+    updated_at: string;
+    // Omit deeply nested references
+  }[];
   hasLoaded: boolean;
-}
+};
 
 const initialState: ClusterState = {
   clusters: [],
