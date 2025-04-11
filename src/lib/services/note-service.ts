@@ -6,11 +6,12 @@ import {
 } from "@/types/database.types";
 import { Category, Note, Tag, Zone } from "@/types/types";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { ITEM_CATEGORIES } from "../constants";
 import { generateEmbedding } from "../embeddings";
 import { generateNoteCategory, generateNoteFields } from "./ai-service";
+import { ItemService } from "./item-service";
 import { searchNotes } from "./search-service";
 import { TagService } from "./tag-service";
-
 export type NoteRow = Tables<"cosmic_memory">;
 export type NoteInsert = TablesInsert<"cosmic_memory">;
 export type NoteUpdate = TablesUpdate<"cosmic_memory">;
@@ -257,22 +258,36 @@ export class NoteService {
     const existingNote = await this.getNoteById(id);
     if (!existingNote) throw new Error("Note not found");
     console.log("updates", updates);
-    await this.upsertTagsToNote(id, updates.tags, updates.tagIds);
 
     if (updates.content && updates.content !== existingNote.content) {
       updates.embedding = await generateEmbedding(updates.content);
     }
 
-    const existingTags = (await this.getNoteById(id))?.tags;
-    const tagsToDelete = existingTags?.filter(
-      (tag) => !updates.tags?.includes(tag.name)
-    );
-    if (tagsToDelete && tagsToDelete.length > 0) {
-      await Promise.all(
-        tagsToDelete.map((tag) => this.deleteTagFromNote(id, tag.id))
+    if (updates.tags) {
+      await this.upsertTagsToNote(id, updates.tags, updates.tagIds);
+      const existingTags = (await this.getNoteById(id))?.tags;
+      const tagsToDelete = existingTags?.filter(
+        (tag) => !updates.tags?.includes(tag.name)
       );
+      if (tagsToDelete && tagsToDelete.length > 0) {
+        await Promise.all(
+          tagsToDelete.map((tag) => this.deleteTagFromNote(id, tag.id))
+        );
+      }
     }
 
+    // If the note is being converted to a collection, convert it
+    if (
+      updates.category &&
+      updates.category !== existingNote.category &&
+      ITEM_CATEGORIES.includes(updates.category) &&
+      existingNote.items.length === 0
+    ) {
+      const itemService = new ItemService(this.supabase);
+      await itemService.saveNoteAsItems(existingNote, updates.category);
+    }
+
+    // Remove tags from updates since these are objects, and tags are tracked via tagmap
     delete updates.tags;
     delete updates.tagIds;
 

@@ -4,8 +4,8 @@ import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import * as z from "zod";
+import { getItemsPromptFunction } from "../prompts/items.prompt";
 import { getPromptFunction } from "../prompts/summary.prompt";
-
 const CATEGORY_DESCRIPTIONS = `- to-do: The note contains a list of things to do.
     - collections: The note contains a list of related ideas or thoughts.
     - brainstorm: The note contains ideas for features or products.
@@ -77,7 +77,7 @@ export async function generateNoteSummary(notes: Note[], category: Category) {
   const { prompt, model, summary } = getPrompt(notes);
 
   const result = await generateObject({
-    model: openai(model),
+    model,
     temperature: 0.1,
     topP: 0,
     system:
@@ -230,17 +230,20 @@ export async function convertContentToItems(
   content: string,
   category: Category
 ): Promise<string[]> {
-  const result = await generateObject({
-    model: openai("gpt-4o-mini"),
-    temperature: 0,
-    system: `You are a helpful assistant that specializes in converting disorganized ${category} notes into a list of items.`,
-    prompt: `Convert the following ${category} note into a list of items:
+  const getItemsPrompt = getItemsPromptFunction(category);
 
-    # Note
-    ${content}
-    `,
+  const { system, prompt, model, itemsArrayDescription } = getItemsPrompt(
+    content,
+    category
+  );
+
+  const result = await generateObject({
+    model,
+    temperature: 0,
+    system,
+    prompt,
     schema: z.object({
-      items: z.array(z.string()).describe("A list of items"),
+      items: z.array(z.string()).describe(itemsArrayDescription),
     }),
   });
 

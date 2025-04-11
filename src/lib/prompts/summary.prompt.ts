@@ -1,4 +1,6 @@
 import { Note } from "@/types/types";
+import { openai } from "@ai-sdk/openai";
+import { LanguageModel } from "ai";
 
 const formatNote = (
   note: Note,
@@ -30,7 +32,7 @@ const formatNotes = (
 ) => notes.map((note) => formatNote(note, options)).join("\n");
 
 export type SummaryPrompt = {
-  model: string;
+  model: LanguageModel;
   prompt: string;
   summary: string;
 };
@@ -45,7 +47,7 @@ const getNoAlterationsPrompt = (category: string) =>
   `Synthesize and reorganize these ${category} notes into a single organized note. Reorganize in a way that is most useful for the user, but do not summarize the content.`;
 
 export const getDefaultPrompt = (notes: Note[]): SummaryPrompt => ({
-  model: "gpt-4o-mini",
+  model: openai("gpt-4o-mini"),
   prompt: `${getNoAlterationsPrompt("all")}
 
 # All Notes
@@ -55,7 +57,7 @@ ${formatNotes(notes)}`,
 });
 
 export const getScratchpadPrompt = (notes: Note[]): SummaryPrompt => ({
-  model: "gpt-4o-mini",
+  model: openai("gpt-4o-mini"),
   prompt: `${getNoAlterationsPrompt("scratchpad")}
 
 # Notes
@@ -65,7 +67,7 @@ ${formatNotes(notes, { title: true })}`,
 });
 
 export const getCollectionsPrompt = (notes: Note[]): SummaryPrompt => ({
-  model: "gpt-4o-mini",
+  model: openai("gpt-4o-mini"),
   prompt: `${getNoAlterationsPrompt("collection")}
 
 # Collection Notes
@@ -75,7 +77,7 @@ ${formatNotes(notes, { title: true })}`,
 });
 
 export const getBrainstormPrompt = (notes: Note[]): SummaryPrompt => ({
-  model: "gpt-4o-mini",
+  model: openai("gpt-4o-mini"),
   prompt: `${getNoAlterationsPrompt("brainstorm")}
 
 # Brainstorm Notes
@@ -85,7 +87,7 @@ ${formatNotes(notes, { title: true })}`,
 });
 
 export const getJournalPrompt = (notes: Note[]): SummaryPrompt => ({
-  model: "gpt-4o-mini",
+  model: openai("gpt-4o-mini"),
   prompt: `Organize these journal notes into a single, organized, markdown formatted note, ordered by the date of the note. Use the following format:
   
 \`\`\`
@@ -99,7 +101,7 @@ ${formatNotes(notes, { date: true, id: true })}`,
 });
 
 export const getMeetingPrompt = (notes: Note[]): SummaryPrompt => ({
-  model: "gpt-4o-mini",
+  model: openai("gpt-4o-mini"),
   prompt: `Organize these meeting notes into a single, organized, markdown formatted note, ordered by the date of the note. Use the following format:
   
 \`\`\`
@@ -114,7 +116,7 @@ ${formatNotes(notes, { title: true, date: true, id: true })}`,
 });
 
 export const getResearchPrompt = (notes: Note[]): SummaryPrompt => ({
-  model: "gpt-4o",
+  model: openai("gpt-4o"),
   prompt: `${getNoAlterationsPrompt("research")}
 
 # Research Notes
@@ -124,7 +126,7 @@ ${formatNotes(notes)}`,
 });
 
 export const getLearningPrompt = (notes: Note[]): SummaryPrompt => ({
-  model: "gpt-4o-mini",
+  model: openai("gpt-4o-mini"),
   prompt: `${getNoAlterationsPrompt("learning")}
 
 # Learning Notes
@@ -134,7 +136,7 @@ ${formatNotes(notes)}`,
 });
 
 export const getFeedbackPrompt = (notes: Note[]): SummaryPrompt => ({
-  model: "gpt-4o-mini",
+  model: openai("gpt-4o-mini"),
   prompt: `Organize these feedback notes into a single, organized, markdown formatted note, ordered by the date of the note. Use the following format:
   
 \`\`\`
