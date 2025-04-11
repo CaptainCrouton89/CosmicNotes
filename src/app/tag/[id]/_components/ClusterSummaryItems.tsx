@@ -1,14 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
+import { clustersApi } from "@/lib/redux/services/clustersApi";
 import { itemsApi } from "@/lib/redux/services/itemsApi";
-import { Item, Note } from "@/types/types";
+import { Cluster, Item } from "@/types/types";
 import { Loader2, TrashIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface ClusterSummaryItemsProps {
-  notes: Note[];
-  tagId: number;
+  cluster: Cluster;
 }
 
 // Helper function to sort items
@@ -24,30 +24,42 @@ const sortItems = (items: Item[]): Item[] => {
   });
 };
 
-export function ClusterSummaryItems({
-  notes,
-  tagId,
-}: ClusterSummaryItemsProps) {
+export function ClusterSummaryItems({ cluster }: ClusterSummaryItemsProps) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState<Record<number, boolean>>({});
   const [deleting, setDeleting] = useState<Record<number, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // API mutations
+  // API hooks
+  const { data: completeCluster } = clustersApi.useGetClusterQuery(cluster.id);
   const [updateItemMutation] = itemsApi.useUpdateItemMutation();
   const [deleteItemMutation] = itemsApi.useDeleteItemMutation();
 
-  // Extract items from notes
+  // Extract items from notes in the cluster
   useEffect(() => {
     const fetchItems = async () => {
       setIsLoading(true);
       try {
-        // Collect all items from the notes
+        if (!completeCluster) return;
+
+        // Collect all items from the notes in the cluster
         const allItems: Item[] = [];
-        notes.forEach((note) => {
+
+        completeCluster.notes.forEach((note) => {
           if (note.items && note.items.length > 0) {
-            allItems.push(...(note.items as Item[]));
+            // Convert each item to Item type and add to allItems
+            note.items.forEach((item) => {
+              if (item.id) {
+                allItems.push({
+                  id: item.id,
+                  item: item.item || "",
+                  done: item.done || false,
+                  created_at: item.created_at || new Date().toISOString(),
+                  updated_at: item.updated_at || new Date().toISOString(),
+                });
+              }
+            });
           }
         });
 
@@ -64,7 +76,7 @@ export function ClusterSummaryItems({
     };
 
     fetchItems();
-  }, [notes, toast]);
+  }, [completeCluster, toast]);
 
   const handleToggleStatus = async (id: number, done: boolean) => {
     setLoading((prev) => ({ ...prev, [id]: true }));

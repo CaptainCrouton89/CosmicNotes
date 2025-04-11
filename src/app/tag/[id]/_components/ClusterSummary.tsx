@@ -1,16 +1,14 @@
 import { ITEM_CATEGORIES } from "@/lib/constants";
-import { Cluster, Note } from "@/types/types";
+import { Cluster } from "@/types/types";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ClusterSummaryItems } from "./ClusterSummaryItems";
 
 interface ClusterSummaryProps {
-  cluster: Cluster | undefined;
-  notes: Note[];
-  tagId: number;
+  cluster: Cluster;
 }
 
-export function ClusterSummary({ cluster, notes, tagId }: ClusterSummaryProps) {
+export function ClusterSummary({ cluster }: ClusterSummaryProps) {
   if (!cluster) return null;
 
   // Check if this category should display items
@@ -19,8 +17,8 @@ export function ClusterSummary({ cluster, notes, tagId }: ClusterSummaryProps) {
   return (
     <div className="mt-4">
       {shouldShowItems ? (
-        // Show items from notes
-        <ClusterSummaryItems notes={notes} tagId={tagId} />
+        // Show items from notes using the clusterId
+        <ClusterSummaryItems cluster={cluster} />
       ) : (
         // Show markdown summary
         <div className="markdown">

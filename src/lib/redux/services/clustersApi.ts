@@ -1,4 +1,4 @@
-import { Cluster, PaginatedResponse } from "@/types/types";
+import { Cluster, CompleteCluster, PaginatedResponse } from "@/types/types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const clustersApi = createApi({
@@ -40,7 +40,7 @@ export const clustersApi = createApi({
           : [{ type: "Cluster", id: "FILTERED_LIST" }],
     }),
 
-    getCluster: builder.query<Cluster, number>({
+    getCluster: builder.query<CompleteCluster, number>({
       query: (id) => `cluster/${id}`,
       providesTags: (result, error, id) => [{ type: "Cluster", id }],
     }),

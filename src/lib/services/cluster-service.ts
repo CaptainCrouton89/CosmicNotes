@@ -1,5 +1,5 @@
 import { Database } from "@/types/database.types";
-import { Category, Cluster, Note } from "@/types/types";
+import { Category, Cluster, CompleteCluster, Note } from "@/types/types";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { generateEmbedding } from "../embeddings";
 import { linkifySummary } from "../utils";
@@ -49,7 +49,7 @@ export class ClusterService {
     }));
   }
 
-  async getClusterById(id: number): Promise<Cluster> {
+  async getClusterById(id: number): Promise<CompleteCluster> {
     const { data, error } = await this.supabase
       .from("cosmic_cluster")
       .select("*, cosmic_tags(name, id)")
@@ -58,18 +58,77 @@ export class ClusterService {
 
     if (error) throw error;
 
-    const { data: notes, error: notesError } = await this.supabase
+    console.log("Cluster data:", data);
+
+    // Get all memories associated with this tag id
+    const { data: tagMappings, error: notesError } = await this.supabase
       .from("cosmic_memory_tag_map")
-      .select("*, cosmic_memory(*)")
-      .eq("tag", id)
-      .eq("cosmic_memory.category", data.category);
+      .select("note")
+      .eq("tag", data.tag);
 
     if (notesError) throw notesError;
+
+    console.log("Tag mappings:", tagMappings);
+
+    // If no memories are found
+    if (!tagMappings || tagMappings.length === 0) {
+      console.log("No tag mappings found for tag ID:", id);
+      return {
+        ...data,
+        tag: data.cosmic_tags,
+        note_count: 0,
+        notes: [],
+      };
+    }
+
+    // Get all the memory IDs
+    const memoryIds = tagMappings.map((mapping) => mapping.note);
+    console.log("Memory IDs:", memoryIds);
+
+    // Fetch the actual memories - REMOVED category filter
+    const { data: memories, error: memoriesError } = await this.supabase
+      .from("cosmic_memory")
+      .select("*")
+      .in("id", memoryIds);
+
+    if (memoriesError) throw memoriesError;
+
+    console.log("Memories:", memories);
+
+    // Fetch all tags and items for these memories in batch
+    const notesWithTagsAndItems = await Promise.all(
+      memories.map(async (memory) => {
+        // Get tags for this memory
+        const { data: tags, error: tagsError } = await this.supabase
+          .from("cosmic_memory_tag_map")
+          .select("*, cosmic_tags(*)")
+          .eq("note", memory.id);
+
+        if (tagsError) throw tagsError;
+
+        // Get collection items for this memory
+        const { data: items, error: itemsError } = await this.supabase
+          .from("cosmic_collection_item")
+          .select("*")
+          .eq("memory", memory.id);
+
+        if (itemsError) throw itemsError;
+
+        return {
+          ...memory,
+          tags: tags.map((tag) => tag.cosmic_tags),
+          items: items || [],
+        };
+      })
+    );
+
+    console.log("Notes with tags and items:", notesWithTagsAndItems);
 
     return {
       ...data,
       tag: data.cosmic_tags,
-      notes: notes.map((note) => note.cosmic_memory),
+      note_count: notesWithTagsAndItems.length,
+      notes: notesWithTagsAndItems,
     };
   }
 

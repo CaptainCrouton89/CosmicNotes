@@ -93,7 +93,7 @@ export type CompleteCluster = {
     id: number;
     name: string;
   };
-  notes: Database["public"]["Tables"]["cosmic_memory"]["Row"][];
+  notes: CompleteNote[];
 };
 
 export const ZONES = ["personal", "work", "other"] as const;
