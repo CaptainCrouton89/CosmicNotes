@@ -103,15 +103,14 @@ export class NoteService {
 
     if (error) throw error;
 
-    const { error: tagError, data: tagData } = await this.supabase
+    const { error: tagError, count } = await this.supabase
       .from("cosmic_memory_tag_map")
-      .select("*")
-      .eq("tag", tagId)
-      .maybeSingle();
+      .select("*", { count: "exact", head: false })
+      .eq("tag", tagId);
 
     if (tagError) throw tagError;
 
-    if (!tagData) {
+    if (count === 0) {
       const { error: tagDeleteError } = await this.supabase
         .from("cosmic_tags")
         .delete()

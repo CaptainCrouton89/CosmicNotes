@@ -1,14 +1,5 @@
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -38,17 +29,17 @@ export function NoteActions({
   isDeleting,
   disabled,
 }: NoteActionsProps) {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   return (
-    <div className="flex items-center gap-2 xl:gap-4 xl:self-auto self-start">
+    <div className="flex items-center xl:gap-4 xl:self-auto self-start">
       <Button
         variant="ghost"
         onClick={onSave}
         disabled={isSaving || !hasChanges || disabled}
       >
-        <Save className="h-4 w-4 mr-2" />
-        {isSaving ? "Saving..." : "Save"}
+        <Save className="h-4 w-4" />
+        {isSaving && "Saving..."}
       </Button>
 
       <DropdownMenu>
@@ -67,46 +58,21 @@ export function NoteActions({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogTrigger asChild>
-          <Button
-            variant="ghost"
-            disabled={disabled}
-            className="hover:text-destructive"
-          >
-            <Trash2 />
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Note</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this note? This action cannot be
-              undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setDeleteDialogOpen(false)}
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                onDelete();
-                setDeleteDialogOpen(false);
-              }}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <Button
+        variant={deleteConfirmOpen ? "destructive" : "ghost"}
+        size="sm"
+        className="transition-all duration-400 ease-in-out"
+        disabled={disabled}
+        onClick={() => {
+          if (!deleteConfirmOpen) setDeleteConfirmOpen(true);
+          else onDelete();
+        }}
+        onMouseLeave={() => {
+          if (deleteConfirmOpen) setDeleteConfirmOpen(false);
+        }}
+      >
+        {deleteConfirmOpen ? "Confirm Delete" : <Trash2 className="h-4 w-4" />}
+      </Button>
     </div>
   );
 }
