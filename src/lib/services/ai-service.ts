@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { CATEGORIES, Category, Note, Zone, ZONES } from "@/types/types";
+import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import * as z from "zod";
@@ -14,6 +15,22 @@ const CATEGORY_DESCRIPTIONS = `- to-do: The note contains a list of things to do
     - learning: The note contains notes from a class or course.
     - feedback: The note contains feedback for a product or service.
     - scratchpad: The note contains random thoughts or ideas, or the content doesn't fit into other categories.`;
+
+export async function demoGemeni() {
+  const result = await generateObject({
+    model: google("gemini-1.5-flash"),
+    temperature: 0,
+    system:
+      "You are a helpful assistant that specializes in turning disorganized notes into well-organized, markdown formatted notes.",
+    prompt: "Come up with a concise title for the following note",
+    schema: z.object({
+      title: z.string().describe("A concise title for the note"),
+    }),
+  });
+
+  return result.object.title;
+}
+
 export async function generateTodos(notes: Note[], tagId: number) {
   const supabase = await createClient();
 
@@ -76,7 +93,7 @@ export async function generateNoteSummary(notes: Note[], category: Category) {
 
 export async function generateNoteTitle(content: string) {
   const result = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: google("gemini-1.5-flash"),
     temperature: 0,
     system:
       "You are a helpful assistant that specializes in turning disorganized notes into well-organized, markdown formatted notes.",

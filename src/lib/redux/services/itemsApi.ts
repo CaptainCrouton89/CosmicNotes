@@ -1,21 +1,18 @@
-import { Item } from "@/types/types";
+import { CompleteItem, Item } from "@/types/types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const itemsApi = createApi({
   reducerPath: "itemApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
-  tagTypes: ["Item", "Cluster"],
+  tagTypes: ["Item"],
   endpoints: (builder) => ({
-    updateItem: builder.mutation<Item, { id: number; done: boolean }>({
+    updateItem: builder.mutation<CompleteItem, { id: number; done: boolean }>({
       query: ({ id, done }) => ({
         url: "item",
         method: "PUT",
         body: { id, done },
       }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: "Item", id },
-        { type: "Cluster", id: "LIST" },
-      ],
+      invalidatesTags: (result, error, { id }) => [{ type: "Item", id }],
     }),
 
     createItem: builder.mutation<Item, { item: string; tag: number }>({
@@ -24,10 +21,7 @@ export const itemsApi = createApi({
         method: "POST",
         body,
       }),
-      invalidatesTags: [
-        { type: "Item", id: "LIST" },
-        { type: "Cluster", id: "LIST" },
-      ],
+      invalidatesTags: [{ type: "Item", id: "LIST" }],
     }),
 
     deleteItem: builder.mutation<void, number>({
@@ -35,10 +29,17 @@ export const itemsApi = createApi({
         url: `item/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: "Item", id },
-        { type: "Cluster", id: "LIST" },
-      ],
+      invalidatesTags: (result, error, id) => [{ type: "Item", id: "LIST" }],
+    }),
+    getItemsByNoteId: builder.query<Item[], number>({
+      query: (noteId) => `note/${noteId}/item`,
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: "Item" as const, id })),
+              { type: "Item", id: "LIST" },
+            ]
+          : [{ type: "Item", id: "LIST" }],
     }),
   }),
 });

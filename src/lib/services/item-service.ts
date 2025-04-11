@@ -20,7 +20,7 @@ export class ItemService {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
       .insert(item)
-      .select("*, cosmic_memory(*)")
+      .select("*, memory:cosmic_memory(*)")
       .single();
 
     if (error) throw new Error(error.message);
@@ -30,7 +30,7 @@ export class ItemService {
     return {
       ...data,
       memory:
-        data.cosmic_memory as Database["public"]["Tables"]["cosmic_memory"]["Row"],
+        data.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
       embedding,
     };
   }
@@ -39,32 +39,36 @@ export class ItemService {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
       .insert(items)
-      .select("*, cosmic_memory(*)");
+      .select("*, memory:cosmic_memory(*)");
 
     if (error) throw new Error(error.message);
 
-    return data.map((item) => ({
-      ...item,
-      memory:
-        item.cosmic_memory as Database["public"]["Tables"]["cosmic_memory"]["Row"],
-      embedding: item.embedding || undefined,
-    }));
+    return data.map((item) => {
+      return {
+        ...item,
+        memory:
+          item.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
+        embedding: item.embedding || undefined,
+      };
+    });
   }
 
-  async getItems(collectionId: number): Promise<Item[]> {
+  async getItems(noteId: number): Promise<Item[]> {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
-      .select("*, cosmic_memory(*)")
-      .eq("collection_id", collectionId);
+      .select("*, memory:cosmic_memory(*)")
+      .eq("memory", noteId);
 
     if (error) throw new Error(error.message);
 
-    return data.map((item) => ({
-      ...item,
-      memory:
-        item.cosmic_memory as Database["public"]["Tables"]["cosmic_memory"]["Row"],
-      embedding: item.embedding || undefined,
-    }));
+    return data.map((item) => {
+      return {
+        ...item,
+        memory:
+          item.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
+        embedding: item.embedding || undefined,
+      };
+    });
   }
 
   async updateItem(
@@ -73,7 +77,7 @@ export class ItemService {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
       .update(item)
-      .select("*, cosmic_memory(*)")
+      .select("*, memory:cosmic_memory(*)")
       .single();
 
     if (error) throw new Error(error.message);
@@ -81,7 +85,7 @@ export class ItemService {
     return {
       ...data,
       memory:
-        data.cosmic_memory as Database["public"]["Tables"]["cosmic_memory"]["Row"],
+        data.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
       embedding: data.embedding || undefined,
     };
   }
@@ -98,7 +102,7 @@ export class ItemService {
   async getItem(id: number): Promise<CompleteItem> {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
-      .select("*, cosmic_memory(*)")
+      .select("*, memory:cosmic_memory(*)")
       .eq("id", id)
       .single();
 
@@ -107,7 +111,7 @@ export class ItemService {
     return {
       ...data,
       memory:
-        data.cosmic_memory as Database["public"]["Tables"]["cosmic_memory"]["Row"],
+        data.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
       embedding: data.embedding || undefined,
     };
   }
@@ -126,11 +130,22 @@ export class ItemService {
         embedding: await generateEmbedding(item),
       }))
     );
-    // delete cosmic_memory prop from each
-    const itemsWithoutMemory = embeddedItems.map((item) => ({
+
+    return this.createItems(embeddedItems);
+  }
+
+  async getItemsByNoteId(noteId: number): Promise<Item[]> {
+    const { data, error } = await this.supabase
+      .from("cosmic_collection_item")
+      .select("*")
+      .eq("memory", noteId);
+
+    if (error) throw new Error(error.message);
+
+    return data.map((item) => ({
       ...item,
-      cosmic_memory: undefined,
+      memory: undefined,
+      embedding: item.embedding || undefined,
     }));
-    return this.createItems(itemsWithoutMemory);
   }
 }

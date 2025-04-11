@@ -20,7 +20,6 @@ export function TagList({
   deletingTag,
   onAddTags,
 }: TagListProps) {
-  console.log("tags", tags);
   return (
     <>
       <TagIcon className="h-4 w-4" />

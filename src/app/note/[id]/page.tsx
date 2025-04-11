@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Zone } from "@/types/types";
 import "@mdxeditor/editor/style.css";
-import { ArrowLeft, Check, X } from "lucide-react";
+import { ArrowLeft, Check, Loader2, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { KeyboardEvent, useEffect, useState } from "react";
 import {
   CategorySelector,
+  ItemList,
   NoteActions,
   NoteMetadata,
   TagList,
@@ -19,6 +20,7 @@ import {
 import {
   useNoteActions,
   useNoteEditor,
+  useNoteItems,
   useNoteMetadata,
   useNoteTags,
 } from "./hooks";
@@ -67,15 +69,36 @@ export default function NotePage() {
 
   const { deleting, deleteNote } = useNoteActions(noteId);
 
+  // Note items hook
+  const {
+    items,
+    loading: itemsLoading,
+    deleting: itemsDeleting,
+    creating: itemsCreating,
+    hasItems,
+    isLoading: isLoadingItems,
+    toggleItemStatus,
+    createItem,
+    deleteItem,
+    refetchItems,
+  } = useNoteItems(note);
+
   // Update editor content when note data is loaded
   useEffect(() => {
-    if (note?.content && editorRef.current) {
+    if (note?.content && editorRef.current && !hasItems) {
       editorRef.current.setMarkdown(note.content);
     }
     if (note?.title) {
       setTitleValue(note.title);
     }
-  }, [note, editorRef]);
+  }, [note, editorRef, hasItems]);
+
+  // Refresh items when note is refreshed
+  useEffect(() => {
+    if (refreshing && hasItems) {
+      refetchItems();
+    }
+  }, [refreshing, hasItems, refetchItems]);
 
   const handleTitleClick = () => {
     if (!note || loading) return;
@@ -247,22 +270,44 @@ export default function NotePage() {
             />
           </div>
 
-          <div
-            className="w-full border rounded-md overflow-hidden flex-1 cursor-text"
-            onClick={focusEditor}
-          >
-            <ForwardRefEditor
-              key={String(noteId)}
-              ref={editorRef}
-              markdown={content}
-              onChange={handleEditorChange}
-              onBlur={() => {
-                if (hasChanges) {
-                  saveNote();
-                }
-              }}
-            />
-          </div>
+          {/* Show ItemList if note has items, otherwise show the markdown editor */}
+          {hasItems ? (
+            <div className="w-full border rounded-md overflow-hidden flex-1 p-4">
+              {isLoadingItems ? (
+                <div className="h-40 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2">Loading items...</span>
+                </div>
+              ) : (
+                <ItemList
+                  items={items}
+                  loading={itemsLoading}
+                  deleting={itemsDeleting}
+                  creating={itemsCreating}
+                  onToggleStatus={toggleItemStatus}
+                  onCreateItem={createItem}
+                  onDeleteItem={deleteItem}
+                />
+              )}
+            </div>
+          ) : (
+            <div
+              className="w-full border rounded-md overflow-hidden flex-1 cursor-text"
+              onClick={focusEditor}
+            >
+              <ForwardRefEditor
+                key={String(noteId)}
+                ref={editorRef}
+                markdown={content}
+                onChange={handleEditorChange}
+                onBlur={() => {
+                  if (hasChanges) {
+                    saveNote();
+                  }
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
