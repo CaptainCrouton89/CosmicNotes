@@ -38,7 +38,7 @@ export default function SearchPage() {
       { skip }
     );
 
-  const clusters = clustersData?.clusters || [];
+  const clusters = clustersData?.content || [];
   const isLoading = isSearching;
 
   // Filter clusters based on search query

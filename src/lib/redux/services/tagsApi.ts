@@ -5,6 +5,12 @@ import { notesApi } from "./notesApi";
 
 type TagInput = Database["public"]["Tables"]["cosmic_tags"]["Insert"];
 
+// Define the tag suggestion response interface
+export interface TagSuggestion {
+  name: string;
+  confidence: number;
+}
+
 export const tagsApi = createApi({
   reducerPath: "tagsApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
@@ -17,6 +23,19 @@ export const tagsApi = createApi({
     getAllTags: builder.query<(Tag & { note_count: number })[], void>({
       query: () => "tag",
       providesTags: [{ type: "Tag", id: "LIST" }],
+    }),
+
+    // Mutation endpoint to get tag suggestions (using POST)
+    suggestTags: builder.mutation<TagSuggestion[], string>({
+      query: (content) => ({
+        url: `note/suggest-tags`,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: { content },
+      }),
+      transformResponse: (response: { tags: TagSuggestion[] }) => response.tags,
     }),
 
     refineTags: builder.mutation<{ results: Tag[] }, void>({

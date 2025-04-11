@@ -42,6 +42,7 @@ export default function RootLayout({
                   </div>
                 </header>
                 <main className="flex-1 overflow-auto min-h-0">
+                  {/* container px-2 md:px-4 lg:px-10 */}
                   <div className="container px-2 md:px-4 lg:px-10 h-full flex flex-col">
                     {children}
                   </div>

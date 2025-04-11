@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     // Initialize services with proper dependency setup
     const { noteService, itemService } = await initializeServices();
-    const savedNote = await noteService.createNote(requestData);
+    const savedNote: Note = await noteService.createNote(requestData);
     if (ITEM_CATEGORIES.includes(savedNote.category)) {
       const items: Item[] = await itemService.saveNoteAsItems(
         savedNote,

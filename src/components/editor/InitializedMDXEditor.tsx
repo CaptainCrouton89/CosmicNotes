@@ -1,16 +1,8 @@
 "use client";
 import {
-  BlockTypeSelect,
   BoldItalicUnderlineToggles,
-  CodeToggle,
-  CreateLink,
-  headingsPlugin,
   imagePlugin,
-  InsertImage,
   InsertTable,
-  InsertThematicBreak,
-  linkDialogPlugin,
-  linkPlugin,
   listsPlugin,
   ListsToggle,
   markdownShortcutPlugin,
@@ -33,31 +25,23 @@ export default function InitializedMDXEditor({
   return (
     <MDXEditor
       plugins={[
-        headingsPlugin(),
+        // headingsPlugin(),
         listsPlugin(),
         quotePlugin(),
         thematicBreakPlugin(),
         markdownShortcutPlugin(),
-        linkPlugin(),
-        linkDialogPlugin(),
         imagePlugin(),
         tablePlugin(),
         toolbarPlugin({
           toolbarContents: () => (
-            <div className="flex items-center flex-wrap">
-              <BlockTypeSelect />
-              <Separator />
+            <div className="flex items-center flex-wrap gap-2">
+              {/* <BlockTypeSelect />
+              <Separator /> */}
               <BoldItalicUnderlineToggles />
-              <CodeToggle />
               <Separator />
-              <ListsToggle />
-              <Separator />
-              <CreateLink />
-              <InsertImage />
+              <ListsToggle options={["bullet", "number"]} />
               <Separator />
               <InsertTable />
-              <Separator />
-              <InsertThematicBreak />
             </div>
           ),
         }),

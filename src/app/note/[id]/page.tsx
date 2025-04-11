@@ -33,6 +33,8 @@ export default function NotePage() {
   const [titleValue, setTitleValue] = useState("");
 
   // Use custom hooks
+  const { deleting, deleteNote } = useNoteActions(noteId);
+
   const {
     note,
     loading,
@@ -51,7 +53,6 @@ export default function NotePage() {
 
   const {
     tags,
-    suggestedTags,
     showTagDialog,
     tagDeleting,
     setShowTagDialog,
@@ -66,8 +67,6 @@ export default function NotePage() {
     noteId,
     note?.content ?? ""
   );
-
-  const { deleting, deleteNote } = useNoteActions(noteId);
 
   // Note items hook
   const {
@@ -131,6 +130,16 @@ export default function NotePage() {
       handleTitleCancel();
     }
   };
+
+  // Skip rendering or processing if deletion is in progress
+  if (deleting) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Deleting note...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 flex flex-col flex-1 py-6">
@@ -196,7 +205,11 @@ export default function NotePage() {
       <TagSelectionDialog
         open={showTagDialog}
         onOpenChange={setShowTagDialog}
-        suggestedTags={suggestedTags}
+        suggestedTags={tags.map((tag) => ({
+          name: tag.name,
+          confidence: 1,
+          selected: true,
+        }))}
         onToggleTagSelection={toggleTagSelection}
         onSaveTags={saveSelectedTags}
         isSaving={saving}
@@ -263,6 +276,7 @@ export default function NotePage() {
                     existingTags.map((tag) => ({
                       tag: tag.tag,
                       confidence: 1,
+                      selected: false,
                     }))
                   );
                 }
@@ -272,7 +286,7 @@ export default function NotePage() {
 
           {/* Show ItemList if note has items, otherwise show the markdown editor */}
           {hasItems ? (
-            <div className="w-full border rounded-md overflow-hidden flex-1 p-4">
+            <div className="w-full overflow-hidden flex-1 p-4">
               {isLoadingItems ? (
                 <div className="h-40 flex items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

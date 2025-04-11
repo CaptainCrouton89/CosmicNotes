@@ -106,16 +106,10 @@ export function useNoteTags(noteId: number) {
 
   // Open tag dialog with suggested tags
   const openTagDialog = useCallback(
-    (suggestions: { tag: string; confidence: number }[]) => {
-      // Filter out X20 tags and prepare suggestions
-      const filteredSuggestions = suggestions
-        .filter((tag) => tag.tag !== "X20" && !tag.tag.includes("X20"))
-        .map((tag) => ({
-          ...tag,
-          selected: tag.confidence > 0.7, // Pre-select high confidence tags
-        }));
-
-      setSuggestedTags(filteredSuggestions);
+    async (
+      suggestions?: { tag: string; confidence: number; selected: boolean }[]
+    ) => {
+      setSuggestedTags(suggestions!);
       setShowTagDialog(true);
     },
     []

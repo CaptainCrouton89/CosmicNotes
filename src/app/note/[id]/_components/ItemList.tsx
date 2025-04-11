@@ -38,8 +38,6 @@ export function ItemList({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">Items</h3>
-
       {/* Add new item form */}
       <form onSubmit={handleAddItem} className="flex gap-2 mb-4">
         <Input

@@ -60,16 +60,14 @@ export const notesApi = createApi({
     }),
 
     createNote: builder.mutation<
-      CompleteNote,
-      NoteInput & { tags?: string[]; tagIds?: number[] }
+      Note,
+      Omit<NoteInput, "embedding"> & { tags?: string[]; tagIds?: number[] }
     >({
       query: (note) => ({
         url: "note",
         method: "POST",
         body: note,
       }),
-      transformResponse: (response: { success: boolean; note: CompleteNote }) =>
-        response.note,
       invalidatesTags: [{ type: "Note", id: "LIST" }],
     }),
 

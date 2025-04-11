@@ -2,6 +2,7 @@
 import { type MDXEditorMethods, type MDXEditorProps } from "@mdxeditor/editor";
 import dynamic from "next/dynamic";
 import { forwardRef } from "react";
+import "./styles.css";
 
 // This is the only place InitializedMDXEditor is imported directly.
 const Editor = dynamic(() => import("./InitializedMDXEditor"), {

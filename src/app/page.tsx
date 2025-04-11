@@ -1,11 +1,14 @@
 "use client";
 
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
-import { TagSuggestion } from "@/components/TagSelectionDialog";
-import { Badge } from "@/components/ui/badge";
+import {
+  TagSelectionDialog,
+  TagSuggestionWithSelected,
+} from "@/components/TagSelectionDialog";
 import { Button } from "@/components/ui/button";
 import { notesApi } from "@/lib/redux/services/notesApi";
-import { CATEGORIES, Category } from "@/types/types";
+import { tagsApi } from "@/lib/redux/services/tagsApi";
+import { CATEGORIES, Category, Zone } from "@/types/types";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -15,13 +18,21 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 function HomeContent() {
   const [note, setNote] = useState("");
   const [category, setCategory] = useState<Category>("scratchpad");
+  const [zone, setZone] = useState<Zone>("personal");
   const [createNote, { isLoading: isSaving }] =
     notesApi.useCreateNoteMutation();
+  const [updateNote, { isLoading: isUpdating }] =
+    notesApi.useUpdateNoteMutation();
+  const [suggestTags, { isLoading: isLoadingTags }] =
+    tagsApi.useSuggestTagsMutation();
   const editorRef = useRef<MDXEditorMethods>(null);
-  const [suggestedTags, setSuggestedTags] = useState<TagSuggestion[]>([]);
+  const [suggestedTags, setSuggestedTags] = useState<
+    TagSuggestionWithSelected[]
+  >([]);
   const [showTagDialog, setShowTagDialog] = useState(false);
   const [createdNoteId, setCreatedNoteId] = useState<number | null>(null);
   const [savingTags, setSavingTags] = useState(false);
+  const [loadingTagSuggestions, setLoadingTagSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,6 +57,48 @@ function HomeContent() {
     );
   }, []);
 
+  const saveSelectedTags = useCallback(async () => {
+    if (!createdNoteId) return;
+
+    try {
+      setSavingTags(true);
+
+      // Filter selected tags and prepare them for saving
+      const tagsToSave = suggestedTags
+        .filter((tag) => tag.selected)
+        .map((tag) => tag.name);
+
+      // Update the note with selected tags
+      await updateNote({
+        id: createdNoteId,
+        note: { tags: tagsToSave },
+      }).unwrap();
+
+      // Clear editor and reset state
+      setNote("");
+      setCategory("scratchpad");
+      setShowTagDialog(false);
+      if (editorRef.current) {
+        editorRef.current.setMarkdown("");
+      }
+    } catch (err) {
+      console.error("Error saving tags:", err);
+      setError("Failed to save tags");
+    } finally {
+      setSavingTags(false);
+    }
+  }, [createdNoteId, suggestedTags, updateNote]);
+
+  const skipTags = useCallback(() => {
+    // Clear editor and reset state without saving tags
+    setNote("");
+    setCategory("scratchpad");
+    setShowTagDialog(false);
+    if (editorRef.current) {
+      editorRef.current.setMarkdown("");
+    }
+  }, []);
+
   const handleSaveNote = async () => {
     if (!note.trim()) return;
 
@@ -54,48 +107,42 @@ function HomeContent() {
       const currentContent = editorRef.current?.getMarkdown() || note;
 
       // Create the note with category if specified
-      const result = await createNote({
+      const createNotePromise = createNote({
         content: currentContent,
-        embedding: "",
         category: category as Category, // Only include if set
+        zone: zone as Zone,
       }).unwrap();
 
-      // Store the created note ID for tag operations
-      setCreatedNoteId(result.id);
-
-      if (result.category === "scratchpad") {
+      if (category === "scratchpad") {
+        // For scratchpad notes, just clear the editor
+        setNote("");
+        if (editorRef.current) {
+          editorRef.current.setMarkdown("");
+        }
         return;
       }
-      // Get tag suggestions
-      try {
-        const suggestResponse = await fetch(
-          `/api/note/${result.id}/suggest-tags`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
 
-        if (!suggestResponse.ok) {
-          throw new Error("Failed to get tag suggestions");
+      const suggestedTagsPromise = suggestTags(currentContent).unwrap();
+
+      const newNote = await createNotePromise;
+      setCreatedNoteId(newNote.id);
+      if (newNote.category === "scratchpad") {
+        // For scratchpad notes, just clear the editor
+        setNote("");
+        if (editorRef.current) {
+          editorRef.current.setMarkdown("");
         }
-
-        const data = await suggestResponse.json();
-
+        return;
+      }
+      // Get tag suggestions using Redux API
+      try {
+        const tags = await suggestedTagsPromise;
         // Convert to TagSuggestion format and pre-select tags with high confidence
-        // Also filter out any X20 tags that might have slipped through
-        const suggestions: TagSuggestion[] = data.tags
-          .filter(
-            (tag: { tag: string; confidence: number }) =>
-              tag.tag !== "X20" && !tag.tag.includes("X20")
-          )
-          .map((tag: { tag: string; confidence: number }) => ({
-            tag: tag.tag,
-            confidence: tag.confidence,
-            selected: tag.confidence >= 0.8,
-          }));
+        const suggestions: TagSuggestionWithSelected[] = tags.map((tag) => ({
+          name: tag.name,
+          confidence: tag.confidence,
+          selected: tag.confidence >= 0.8,
+        }));
 
         setSuggestedTags(suggestions);
         setShowTagDialog(true);
@@ -113,8 +160,10 @@ function HomeContent() {
     } catch (error) {
       console.error("Error saving note:", error);
       setError("Failed to save note");
+      setShowTagDialog(false);
     }
   };
+
   const focusEditor = useCallback(() => {
     if (editorRef.current) {
       editorRef.current.focus();
@@ -122,37 +171,32 @@ function HomeContent() {
   }, []);
 
   return (
-    <div className="space-y-8 flex-1 min-h-0 flex flex-col pt-2 pb-4 md:pt-4">
+    <>
       {error && (
         <div className="p-4 bg-red-50 text-red-500 rounded-lg">{error}</div>
       )}
 
-      <div className="space-y-4 flex-1 min-h-0 flex flex-col">
-        <div className="flex items-center justify-between mb-1 md:mb-4">
-          <h2 className="text-xl font-semibold">New Note</h2>
-          {category && <Badge className="ml-2">{category}</Badge>}
-        </div>
-        <div
-          className="w-full border rounded-md overflow-hidden flex-1 min-h-0 cursor-text"
-          onClick={focusEditor}
-        >
-          <ForwardRefEditor
-            ref={editorRef}
-            markdown={note}
-            onChange={handleEditorChange}
-          />
-        </div>
-        <Button
-          onClick={handleSaveNote}
-          disabled={isSaving || !note.trim()}
-          className="w-full"
-        >
-          {isSaving ? "Saving..." : "Save Note"}
-        </Button>
+      <div
+        className="w-full overflow-hidden flex-1 min-h-0 cursor-text"
+        onClick={focusEditor}
+      >
+        <ForwardRefEditor
+          ref={editorRef}
+          markdown={note}
+          onChange={handleEditorChange}
+          autoFocus={true}
+        />
       </div>
+      <Button
+        onClick={handleSaveNote}
+        disabled={isSaving || !note.trim()}
+        className="top-3 absolute right-3"
+      >
+        {isSaving ? "Saving..." : "Save Note"}
+      </Button>
 
-      {/* Use the new TagSelectionDialog component */}
-      {/* <TagSelectionDialog
+      {/* Tag selection dialog */}
+      <TagSelectionDialog
         open={showTagDialog}
         onOpenChange={setShowTagDialog}
         suggestedTags={suggestedTags}
@@ -160,8 +204,9 @@ function HomeContent() {
         onSaveTags={saveSelectedTags}
         onSkipTags={skipTags}
         isSaving={savingTags}
-      /> */}
-    </div>
+        isLoading={loadingTagSuggestions}
+      />
+    </>
   );
 }
 

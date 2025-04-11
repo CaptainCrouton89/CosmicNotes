@@ -209,7 +209,7 @@ export class NoteService {
       tags?: string[];
       tagIds: number[];
     }
-  ): Promise<NoteRow> {
+  ): Promise<Note> {
     const embedding = note.content
       ? await generateEmbedding(note.content)
       : "[]";

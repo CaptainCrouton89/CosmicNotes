@@ -66,7 +66,7 @@ export function useNoteEditor(noteId: number) {
 
   // Save the note content
   const saveNote = useCallback(async () => {
-    if (!note) return;
+    if (!note || saving) return;
 
     try {
       setSaving(true);
@@ -89,7 +89,7 @@ export function useNoteEditor(noteId: number) {
     } finally {
       setSaving(false);
     }
-  }, [note, noteId, content, updateNote, refetch]);
+  }, [note, noteId, saving, content, updateNote, refetch]);
 
   // Refresh note and tags
   const refreshNote = useCallback(async () => {

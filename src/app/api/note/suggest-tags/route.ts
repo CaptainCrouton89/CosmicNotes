@@ -7,30 +7,20 @@ export const runtime = "edge";
 // POST endpoint to generate tag suggestions for a note
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ noteId: string }> }
+  { params }: { params: Promise<{ content: string }> }
 ) {
   try {
-    const noteId = (await params).noteId;
+    const content = (await params).content;
 
-    if (!noteId) {
-      throw new UserError("Note ID is required");
+    if (!content) {
+      throw new UserError("Content is required");
     }
 
     // Initialize services with proper dependency setup
-    const { tagService, noteService } = await initializeServices();
-
-    // Get the note content
-    const note = await noteService.getNoteById(parseInt(noteId));
-
-    if (!note) {
-      throw new UserError("Note not found");
-    }
+    const { tagService } = await initializeServices();
 
     // Generate tag suggestions without saving them
-    const suggestedTags = await tagService.getTagsForNote(
-      note.content as string,
-      0.5
-    );
+    const suggestedTags = await tagService.getTagsForNote(content, 0.5);
 
     // Additional filter to ensure no X20 tags slip through
     const filteredTags = suggestedTags.filter(

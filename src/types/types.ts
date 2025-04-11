@@ -1,5 +1,10 @@
 import { Database, Json } from "./database.types";
 
+export interface TagSuggestion {
+  name: string;
+  confidence: number;
+}
+
 export type Item = Partial<CompleteItem> & {
   id: number;
   item: string;
@@ -22,7 +27,7 @@ export type CompleteItem = {
 export type Note = Partial<CompleteNote> & {
   id: number;
   title: string;
-  content: string | null;
+  content: string;
   zone: Zone;
   category: Category;
   created_at: string;
@@ -33,7 +38,7 @@ export type Note = Partial<CompleteNote> & {
 export type CompleteNote = {
   id: number;
   title: string;
-  content: string | null;
+  content: string;
   zone: Zone;
   category: Category;
   created_at: string;
