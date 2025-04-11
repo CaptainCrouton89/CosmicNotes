@@ -25,8 +25,6 @@ export async function POST(req: Request) {
       return Response.json({ error: notesError }, { status: 500 });
     }
 
-    console.log("notes", notes);
-
     // join notes together, prefaced by date
     const notesContent = notes
       .map(

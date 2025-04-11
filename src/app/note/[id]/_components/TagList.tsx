@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Plus, Tag as TagIcon, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Tag as TagIcon, X } from "lucide-react";
+import { useState } from "react";
 
 interface Tag {
   id: number;
@@ -11,7 +12,7 @@ interface TagListProps {
   tags: Tag[];
   onDeleteTag: (tagId: number) => void;
   deletingTag: number | null;
-  onAddTags?: () => void;
+  onAddTags?: (tag: string) => void;
 }
 
 export function TagList({
@@ -20,6 +21,7 @@ export function TagList({
   deletingTag,
   onAddTags,
 }: TagListProps) {
+  const [newTag, setNewTag] = useState("");
   return (
     <>
       <TagIcon className="h-4 w-4" />
@@ -51,15 +53,19 @@ export function TagList({
         ))}
 
         {onAddTags && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onAddTags}
-            className="text-xs h-6 px-2 gap-1 ml-1"
-          >
-            <Plus className="h-3 w-3" />
-            {tags.length === 0 ? "Add Tags" : "Add More"}
-          </Button>
+          <Input
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                onAddTags(newTag);
+                setNewTag("");
+              }
+            }}
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value)}
+            type="text"
+            placeholder="Add tag..."
+            className="text-xs h-6 px-2 gap-1 ml-1 w-24"
+          />
         )}
       </div>
     </>

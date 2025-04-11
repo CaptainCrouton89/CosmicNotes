@@ -15,7 +15,6 @@ export const GET = async (
     // Initialize services with proper dependency setup
     const { tagService } = await initializeServices();
 
-    console.log("tagId", tagId);
     const tag = await tagService.getTag(tagId);
     return NextResponse.json(tag);
   } catch (error) {

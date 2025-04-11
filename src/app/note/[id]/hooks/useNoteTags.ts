@@ -18,6 +18,18 @@ export function useNoteTags(noteId: number) {
   const [deleteTag] = tagsApi.useDeleteTagMutation();
   const [updateNote] = notesApi.useUpdateNoteMutation();
 
+  const addTag = useCallback(
+    (tag: string) => {
+      if (!note) throw new Error("Note is undefined");
+      if (!tag) throw new Error("Tag is undefined");
+      updateNote({
+        id: noteId,
+        note: { tags: [...note!.tags.map((t) => t.name), tag] },
+      }).unwrap();
+    },
+    [noteId, updateNote, note]
+  );
+
   // Toggle a tag selection in the suggestions dialog
   const toggleTagSelection = useCallback((index: number) => {
     setSuggestedTags((prev) =>
@@ -126,5 +138,6 @@ export function useNoteTags(noteId: number) {
     handleTagDelete,
     openTagDialog,
     addCustomTag,
+    addTag,
   };
 }

@@ -142,21 +142,28 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          size="sm"
-          className={`h-8 gap-2 flex items-center justify-center ${getCategoryColor(
+          className={`gap-1 sm:gap-2 p-1 sm:p-2 h-auto flex items-center justify-center ${getCategoryColor(
             selectedCategory
           )}`}
         >
-          <Filter className="h-4 w-4" />
-          {selectedCategory || "All Categories"}
+          <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">
+            {selectedCategory || "All Categories"}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48">
         {CATEGORIES.map((cat) => (
-          <DropdownMenuItem key={cat} onClick={() => onSelectCategory(cat)}>
+          <DropdownMenuItem
+            key={cat}
+            onClick={() => onSelectCategory(cat)}
+            className="text-xs sm:text-sm py-1 px-2"
+          >
             {getCategoryIcon(cat, true)}
             <span className="ml-2">{cat}</span>
-            {selectedCategory === cat && <Check className="ml-auto h-4 w-4" />}
+            {selectedCategory === cat && (
+              <Check className="ml-auto h-3 w-3 sm:h-4 sm:w-4" />
+            )}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

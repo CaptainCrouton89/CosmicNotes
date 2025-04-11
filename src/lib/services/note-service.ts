@@ -130,8 +130,6 @@ export class NoteService {
         .select("*")
         .in("name", tags);
 
-      console.log("existingTags", existingTags);
-
       if (tagsError) throw tagsError;
 
       const newTags = tags.filter(
@@ -161,7 +159,6 @@ export class NoteService {
   ): Promise<void> {
     let allTagIds = tagIds || [];
     allTagIds.push(...(await this.upsertTags(tags)));
-    console.log("allTagIds", allTagIds);
 
     if (allTagIds.length > 0) {
       // First get existing tag mappings for this note

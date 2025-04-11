@@ -1,7 +1,6 @@
 "use client";
 
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
-import { TagSelectionDialog } from "@/components/TagSelectionDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ITEM_CATEGORIES } from "@/lib/constants";
@@ -52,17 +51,8 @@ export default function NotePage() {
     updateNoteTitle,
   } = useNoteEditor(noteId);
 
-  const {
-    tags,
-    showTagDialog,
-    tagDeleting,
-    setShowTagDialog,
-    toggleTagSelection,
-    saveSelectedTags,
-    handleTagDelete,
-    addCustomTag,
-    openTagDialog,
-  } = useNoteTags(noteId);
+  const { tags, tagDeleting, handleTagDelete, addCustomTag, addTag } =
+    useNoteTags(noteId);
 
   const { updatingField, updateCategory, updateZone } = useNoteMetadata(
     noteId,
@@ -203,7 +193,7 @@ export default function NotePage() {
       </div>
 
       {/* Replace with TagSelectionDialog component */}
-      <TagSelectionDialog
+      {/* <TagSelectionDialog
         open={showTagDialog}
         onOpenChange={setShowTagDialog}
         suggestedTags={tags.map((tag) => ({
@@ -216,7 +206,7 @@ export default function NotePage() {
         isSaving={saving}
         onSkipTags={() => setShowTagDialog(false)}
         onAddCustomTag={addCustomTag}
-      />
+      /> */}
 
       {loading ? (
         <div className="h-40 flex items-center justify-center">
@@ -230,7 +220,7 @@ export default function NotePage() {
         </div>
       ) : (
         <div className="space-y-4 flex flex-col flex-1">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground text-xs">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground text-xs px-4">
             {/* Note Metadata */}
             <NoteMetadata
               createdAt={note.created_at}
@@ -261,27 +251,7 @@ export default function NotePage() {
               tags={tags}
               onDeleteTag={handleTagDelete}
               deletingTag={tagDeleting}
-              onAddTags={() => {
-                // Open dialog with existing tags as suggestions
-                const existingTags = tags.map((tag) => ({
-                  tag: tag.name,
-                  confidence: 1,
-                }));
-
-                // If no tags exist, start with empty suggestions
-                if (existingTags.length === 0) {
-                  setShowTagDialog(true);
-                } else {
-                  // Use existing tags as suggestions
-                  openTagDialog(
-                    existingTags.map((tag) => ({
-                      tag: tag.tag,
-                      confidence: 1,
-                      selected: false,
-                    }))
-                  );
-                }
-              }}
+              onAddTags={addTag}
             />
           </div>
 
@@ -306,17 +276,22 @@ export default function NotePage() {
               )}
             </div>
           ) : (
-            <ForwardRefEditor
-              key={String(noteId)}
-              ref={editorRef}
-              markdown={content}
-              onChange={handleEditorChange}
-              onBlur={() => {
-                if (hasChanges) {
-                  saveNote();
-                }
-              }}
-            />
+            <div
+              className="w-full overflow-hidden flex-1 min-h-0 cursor-text"
+              onClick={focusEditor}
+            >
+              <ForwardRefEditor
+                key={String(noteId)}
+                ref={editorRef}
+                markdown={content}
+                onChange={handleEditorChange}
+                onBlur={() => {
+                  if (hasChanges) {
+                    saveNote();
+                  }
+                }}
+              />
+            </div>
           )}
         </div>
       )}

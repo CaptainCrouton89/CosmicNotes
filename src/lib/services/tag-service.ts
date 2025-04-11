@@ -25,6 +25,19 @@ type CompleteTag = Tag & {
   notes: Database["public"]["Tables"]["cosmic_memory"]["Row"][];
 };
 
+export interface TagMerge {
+  primaryTag: string;
+  similarTags: string[];
+}
+
+export interface TagMergeResult {
+  primaryTag: string;
+  primaryTagId?: number;
+  mergedTagIds?: number[];
+  success?: boolean;
+  error?: string;
+}
+
 export class TagService {
   private supabase: SupabaseClient<Database>;
   private noteService?: NoteService;
@@ -301,7 +314,6 @@ export class TagService {
       }
     }
 
-    console.log("Deleting cluster for category", category);
     clusterService.deleteClusterByCategory(completeTag.id, category);
     const notesInCategory = completeTag.notes.filter(
       (note) => note.category === category
@@ -313,7 +325,6 @@ export class TagService {
       category
     );
 
-    console.log("Created new cluster for category", category);
     return newCluster;
   }
 
@@ -339,5 +350,141 @@ export class TagService {
     completeTag.clusters = allClusters;
 
     return completeTag;
+  }
+
+  /**
+   * Merges similar tags into a primary tag
+   * @param merges Array of merge operations to perform
+   * @returns Array of results for each merge operation
+   */
+  async mergeTags(merges: TagMerge[]): Promise<TagMergeResult[]> {
+    const results: TagMergeResult[] = [];
+
+    // Process each merge operation
+    for (const merge of merges) {
+      const { primaryTag, similarTags } = merge;
+
+      // Get the primary tag
+      const { data: primaryTagData, error: primaryTagError } =
+        await this.supabase
+          .from("cosmic_tags")
+          .select("*")
+          .eq("name", primaryTag)
+          .single();
+
+      if (primaryTagError && primaryTagError.code !== "PGRST116") {
+        // Handle error except "no rows returned" error
+        throw primaryTagError;
+      }
+
+      // If primary tag doesn't exist, skip this merge
+      if (!primaryTagData) {
+        results.push({
+          primaryTag,
+          error: "Primary tag not found",
+        });
+        continue;
+      }
+
+      const primaryTagId = primaryTagData.id;
+      const mergedTagIds: number[] = [];
+
+      // Process each similar tag in the merge
+      for (const similarTag of similarTags) {
+        // Get the similar tag
+        const { data: similarTagData, error: similarTagError } =
+          await this.supabase
+            .from("cosmic_tags")
+            .select("*")
+            .eq("name", similarTag)
+            .single();
+
+        if (similarTagError && similarTagError.code !== "PGRST116") {
+          // Handle error except "no rows returned" error
+          throw similarTagError;
+        }
+
+        // If similar tag doesn't exist, skip this tag
+        if (!similarTagData) {
+          continue;
+        }
+
+        const similarTagId = similarTagData.id;
+        mergedTagIds.push(similarTagId);
+
+        // Get all notes with the similar tag
+        const { data: tagMaps, error: tagMapsError } = await this.supabase
+          .from("cosmic_memory_tag_map")
+          .select("*")
+          .eq("tag", similarTagId);
+
+        if (tagMapsError) {
+          throw tagMapsError;
+        }
+
+        if (!this.noteService) {
+          throw new Error("Note service is required for tag merging");
+        }
+
+        // For each note with the similar tag
+        for (const tagMap of tagMaps) {
+          const noteId = tagMap.note;
+
+          // Check if the note already has the primary tag
+          const { data: existingMapping, error: existingMappingError } =
+            await this.supabase
+              .from("cosmic_memory_tag_map")
+              .select("*")
+              .eq("note", noteId)
+              .eq("tag", primaryTagId);
+
+          if (existingMappingError) {
+            throw existingMappingError;
+          }
+
+          // If the note doesn't have the primary tag, add it
+          if (!existingMapping || existingMapping.length === 0) {
+            await this.noteService.addTagToNote(noteId, primaryTagId);
+          }
+
+          // Remove the similar tag from the note
+          await this.noteService.removeTagFromNote(noteId, similarTagId);
+        }
+
+        // Mark the primary tag as dirty to trigger cluster rebuild
+        await this.setTagDirty(primaryTagId);
+
+        // Delete the similar tag if it no longer has any notes
+        const { count, error: countError } = await this.supabase
+          .from("cosmic_memory_tag_map")
+          .select("*", { count: "exact", head: true })
+          .eq("tag", similarTagId);
+
+        if (countError) {
+          throw countError;
+        }
+
+        if (count === 0) {
+          // Delete similar tag entirely as it's no longer used
+          const { error: deleteError } = await this.supabase
+            .from("cosmic_tags")
+            .delete()
+            .eq("id", similarTagId);
+
+          if (deleteError) {
+            throw deleteError;
+          }
+        }
+      }
+
+      results.push({
+        primaryTag,
+        primaryTagId,
+        mergedTagIds,
+        success: true,
+      });
+    }
+
+    return results;
   }
 }

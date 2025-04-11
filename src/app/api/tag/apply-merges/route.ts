@@ -1,9 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
-import { capitalize } from "@/lib/utils";
+import { initializeServices } from "@/lib/services";
+import { TagMerge } from "@/lib/services/tag-service";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-// Define schema for request validation
+// Define the schema for the request body
 const applyMergesSchema = z.object({
   merges: z.array(
     z.object({
@@ -15,62 +15,33 @@ const applyMergesSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    // Parse and validate request body
+    // Parse and validate the request body
     const body = await request.json();
     const { merges } = applyMergesSchema.parse(body);
 
-    if (!merges || merges.length === 0) {
-      return NextResponse.json(
-        { message: "No merges to apply" },
-        { status: 400 }
-      );
-    }
+    // Initialize services
+    const { tagService } = await initializeServices();
 
-    // Initialize Supabase client
-    const supabase = await createClient();
+    // Process merges using the tag service
+    const results = await tagService.mergeTags(merges as TagMerge[]);
 
-    // Apply each merge
-    const updates = merges.map(async ({ primaryTag, similarTags }) => {
-      // Update all occurrences of similar tags to the primary tag
-      const { error: updateError } = await supabase
-        .from("cosmic_tags")
-        .update({ name: capitalize(primaryTag) })
-        .in("name", similarTags);
-
-      if (updateError) {
-        console.error("Error updating tags:", updateError);
-        return {
-          success: false,
-          primaryTag,
-          error: updateError,
-        };
-      }
-
-      return {
-        success: true,
-        primaryTag,
-        similarTags,
-      };
-    });
-
-    const results = await Promise.all(updates);
-
-    return NextResponse.json({
-      message: "Tag merges applied successfully",
-      results,
-    });
+    return NextResponse.json({ success: true, results });
   } catch (error) {
     console.error("Error applying tag merges:", error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid request format", details: error.format() },
+        {
+          success: false,
+          error: "Invalid request format",
+          details: error.errors,
+        },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: "Failed to apply tag merges" },
+      { success: false, error: "Failed to apply tag merges" },
       { status: 500 }
     );
   }

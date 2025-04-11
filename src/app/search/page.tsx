@@ -160,8 +160,8 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="container px-4 py-8 mx-auto max-w-5xl">
-      <h1 className="text-3xl font-bold mb-8 text-center sm:text-left">
+    <div className="container px-4 py-4 sm:py-8 mx-auto max-w-5xl">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-8 text-center sm:text-left">
         Search Notes & Clusters
       </h1>
 
