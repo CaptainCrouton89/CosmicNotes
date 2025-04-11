@@ -4,6 +4,7 @@ import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
 import { TagSelectionDialog } from "@/components/TagSelectionDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ITEM_CATEGORIES } from "@/lib/constants";
 import { Zone } from "@/types/types";
 import "@mdxeditor/editor/style.css";
 import { ArrowLeft, Check, Loader2, X } from "lucide-react";
@@ -285,7 +286,7 @@ export default function NotePage() {
           </div>
 
           {/* Show ItemList if note has items, otherwise show the markdown editor */}
-          {hasItems ? (
+          {ITEM_CATEGORIES.includes(note.category) ? (
             <div className="w-full overflow-hidden flex-1 p-4">
               {isLoadingItems ? (
                 <div className="h-40 flex items-center justify-center">

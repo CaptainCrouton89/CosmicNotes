@@ -1,16 +1,10 @@
+import { ITEM_CATEGORIES } from "@/lib/constants";
 import { ApplicationError, UserError } from "@/lib/errors";
 import { initializeServices } from "@/lib/services";
-import { Category, Item, Note } from "@/types/types";
+import { Item, Note } from "@/types/types";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
-
-const ITEM_CATEGORIES: Category[] = [
-  "to-do",
-  "brainstorm",
-  "collection",
-  "feedback",
-];
 
 export async function POST(req: NextRequest) {
   try {
