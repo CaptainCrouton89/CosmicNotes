@@ -11,6 +11,7 @@ import { tagsApi } from "@/lib/redux/services/tagsApi";
 import { CATEGORIES, Category, Zone } from "@/types/types";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
+import { SaveIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
@@ -189,10 +190,12 @@ function HomeContent() {
       </div>
       <Button
         onClick={handleSaveNote}
+        variant="ghost"
         disabled={isSaving || !note.trim()}
-        className="top-3 absolute right-3"
+        className="absolute top-3 right-3"
       >
-        {isSaving ? "Saving..." : "Save Note"}
+        <SaveIcon className="w-4 h-4" />
+        {isSaving ? "Saving..." : ""}
       </Button>
 
       {/* Tag selection dialog */}
