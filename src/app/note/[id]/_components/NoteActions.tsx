@@ -43,11 +43,9 @@ export function NoteActions({
   return (
     <div className="flex items-center gap-2 xl:gap-4 xl:self-auto self-start">
       <Button
-        variant="outline"
-        size="sm"
+        variant="ghost"
         onClick={onSave}
         disabled={isSaving || !hasChanges || disabled}
-        className="h-9 px-3"
       >
         <Save className="h-4 w-4 mr-2" />
         {isSaving ? "Saving..." : "Save"}
@@ -55,12 +53,7 @@ export function NoteActions({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 w-9 p-0"
-            disabled={disabled}
-          >
+          <Button variant="ghost" size="sm" disabled={disabled}>
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -78,13 +71,11 @@ export function NoteActions({
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogTrigger asChild>
           <Button
-            variant="destructive"
-            size="sm"
+            variant="ghost"
             disabled={disabled}
-            className="h-9 px-3"
+            className="hover:text-destructive"
           >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            <Trash2 />
           </Button>
         </DialogTrigger>
         <DialogContent>

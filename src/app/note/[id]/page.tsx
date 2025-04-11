@@ -305,22 +305,17 @@ export default function NotePage() {
               )}
             </div>
           ) : (
-            <div
-              className="w-full border rounded-md overflow-hidden flex-1 cursor-text"
-              onClick={focusEditor}
-            >
-              <ForwardRefEditor
-                key={String(noteId)}
-                ref={editorRef}
-                markdown={content}
-                onChange={handleEditorChange}
-                onBlur={() => {
-                  if (hasChanges) {
-                    saveNote();
-                  }
-                }}
-              />
-            </div>
+            <ForwardRefEditor
+              key={String(noteId)}
+              ref={editorRef}
+              markdown={content}
+              onChange={handleEditorChange}
+              onBlur={() => {
+                if (hasChanges) {
+                  saveNote();
+                }
+              }}
+            />
           )}
         </div>
       )}
