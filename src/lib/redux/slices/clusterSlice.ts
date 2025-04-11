@@ -1,5 +1,4 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { clustersApi } from "../services/clustersApi";
 
 // Define a simplified version of Cluster for state management
 // to avoid recursive type instantiation
@@ -30,17 +29,17 @@ const clusterSlice = createSlice({
       state.hasLoaded = false;
     },
   },
-  extraReducers: (builder) => {
-    builder.addMatcher(
-      clustersApi.endpoints.getClusters.matchFulfilled,
-      (state, { payload }) => {
-        if (payload && payload.clusters) {
-          state.clusters = payload.clusters;
-          state.hasLoaded = true;
-        }
-      }
-    );
-  },
+  // extraReducers: (builder) => {
+  //   // builder.addMatcher(
+  //   //   clustersApi.endpoints.getClusters.matchFulfilled,
+  //   //   (state, { payload }) => {
+  //   //     if (payload && payload.content) {
+  //   //       state.content = payload.content;
+  //   //       state.hasLoaded = true;
+  //   //     }
+  //   //   }
+  //   // );
+  // },
 });
 
 export const { clearClusters } = clusterSlice.actions;

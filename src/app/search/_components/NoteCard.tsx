@@ -1,4 +1,4 @@
-import { Note, Tag } from "@/types/types";
+import { Note } from "@/types/types";
 import React from "react";
 
 interface NoteCardProps {
@@ -39,7 +39,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({
       {/* Tags section */}
       {note.tags && note.tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
-          {note.tags.map((tag: Tag, tagIndex: number) => (
+          {note.tags.map((tag, tagIndex: number) => (
             <span
               key={tagIndex}
               className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10"
