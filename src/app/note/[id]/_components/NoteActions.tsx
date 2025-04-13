@@ -30,7 +30,7 @@ export function NoteActions({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   return (
-    <div className="flex items-center xl:gap-4 xl:self-auto self-start">
+    <div className="flex items-center xl:gap-4 xl:self-auto self-start absolute top-3 right-3">
       <Button
         variant="ghost"
         onClick={onSave}

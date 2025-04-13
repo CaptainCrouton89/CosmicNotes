@@ -3,17 +3,23 @@
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ITEM_CATEGORIES } from "@/lib/constants";
+import { formatDateOnly } from "@/lib/utils";
 import { Zone } from "@/types/types";
 import "@mdxeditor/editor/style.css";
-import { ArrowLeft, Check, Loader2, X } from "lucide-react";
+import { ArrowLeft, Check, Clock, Loader2, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { KeyboardEvent, useEffect, useState } from "react";
 import {
   CategorySelector,
   ItemList,
   NoteActions,
-  NoteMetadata,
   TagList,
   ZoneSelector,
 } from "./_components";
@@ -24,7 +30,6 @@ import {
   useNoteMetadata,
   useNoteTags,
 } from "./hooks";
-
 export default function NotePage() {
   const params = useParams();
   const noteId = Number(params.id);
@@ -133,78 +138,88 @@ export default function NotePage() {
 
   return (
     <div className="space-y-6 flex flex-col flex-1 py-6">
+      <NoteActions
+        onRefresh={refreshNote}
+        onSave={saveNote}
+        onDelete={deleteNote}
+        hasChanges={hasChanges}
+        isRefreshing={refreshing}
+        isSaving={saving}
+        disabled={!note || isEditingTitle}
+      />
       <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
         <div className="flex items-center gap-2 flex-1">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
+          <div>
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2 flex-1">
+                <Input
+                  type="text"
+                  value={titleValue}
+                  onChange={(e) => setTitleValue(e.target.value)}
+                  onKeyDown={handleTitleKeyDown}
+                  autoFocus
+                  className="text-xl xl:text-2xl font-bold w-full max-w-xs xl:max-w-md"
+                  placeholder="Note Title"
+                  onBlur={handleTitleSave}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleTitleSave}
+                  className="text-green-500"
+                >
+                  <Check className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleTitleCancel}
+                  className="text-red-500"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            ) : (
+              <h1
+                className="text-xl xl:text-2xl font-bold truncate max-w-xs xl:max-w-md xl:max-w-lg cursor-pointer hover:text-primary transition-colors px-2 py-1"
+                onClick={handleTitleClick}
+                title="Click to edit title"
+              >
+                {note?.title || "Note Details"}
+              </h1>
+            )}
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2 cursor-help text-muted-foreground text-xs">
+                    <Clock className="h-4 w-4" />
+                    <span>{formatDateOnly(note?.updated_at || "")}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <div className="space-y-1 text-xs">
+                    <div>
+                      <strong>Created:</strong> {note?.created_at}
+                    </div>
+                    <div>
+                      <strong>Last updated:</strong> {note?.updated_at}
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
 
-          {isEditingTitle ? (
-            <div className="flex items-center gap-2 flex-1">
-              <Input
-                type="text"
-                value={titleValue}
-                onChange={(e) => setTitleValue(e.target.value)}
-                onKeyDown={handleTitleKeyDown}
-                autoFocus
-                className="text-xl xl:text-2xl font-bold w-full max-w-xs xl:max-w-md"
-                placeholder="Note Title"
-                onBlur={handleTitleSave}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleTitleSave}
-                className="text-green-500"
-              >
-                <Check className="h-5 w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleTitleCancel}
-                className="text-red-500"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-          ) : (
-            <h1
-              className="text-xl xl:text-2xl font-bold truncate max-w-xs xl:max-w-md xl:max-w-lg cursor-pointer hover:text-primary transition-colors px-2 py-1"
-              onClick={handleTitleClick}
-              title="Click to edit title"
-            >
-              {note?.title || "Note Details"}
-            </h1>
-          )}
+              {saving && (
+                <div className="flex items-center gap-2">
+                  <span>Saving...</span>
+                </div>
+              )}
+            </TooltipProvider>
+          </div>
         </div>
-
-        <NoteActions
-          onRefresh={refreshNote}
-          onSave={saveNote}
-          onDelete={deleteNote}
-          hasChanges={hasChanges}
-          isRefreshing={refreshing}
-          isSaving={saving}
-          disabled={!note || isEditingTitle}
-        />
       </div>
-
-      {/* Replace with TagSelectionDialog component */}
-      {/* <TagSelectionDialog
-        open={showTagDialog}
-        onOpenChange={setShowTagDialog}
-        suggestedTags={tags.map((tag) => ({
-          name: tag.name,
-          confidence: 1,
-          selected: true,
-        }))}
-        onToggleTagSelection={toggleTagSelection}
-        onSaveTags={saveSelectedTags}
-        isSaving={saving}
-        onSkipTags={() => setShowTagDialog(false)}
-        onAddCustomTag={addCustomTag}
-      /> */}
 
       {loading ? (
         <div className="h-40 flex items-center justify-center">
@@ -220,20 +235,6 @@ export default function NotePage() {
         <div className="space-y-4 flex flex-col flex-1">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground text-xs px-4">
             {/* Note Metadata */}
-            <NoteMetadata
-              createdAt={note.created_at}
-              updatedAt={note.updated_at}
-              isSaving={saving}
-            />
-
-            {/* Category Selector */}
-            {note.category !== undefined && (
-              <CategorySelector
-                category={note.category}
-                updating={updatingField === "category"}
-                onUpdateCategory={updateCategory}
-              />
-            )}
 
             {/* Zone Selector */}
             {note.zone !== undefined && (
@@ -241,6 +242,15 @@ export default function NotePage() {
                 zone={note.zone as Zone}
                 updating={updatingField === "zone"}
                 onUpdateZone={updateZone}
+              />
+            )}
+
+            {/* Category Selector */}
+            {note.category !== undefined && (
+              <CategorySelector
+                category={note.category}
+                updating={updatingField === "category"}
+                onUpdateCategory={updateCategory}
               />
             )}
 

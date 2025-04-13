@@ -89,6 +89,7 @@ export class ClusterService {
     const { data: memories, error: memoriesError } = await this.supabase
       .from("cosmic_memory")
       .select("*")
+      .eq("category", data.category)
       .in("id", memoryIds);
 
     if (memoriesError) throw memoriesError;

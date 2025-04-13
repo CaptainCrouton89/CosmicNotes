@@ -25,7 +25,7 @@ export function ZoneSelector({
         <Button
           variant="outline"
           size="sm"
-          className={`h-6 w-8 px-1 flex items-center justify-center ${
+          className={`h-6 gap-1.5 px-2 flex items-center justify-center ${
             zone === "personal"
               ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
               : zone === "work"
@@ -38,13 +38,25 @@ export function ZoneSelector({
           {updating ? (
             <div className="w-3 h-3 border-t-2 border-muted-foreground rounded-full animate-spin" />
           ) : zone === "personal" ? (
-            <Home className="h-3.5 w-3.5" />
+            <>
+              <Home className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">Personal</span>
+            </>
           ) : zone === "work" ? (
-            <Briefcase className="h-3.5 w-3.5" />
+            <>
+              <Briefcase className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">Work</span>
+            </>
           ) : zone === "other" ? (
-            <Globe className="h-3.5 w-3.5" />
+            <>
+              <Globe className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">Other</span>
+            </>
           ) : (
-            <ChevronDown className="h-3 w-3 opacity-50" />
+            <>
+              <ChevronDown className="h-3 w-3 opacity-50" />
+              <span className="hidden sm:inline text-xs">Zone</span>
+            </>
           )}
         </Button>
       </DropdownMenuTrigger>

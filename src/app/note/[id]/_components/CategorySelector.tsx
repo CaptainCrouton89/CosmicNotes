@@ -124,7 +124,7 @@ export function CategorySelector({
         <Button
           variant="outline"
           size="sm"
-          className={`h-6 w-8 px-1 flex items-center justify-center ${
+          className={`h-6 w-8 text-xs sm:w-auto sm:px-3 flex items-center justify-center gap-2 ${
             category === "to-do"
               ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
               : category === "scratchpad"
@@ -149,7 +149,12 @@ export function CategorySelector({
           {updating ? (
             <div className="w-3 h-3 border-t-2 border-muted-foreground rounded-full animate-spin" />
           ) : (
-            getCategoryIcon(category)
+            <>
+              {getCategoryIcon(category)}
+              <span className="hidden sm:inline capitalize">
+                {category || "Uncategorized"}
+              </span>
+            </>
           )}
         </Button>
       </DropdownMenuTrigger>
@@ -157,7 +162,7 @@ export function CategorySelector({
         {CATEGORIES.map((cat) => (
           <DropdownMenuItem key={cat} onClick={() => onUpdateCategory(cat)}>
             {getCategoryIcon(cat, true)}
-            <span className="ml-2">{cat}</span>
+            <span className="ml-2 capitalize">{cat}</span>
             {category === cat && <Check className="ml-auto h-4 w-4" />}
           </DropdownMenuItem>
         ))}

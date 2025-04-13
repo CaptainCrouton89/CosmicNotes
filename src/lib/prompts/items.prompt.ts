@@ -1,4 +1,3 @@
-import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
 import { LanguageModel } from "ai";
 export type ItemsPrompt = {
@@ -21,8 +20,8 @@ const getNoAlterationsPrompt = (category: string) =>
   `Convert these ${category} notes into a single organized list. Make it more readable, but do not summarize the content. Do not add any additional information or formatting.`;
 
 export const getToDoPrompt = (content: string): ItemsPrompt => ({
-  model: google("gemini-1.5-flash"),
-  prompt: `${getNoAlterationsPrompt("to-do")}
+  model: openai("gpt-4o-mini"),
+  prompt: `Here is a collection things to do. It might not be organized or make much sense. Please organize it into a single list of actionable items, and make it more readable.
 
 # To-Do Notes
 ${content}`,
@@ -42,7 +41,7 @@ ${content}`,
 
 export const getBrainstormPrompt = (content: string): ItemsPrompt => ({
   model: openai("gpt-4o-mini"),
-  prompt: `${getNoAlterationsPrompt("brainstorm")}
+  prompt: `Here is a collection of one or more ideas. Please synthesize them into a single list of ideas. Each idea can be any length, as long as it encapsulates the original idea.
 
 # Brainstormed Ideas
 ${content}`,
