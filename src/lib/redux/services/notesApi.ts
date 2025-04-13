@@ -57,6 +57,7 @@ export const notesApi = createApi({
               { type: "Note", id: "LIST" },
             ]
           : [{ type: "Note", id: "LIST" }],
+      keepUnusedDataFor: 1800,
     }),
 
     createNote: builder.mutation<

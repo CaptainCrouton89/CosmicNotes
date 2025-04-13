@@ -33,6 +33,9 @@ const searchSlice = createSlice({
     setSelectedCategory: (state, action: PayloadAction<string | null>) => {
       state.selectedCategory = action.payload;
     },
+    setHasSearched: (state, action: PayloadAction<boolean>) => {
+      state.hasSearched = action.payload;
+    },
     clearSearch: (state) => {
       state.query = "";
       state.selectedCategory = null;
@@ -59,6 +62,10 @@ const searchSlice = createSlice({
   },
 });
 
-export const { setSearchQuery, setSelectedCategory, clearSearch } =
-  searchSlice.actions;
+export const {
+  setSearchQuery,
+  setSelectedCategory,
+  clearSearch,
+  setHasSearched,
+} = searchSlice.actions;
 export default searchSlice.reducer;

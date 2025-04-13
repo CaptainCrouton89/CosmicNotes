@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { clustersApi } from "@/lib/redux/services/clustersApi";
 import { notesApi } from "@/lib/redux/services/notesApi";
 import {
+  setHasSearched,
   setSearchQuery,
   setSelectedCategory,
 } from "@/lib/redux/slices/searchSlice";
@@ -16,15 +17,16 @@ import { SearchBox, SearchResults } from "./_components";
 export default function SearchPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const [skip, setSkip] = useState(true); // Skip initial search
   const storedSearchQuery = useAppSelector((state) => state.search.query);
   const storedSelectedCategory = useAppSelector(
     (state) => state.search.selectedCategory
   );
+  const hasSearched = useAppSelector((state) => state.search.hasSearched);
   const [searchQuery, setLocalSearchQuery] = useState(storedSearchQuery || "");
   const [selectedCategory, setLocalSelectedCategory] = useState(
     storedSelectedCategory
   );
+  const [skip, setSkip] = useState(!hasSearched || !storedSearchQuery);
 
   // Use the existing API hooks
   const { isLoading: isClustersLoading, data: clustersData } =
@@ -82,9 +84,17 @@ export default function SearchPage() {
   // Handler for category selection
   const handleCategorySelect = (category: string | null) => {
     setLocalSelectedCategory(category);
-    if (!skip) {
-      setSkip(true); // Reset skip to trigger a new search
-      setTimeout(() => setSkip(false), 0); // Then search again with the new category
+    if (searchQuery.trim()) {
+      if (!skip) {
+        setSkip(true); // Reset skip to trigger a new search
+        setTimeout(() => {
+          setSkip(false);
+          dispatch(setHasSearched(true));
+        }, 0); // Then search again with the new category
+      } else {
+        setSkip(false);
+        dispatch(setHasSearched(true));
+      }
     }
   };
 
@@ -96,6 +106,7 @@ export default function SearchPage() {
     }
     // Only this part triggers the actual API call
     setSkip(false);
+    dispatch(setHasSearched(true));
   };
 
   const handleRefine = () => {
