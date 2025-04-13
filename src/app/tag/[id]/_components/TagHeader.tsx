@@ -1,4 +1,5 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { capitalize } from "@/lib/utils";
 import { CATEGORIES, Category, Cluster } from "@/types/types";
 import { format } from "date-fns";
 import { Calendar, Clock } from "lucide-react";
@@ -62,15 +63,15 @@ export function TagHeader({
           defaultValue={activeCategory}
           value={activeCategory}
           onValueChange={(value) => onCategoryChange(value as Category)}
-          className="inline-flex"
+          className="w-full"
         >
-          <TabsList className="h-8">
+          <TabsList className="h-auto min-h-8 flex flex-wrap gap-1 pt-0.5 pb-0">
             {CATEGORIES.map((category) => (
               <TabsTrigger
                 key={category}
                 value={category}
                 disabled={!hasContent(category)}
-                className={`text-xs px-3 py-1 ${
+                className={`text-xs px-3 py-1 h-7 mb-1 ${
                   activeCategory === category ? "font-semibold" : ""
                 } ${
                   !hasContent(category)
@@ -79,7 +80,7 @@ export function TagHeader({
                 }`}
                 data-has-content={hasContent(category).toString()}
               >
-                {category}
+                {capitalize(category)}
               </TabsTrigger>
             ))}
           </TabsList>

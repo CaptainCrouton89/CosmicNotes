@@ -14,6 +14,8 @@ export const linkifySummary = (summary: string, fuzzyMatch = false) => {
 
 // capitalizes first letter
 export const capitalize = (str: string) => {
+  // capitalize letters after hyphens and _ too
+  str = str.replace(/[-_]\w/g, (char) => char.toUpperCase());
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
