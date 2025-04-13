@@ -1,3 +1,4 @@
+import { NoteService } from "@/lib/services/note-service";
 import { createClient } from "@/lib/supabase/server";
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
@@ -12,28 +13,29 @@ export async function POST(req: Request) {
 
     const supabase = await createClient();
 
-    const { data: notes, error: notesError } = await supabase
-      .from("cosmic_memory_tag_map")
-      .select("cosmic_memory(content, title, created_at, id)")
-      .eq("tag", tagId);
+    const noteService = new NoteService(supabase);
+    const notes = await noteService.getCompleteNotesByTag(tagId);
 
     if (!notes) {
       return Response.json({ error: "Cluster not found" }, { status: 404 });
-    }
-
-    if (notesError) {
-      return Response.json({ error: notesError }, { status: 500 });
     }
 
     // join notes together, prefaced by date
     const notesContent = notes
       .map(
         (note) =>
-          `## Title: ${note.cosmic_memory.title}
-ID: [${note.cosmic_memory.id}] 
-Created: ${note.cosmic_memory.created_at}
+          `## Title: ${note.title}
+ID: [${note.id}] 
+Created: ${note.created_at}
 
-${note.cosmic_memory.content}
+${
+  note.items
+    ? note.items
+        .map((item) => `- ${item.item} ${item.done ? "[x]" : "[ ]"}`)
+        .join("\n")
+    : note.content
+}
+}
 
 ---`
       )

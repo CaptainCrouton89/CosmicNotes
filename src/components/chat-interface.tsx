@@ -27,10 +27,10 @@ export function ChatInterface({
       onError: (err: Error) => {
         console.error("Chat error:", err);
       },
-      id: `cluster-${chatIdToUse}`,
+      id: `chat-${chatIdToUse}`,
       maxSteps: 15,
       body: {
-        tagName: chatIdToUse,
+        tagId: chatIdToUse,
       },
     });
   const messagesEndRef = useRef<HTMLDivElement>(null);

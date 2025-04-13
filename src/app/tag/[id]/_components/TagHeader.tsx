@@ -35,6 +35,7 @@ export function TagHeader({
     ...clusterCategories,
     ...noteCategories,
   ]);
+  console.log("activeCategory", activeCategory);
 
   // Function to check if a category has content (notes)
   const hasContent = (category: Category) =>

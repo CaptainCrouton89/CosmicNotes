@@ -12,12 +12,14 @@ interface ZoneSelectorProps {
   zone?: Zone;
   updating: boolean;
   onUpdateZone: (zone: Zone | undefined) => void;
+  allowNull?: boolean;
 }
 
 export function ZoneSelector({
   zone,
   updating,
   onUpdateZone,
+  allowNull = true,
 }: ZoneSelectorProps) {
   return (
     <DropdownMenu>
@@ -61,9 +63,11 @@ export function ZoneSelector({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-36">
-        <DropdownMenuItem onClick={() => onUpdateZone(undefined)}>
-          <span className="ml-2 capitalize">Automatic</span>
-        </DropdownMenuItem>
+        {allowNull && (
+          <DropdownMenuItem onClick={() => onUpdateZone(undefined)}>
+            <span className="ml-2 capitalize">Automatic</span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={() => onUpdateZone("personal")}>
           <Home className="mr-2 h-4 w-4 text-blue-600" />
           <span>Personal</span>

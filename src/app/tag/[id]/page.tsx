@@ -37,7 +37,7 @@ export default function TagPage() {
   // State for mobile detection and active categories
   const [, setIsMobile] = useState(false);
   const [activeCategory, setActiveCategory] = useState<Category>(
-    (categoryParam as Category) || "to-do"
+    (categoryParam as Category) || "scratchpad"
   );
   const [activeCluster, setActiveCluster] = useState<Omit<
     Cluster,

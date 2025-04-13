@@ -25,12 +25,14 @@ interface CategorySelectorProps {
   category?: Category;
   updating: boolean;
   onUpdateCategory: (category: Category | undefined) => void;
+  allowNull?: boolean;
 }
 
 export function CategorySelector({
   category,
   updating,
   onUpdateCategory,
+  allowNull = true,
 }: CategorySelectorProps) {
   const getCategoryIcon = useCallback(
     (categoryName: string | undefined, selected?: boolean) => {
@@ -159,9 +161,11 @@ export function CategorySelector({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48">
-        <DropdownMenuItem onClick={() => onUpdateCategory(undefined)}>
-          <span className="ml-2 capitalize">Automatic</span>
-        </DropdownMenuItem>
+        {allowNull && (
+          <DropdownMenuItem onClick={() => onUpdateCategory(undefined)}>
+            <span className="ml-2 capitalize">Automatic</span>
+          </DropdownMenuItem>
+        )}
         {CATEGORIES.map((cat) => (
           <DropdownMenuItem key={cat} onClick={() => onUpdateCategory(cat)}>
             {getCategoryIcon(cat, true)}

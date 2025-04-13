@@ -16,6 +16,7 @@ import {
   type MDXEditorProps,
 } from "@mdxeditor/editor";
 import type { ForwardedRef } from "react";
+import { createPortal } from "react-dom";
 
 // Only import this to the next file
 export default function InitializedMDXEditor({
@@ -34,14 +35,17 @@ export default function InitializedMDXEditor({
         tablePlugin(),
         toolbarPlugin({
           toolbarContents: () => (
-            <div className="flex items-center flex-wrap gap-2">
-              {/* <BlockTypeSelect />
-              <Separator /> */}
-              <BoldItalicUnderlineToggles />
-              <Separator />
-              <ListsToggle options={["bullet", "number"]} />
-              <Separator />
-              <InsertTable />
+            <div>
+              {createPortal(
+                <div className="flex items-center flex-wrap gap-2">
+                  <BoldItalicUnderlineToggles />
+                  <Separator />
+                  <ListsToggle options={["bullet", "number"]} />
+                  <Separator />
+                  <InsertTable />
+                </div>,
+                document.body.querySelector(".toolbar-head") || document.body
+              )}
             </div>
           ),
         }),

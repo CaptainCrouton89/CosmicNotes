@@ -1,6 +1,7 @@
 "use client";
 
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
+import { ToolbarHeader } from "@/components/editor/ToolbarHeader";
 import {
   TagSelectionDialog,
   TagSuggestionWithSelected,
@@ -16,7 +17,6 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { CategorySelector } from "./note/[id]/_components/CategorySelector";
 import { ZoneSelector } from "./note/[id]/_components/ZoneSelector";
-
 // Component that uses useSearchParams
 function HomeContent() {
   const [note, setNote] = useState("");
@@ -98,6 +98,13 @@ function HomeContent() {
     }
   }, []);
 
+  const addCustomTag = useCallback((tag: string) => {
+    setSuggestedTags((prev) => [
+      ...prev,
+      { name: tag, confidence: 0.8, selected: true },
+    ]);
+  }, []);
+
   const handleSaveNote = async () => {
     if (!note.trim()) return;
 
@@ -177,10 +184,8 @@ function HomeContent() {
         <div className="p-4 bg-red-50 text-red-500 rounded-lg">{error}</div>
       )}
 
-      <div
-        className="w-full overflow-hidden flex-1 min-h-0 cursor-text"
-        onClick={focusEditor}
-      >
+      <ToolbarHeader />
+      <div className="w-full flex-1 min-h-0 cursor-text" onClick={focusEditor}>
         <ForwardRefEditor
           ref={editorRef}
           markdown={note}
@@ -214,6 +219,7 @@ function HomeContent() {
         onSaveTags={saveSelectedTags}
         onSkipTags={skipTags}
         isSaving={savingTags}
+        onAddCustomTag={addCustomTag}
       />
     </>
   );

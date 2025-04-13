@@ -1,3 +1,10 @@
+.mdxeditor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
 .mdxeditor-toolbar {
-  background: transparent !important;
+  display: none !important;
 }

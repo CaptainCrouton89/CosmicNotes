@@ -4,7 +4,7 @@ import {
   TablesInsert,
   TablesUpdate,
 } from "@/types/database.types";
-import { Category, Note, Tag, Zone } from "@/types/types";
+import { Category, CompleteNote, Note, Tag, Zone } from "@/types/types";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { ITEM_CATEGORIES } from "../constants";
 import { generateEmbedding } from "../embeddings";
@@ -362,6 +362,32 @@ export class NoteService {
       metadata: note.metadata as Record<string, unknown>,
       tags: note.cosmic_memory_tag_map?.map((map) => map.tag) || [],
     })) as Note[];
+  }
+
+  async getCompleteNotesByTag(tagId: number): Promise<CompleteNote[]> {
+    const { data, error } = await this.supabase
+      .from("cosmic_memory_tag_map")
+      .select(
+        `
+        note:cosmic_memory(
+          *,
+          cosmic_collection_item(*)
+        )
+      `
+      )
+      .eq("tag", tagId);
+
+    if (error) throw error;
+
+    return data
+      .map((item) => item.note)
+      .filter((note) => note !== null)
+      .map((note) => ({
+        ...note,
+        metadata: note.metadata as Record<string, unknown>,
+        tags: [],
+        items: note.cosmic_collection_item || [],
+      })) as CompleteNote[];
   }
 
   async getNotesByTag(tagId: number): Promise<Note[]> {

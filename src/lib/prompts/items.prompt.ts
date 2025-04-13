@@ -40,8 +40,8 @@ ${content}`,
 });
 
 export const getBrainstormPrompt = (content: string): ItemsPrompt => ({
-  model: openai("gpt-4o-mini"),
-  prompt: `Here is a collection of one or more ideas. Please synthesize them into a single list of ideas. Each idea can be any length, as long as it encapsulates the original idea.
+  model: openai("gpt-4o"),
+  prompt: `Here is a collection of one or more ideas. Please synthesize them into a single list of complete ideas.
 
 # Brainstormed Ideas
 ${content}`,

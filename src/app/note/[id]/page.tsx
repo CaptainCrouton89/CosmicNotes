@@ -1,6 +1,7 @@
 "use client";
 
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
+import { ToolbarHeader } from "@/components/editor/ToolbarHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,6 +31,7 @@ import {
   useNoteMetadata,
   useNoteTags,
 } from "./hooks";
+
 export default function NotePage() {
   const params = useParams();
   const noteId = Number(params.id);
@@ -242,6 +244,7 @@ export default function NotePage() {
                 zone={note.zone as Zone}
                 updating={updatingField === "zone"}
                 onUpdateZone={(zone) => updateZone(zone as Zone)}
+                allowNull={false}
               />
             )}
 
@@ -253,6 +256,7 @@ export default function NotePage() {
                 onUpdateCategory={(category) =>
                   updateCategory(category as Category)
                 }
+                allowNull={false}
               />
             )}
 
@@ -290,6 +294,7 @@ export default function NotePage() {
               className="w-full overflow-hidden flex-1 min-h-0 cursor-text"
               onClick={focusEditor}
             >
+              <ToolbarHeader />
               <ForwardRefEditor
                 key={String(noteId)}
                 ref={editorRef}

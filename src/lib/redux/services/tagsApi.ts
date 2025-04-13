@@ -48,7 +48,7 @@ export const tagsApi = createApi({
 
     createTag: builder.mutation<CompleteTag, TagInput>({
       query: (tag) => ({
-        url: "tags",
+        url: "tag",
         method: "POST",
         body: tag,
       }),

@@ -1,5 +1,6 @@
 import { generateEmbedding } from "@/lib/embeddings";
 import { ApplicationError } from "@/lib/errors";
+import { searchNotes } from "@/lib/services/search-service";
 import { createClient } from "@/lib/supabase/server";
 import { CATEGORIES } from "@/types/types";
 import { tool } from "ai";
@@ -39,18 +40,8 @@ export const searchNotesTool = tool({
     const embeddingData = await embeddingResponse.json();
     const [{ embedding }] = embeddingData.data;
 
-    const client = await createClient();
-    const { data: notes, error } = await client.rpc("match_notes", {
-      query_embedding: embedding,
-      match_threshold: 0.8,
-      match_count: 5, // Retrieve more results initially for reranking
-    });
-
-    if (error) {
-      throw new ApplicationError("Failed to search notes", {
-        supabaseError: error,
-      });
-    }
+    const notes = await searchNotes(query, limit, 0.8, null);
+    console.log("notes", notes);
 
     // Rerank the results using OpenAI
     if (notes.length > 0) {
