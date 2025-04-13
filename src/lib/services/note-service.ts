@@ -211,12 +211,17 @@ export class NoteService {
       ? await generateEmbedding(note.content)
       : "[]";
 
-    const similarNotes = await searchNotes(note.content, 3, 0.8);
+    let newNoteCategory = note.category;
 
-    const category: Category = await generateNoteCategory(
-      note.content,
-      similarNotes
-    );
+    if (!newNoteCategory) {
+      const similarNotes = await searchNotes(note.content, 3, 0.8);
+
+      const category: Category = await generateNoteCategory(
+        note.content,
+        similarNotes
+      );
+      newNoteCategory = category;
+    }
 
     const { title, zone } = await generateNoteFields(note.content);
 
@@ -225,8 +230,8 @@ export class NoteService {
       .insert({
         ...note,
         title,
-        zone,
-        category,
+        zone: note.zone || zone,
+        category: newNoteCategory,
         embedding,
       })
       .select()

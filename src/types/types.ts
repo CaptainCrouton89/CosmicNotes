@@ -111,14 +111,14 @@ export interface PaginatedResponse<T> {
 }
 
 export const CATEGORIES = [
-  "to-do",
   "scratchpad",
+  "to-do",
+  "journal",
   "collection",
   "brainstorm",
-  "journal",
-  "meeting",
   "research",
   "learning",
   "feedback",
+  "meeting",
 ] as const;
 export type Category = (typeof CATEGORIES)[number];

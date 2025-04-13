@@ -6,12 +6,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Zone } from "@/types/types";
-import { Briefcase, Check, ChevronDown, Globe, Home } from "lucide-react";
+import { Briefcase, Check, FolderKanban, Globe, Home } from "lucide-react";
 
 interface ZoneSelectorProps {
   zone?: Zone;
   updating: boolean;
-  onUpdateZone: (zone: Zone) => void;
+  onUpdateZone: (zone: Zone | undefined) => void;
 }
 
 export function ZoneSelector({
@@ -54,13 +54,16 @@ export function ZoneSelector({
             </>
           ) : (
             <>
-              <ChevronDown className="h-3 w-3 opacity-50" />
+              <FolderKanban className="h-3 w-3 opacity-50" />
               <span className="hidden sm:inline text-xs">Zone</span>
             </>
           )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-36">
+        <DropdownMenuItem onClick={() => onUpdateZone(undefined)}>
+          <span className="ml-2 capitalize">Automatic</span>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onUpdateZone("personal")}>
           <Home className="mr-2 h-4 w-4 text-blue-600" />
           <span>Personal</span>

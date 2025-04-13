@@ -14,12 +14,14 @@ import "@mdxeditor/editor/style.css";
 import { SaveIcon } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { CategorySelector } from "./note/[id]/_components/CategorySelector";
+import { ZoneSelector } from "./note/[id]/_components/ZoneSelector";
 
 // Component that uses useSearchParams
 function HomeContent() {
   const [note, setNote] = useState("");
-  const [category, setCategory] = useState<Category>("scratchpad");
-  const [zone] = useState<Zone>("personal");
+  const [category, setCategory] = useState<Category | undefined>(undefined);
+  const [zone, setZone] = useState<Zone | undefined>(undefined);
   const [createNote, { isLoading: isSaving }] =
     notesApi.useCreateNoteMutation();
   const [updateNote] = notesApi.useUpdateNoteMutation();
@@ -113,6 +115,8 @@ function HomeContent() {
       if (category === "scratchpad") {
         // For scratchpad notes, just clear the editor
         setNote("");
+        setCategory(undefined);
+        setZone(undefined);
         if (editorRef.current) {
           editorRef.current.setMarkdown("");
         }
@@ -184,15 +188,22 @@ function HomeContent() {
           autoFocus={true}
         />
       </div>
-      <Button
-        onClick={handleSaveNote}
-        variant="ghost"
-        disabled={isSaving || !note.trim()}
-        className="absolute top-3 right-3"
-      >
-        <SaveIcon className="w-4 h-4" />
-        {isSaving ? "Saving..." : ""}
-      </Button>
+      <div className="flex items-center gap-2 xl:gap-4 xl:self-auto self-start absolute top-3 right-3">
+        <CategorySelector
+          category={category}
+          updating={isSaving}
+          onUpdateCategory={setCategory}
+        />
+        <ZoneSelector zone={zone} updating={isSaving} onUpdateZone={setZone} />
+        <Button
+          onClick={handleSaveNote}
+          variant="ghost"
+          disabled={isSaving || !note.trim()}
+        >
+          <SaveIcon className="w-4 h-4" />
+          {isSaving ? "Saving..." : ""}
+        </Button>
+      </div>
 
       {/* Tag selection dialog */}
       <TagSelectionDialog

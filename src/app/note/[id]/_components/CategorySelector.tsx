@@ -24,7 +24,7 @@ import { useCallback } from "react";
 interface CategorySelectorProps {
   category?: Category;
   updating: boolean;
-  onUpdateCategory: (category: Category) => void;
+  onUpdateCategory: (category: Category | undefined) => void;
 }
 
 export function CategorySelector({
@@ -152,13 +152,16 @@ export function CategorySelector({
             <>
               {getCategoryIcon(category)}
               <span className="hidden sm:inline capitalize">
-                {category || "Uncategorized"}
+                {category || "Category"}
               </span>
             </>
           )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48">
+        <DropdownMenuItem onClick={() => onUpdateCategory(undefined)}>
+          <span className="ml-2 capitalize">Automatic</span>
+        </DropdownMenuItem>
         {CATEGORIES.map((cat) => (
           <DropdownMenuItem key={cat} onClick={() => onUpdateCategory(cat)}>
             {getCategoryIcon(cat, true)}

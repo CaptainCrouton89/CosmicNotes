@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ITEM_CATEGORIES } from "@/lib/constants";
 import { formatDateOnly } from "@/lib/utils";
-import { Zone } from "@/types/types";
+import { Category, Zone } from "@/types/types";
 import "@mdxeditor/editor/style.css";
 import { ArrowLeft, Check, Clock, Loader2, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -241,7 +241,7 @@ export default function NotePage() {
               <ZoneSelector
                 zone={note.zone as Zone}
                 updating={updatingField === "zone"}
-                onUpdateZone={updateZone}
+                onUpdateZone={(zone) => updateZone(zone as Zone)}
               />
             )}
 
@@ -250,7 +250,9 @@ export default function NotePage() {
               <CategorySelector
                 category={note.category}
                 updating={updatingField === "category"}
-                onUpdateCategory={updateCategory}
+                onUpdateCategory={(category) =>
+                  updateCategory(category as Category)
+                }
               />
             )}
 

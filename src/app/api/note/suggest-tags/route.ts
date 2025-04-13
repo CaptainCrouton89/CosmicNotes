@@ -5,12 +5,9 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "edge";
 
 // POST endpoint to generate tag suggestions for a note
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ content: string }> }
-) {
+export async function POST(request: NextRequest) {
   try {
-    const content = (await params).content;
+    const content = (await request.json()).content;
 
     if (!content) {
       throw new UserError("Content is required");
