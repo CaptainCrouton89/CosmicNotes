@@ -77,8 +77,8 @@ ${formatNotes(notes, { title: true })}`,
 });
 
 export const getBrainstormPrompt = (notes: Note[]): SummaryPrompt => ({
-  model: openai("gpt-4o-mini"),
-  prompt: `${getNoAlterationsPrompt("brainstorm")}
+  model: openai("gpt-4o"),
+  prompt: `Synthesize and reorganize these brainstorm notes into a single organized note. Reorganize, restructure, and bucket information. 
 
 # Brainstorm Notes
 ${formatNotes(notes, { title: true })}`,

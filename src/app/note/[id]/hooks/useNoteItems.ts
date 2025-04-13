@@ -1,4 +1,5 @@
 import { useToast } from "@/components/ui/use-toast";
+import { ITEM_CATEGORIES } from "@/lib/constants";
 import { itemsApi } from "@/lib/redux/services/itemsApi";
 import { Item, Note } from "@/types/types";
 import { useEffect, useState } from "react";
@@ -43,6 +44,13 @@ export function useNoteItems(note: Note | undefined) {
   } = itemsApi.useGetItemsByNoteIdQuery(note?.id || 0, {
     skip: !note?.id,
   });
+
+  // When note category changes to an items category, trigger a refetch
+  useEffect(() => {
+    if (note && ITEM_CATEGORIES.includes(note.category)) {
+      refetchItems();
+    }
+  }, [note?.category, refetchItems, note]);
 
   // Update items when note changes or when items are fetched
   useEffect(() => {
@@ -156,7 +164,11 @@ export function useNoteItems(note: Note | undefined) {
     }
   };
 
-  const hasItems = items.length > 0 || (note?.items && note.items.length > 0);
+  // Separate states for tracking items existence and if note is an items category
+  const hasItemsData =
+    items.length > 0 || (note?.items && note.items.length > 0);
+  const isItemCategory = note ? ITEM_CATEGORIES.includes(note.category) : false;
+  const hasItems = hasItemsData || isItemCategory;
   const isLoading = isFetchingItems;
 
   return {
@@ -165,6 +177,8 @@ export function useNoteItems(note: Note | undefined) {
     deleting,
     creating,
     hasItems,
+    hasItemsData,
+    isItemCategory,
     isLoading,
     toggleItemStatus,
     createItem,

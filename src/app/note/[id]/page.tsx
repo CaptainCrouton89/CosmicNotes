@@ -72,6 +72,8 @@ export default function NotePage() {
     deleting: itemsDeleting,
     creating: itemsCreating,
     hasItems,
+    hasItemsData,
+    isItemCategory,
     isLoading: isLoadingItems,
     toggleItemStatus,
     createItem,
@@ -81,20 +83,20 @@ export default function NotePage() {
 
   // Update editor content when note data is loaded
   useEffect(() => {
-    if (note?.content && editorRef.current && !hasItems) {
+    if (note?.content && editorRef.current && !isItemCategory) {
       editorRef.current.setMarkdown(note.content);
     }
     if (note?.title) {
       setTitleValue(note.title);
     }
-  }, [note, editorRef, hasItems]);
+  }, [note, editorRef, isItemCategory]);
 
-  // Refresh items when note is refreshed
+  // Refresh items when note is refreshed or when category changes
   useEffect(() => {
-    if (refreshing && hasItems) {
+    if (refreshing || (note && ITEM_CATEGORIES.includes(note.category))) {
       refetchItems();
     }
-  }, [refreshing, hasItems, refetchItems]);
+  }, [refreshing, note, refetchItems]);
 
   const handleTitleClick = () => {
     if (!note || loading) return;

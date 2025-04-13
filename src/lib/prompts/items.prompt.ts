@@ -20,8 +20,8 @@ const getNoAlterationsPrompt = (category: string) =>
   `Convert these ${category} notes into a single organized list. Make it more readable, but do not summarize the content. Do not add any additional information or formatting.`;
 
 export const getToDoPrompt = (content: string): ItemsPrompt => ({
-  model: openai("gpt-4o-mini"),
-  prompt: `Here is a collection things to do. It might not be organized or make much sense. Please organize it into a single list of actionable items, and make it more readable.
+  model: openai("gpt-4o"),
+  prompt: `Here is an unstructured collection of things to do. It might not be organized or make much sense. Please organize it into a single list of actionable items, and make it more readable.
 
 # To-Do Notes
 ${content}`,
@@ -39,19 +39,9 @@ ${content}`,
   system: getSystemPrompt("collection"),
 });
 
-export const getBrainstormPrompt = (content: string): ItemsPrompt => ({
-  model: openai("gpt-4o"),
-  prompt: `Here is a collection of one or more ideas. Please synthesize them into a single list of complete ideas.
-
-# Brainstormed Ideas
-${content}`,
-  itemsArrayDescription: "The list of ideas",
-  system: getSystemPrompt("brainstorm"),
-});
-
 export const getFeedbackPrompt = (content: string): ItemsPrompt => ({
-  model: openai("gpt-4o-mini"),
-  prompt: `${getNoAlterationsPrompt("feedback")}
+  model: openai("gpt-4o"),
+  prompt: `Here is a bunch of unstructured feedback. Please organize it and make it more readable. If there are multiple ideas, please list them out. Treat each idea as a separate item.
 
 # Feedback Notes
 ${content}`,
@@ -67,8 +57,6 @@ export const getItemsPromptFunction = (
       return getToDoPrompt;
     case "collection":
       return getCollectionsPrompt;
-    case "brainstorm":
-      return getBrainstormPrompt;
     case "feedback":
       return getFeedbackPrompt;
     default:
