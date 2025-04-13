@@ -3,7 +3,6 @@ import { capitalize } from "@/lib/utils";
 import { CATEGORIES, Category, Cluster } from "@/types/types";
 import { format } from "date-fns";
 import { Calendar, Clock } from "lucide-react";
-import { useParams } from "next/navigation";
 
 interface TagHeaderProps {
   noteCount: number;
@@ -24,9 +23,6 @@ export function TagHeader({
   onCategoryChange,
   noteCategories = [],
 }: TagHeaderProps) {
-  const params = useParams();
-  const tagId = params.id;
-
   // Get unique categories from clusters
   const clusterCategories = [...new Set(clusters.map((c) => c.category))];
 

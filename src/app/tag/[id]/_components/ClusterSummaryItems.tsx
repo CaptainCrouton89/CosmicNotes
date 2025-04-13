@@ -3,7 +3,6 @@
 
 import { useToast } from "@/components/ui/use-toast";
 import { clustersApi } from "@/lib/redux/services/clustersApi";
-import { itemsApi } from "@/lib/redux/services/itemsApi";
 import { Cluster, Item } from "@/types/types";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -27,15 +26,11 @@ const sortItems = (items: Item[]): Item[] => {
 
 export function ClusterSummaryItems({ cluster }: ClusterSummaryItemsProps) {
   const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState<Record<number, boolean>>({});
-  const [deleting, setDeleting] = useState<Record<number, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   // API hooks
   const { data: completeCluster } = clustersApi.useGetClusterQuery(cluster.id);
-  const [updateItemMutation] = itemsApi.useUpdateItemMutation();
-  const [deleteItemMutation] = itemsApi.useDeleteItemMutation();
 
   // Extract items from notes in the cluster
   useEffect(() => {
@@ -78,61 +73,6 @@ export function ClusterSummaryItems({ cluster }: ClusterSummaryItemsProps) {
 
     fetchItems();
   }, [completeCluster, toast]);
-
-  const handleToggleStatus = async (id: number, done: boolean) => {
-    setLoading((prev) => ({ ...prev, [id]: true }));
-
-    try {
-      const updated = await updateItemMutation({ id, done: !done }).unwrap();
-
-      // Update local state and resort
-      setItems((prevItems) => {
-        const updatedItems = prevItems.map((item) =>
-          item.id === id
-            ? { ...item, done: !done, updated_at: updated.updated_at }
-            : item
-        );
-        return sortItems(updatedItems);
-      });
-
-      toast({
-        title: !done ? "Task completed" : "Task marked as incomplete",
-        duration: 2000,
-      });
-    } catch (error) {
-      console.error("Failed to update item:", error);
-      toast({
-        title: "Failed to update task",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading((prev) => ({ ...prev, [id]: false }));
-    }
-  };
-
-  const handleDeleteItem = async (id: number) => {
-    setDeleting((prev) => ({ ...prev, [id]: true }));
-
-    try {
-      await deleteItemMutation(id).unwrap();
-
-      // Remove the deleted item
-      setItems((prevItems) => prevItems.filter((item) => item.id !== id));
-
-      toast({
-        title: "Task deleted",
-        duration: 2000,
-      });
-    } catch (error) {
-      console.error("Failed to delete item:", error);
-      toast({
-        title: "Failed to delete task",
-        variant: "destructive",
-      });
-    } finally {
-      setDeleting((prev) => ({ ...prev, [id]: false }));
-    }
-  };
 
   if (isLoading) {
     return (

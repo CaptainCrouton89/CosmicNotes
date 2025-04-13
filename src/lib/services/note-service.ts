@@ -409,7 +409,7 @@ export class NoteService {
     }
 
     // Get all tags associated with this note
-    let tagsToMarkDirty = existingNote.tags.map((tag) => tag.id);
+    const tagsToMarkDirty = existingNote.tags.map((tag) => tag.id);
 
     if (updates.tags) {
       await this.upsertTagsToNote(id, updates.tags, updates.tagIds);

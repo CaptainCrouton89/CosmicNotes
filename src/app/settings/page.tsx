@@ -74,7 +74,7 @@ export default function SettingsPage() {
         title: "Settings updated",
         description: "Your settings have been saved successfully.",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update settings. Please try again.",

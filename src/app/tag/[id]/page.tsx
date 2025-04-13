@@ -28,8 +28,7 @@ export default function TagPage() {
   const categoryParam = searchParams.get("category");
   const tagId = parseInt(String(params.id), 10);
   const dispatch = useDispatch();
-  const [generateCluster, { isLoading }] =
-    tagsApi.useGenerateClusterForCategoryMutation();
+  const [generateCluster] = tagsApi.useGenerateClusterForCategoryMutation();
 
   console.log(categoryParam);
 
@@ -97,7 +96,7 @@ export default function TagPage() {
     } else {
       setActiveCluster(null);
     }
-  }, [tag, activeCategory]);
+  }, [tag, activeCategory, generateCluster, tagId]);
 
   // Initialize chat visibility based on screen size
   useEffect(() => {

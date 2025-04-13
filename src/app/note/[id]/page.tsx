@@ -71,8 +71,6 @@ export default function NotePage() {
     loading: itemsLoading,
     deleting: itemsDeleting,
     creating: itemsCreating,
-    hasItems,
-    hasItemsData,
     isItemCategory,
     isLoading: isLoadingItems,
     toggleItemStatus,

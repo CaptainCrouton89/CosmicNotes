@@ -93,10 +93,12 @@ export const notesApi = createApi({
           await queryFulfilled;
           // If the update includes tags, also invalidate the Tag cache
           if (note.tags || note.tagIds) {
-            // Import tagsApi lazily to avoid circular dependency
-            const { tagsApi } = require("./tagsApi");
+            // Import tagsApi dynamically to avoid circular dependency
+            const tagsApiModule = await import("./tagsApi");
             dispatch(
-              tagsApi.util.invalidateTags([{ type: "Tag", id: "LIST" }])
+              tagsApiModule.tagsApi.util.invalidateTags([
+                { type: "Tag", id: "LIST" },
+              ])
             );
           }
         } catch {}
