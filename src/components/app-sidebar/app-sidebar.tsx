@@ -215,27 +215,25 @@ export function AppSidebar() {
             ) : (
               <SidebarMenu>
                 {tagsData
-                  ? [...tagsData]
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((tag) => (
-                        <SidebarMenuItem key={tag.id}>
-                          <SidebarMenuButton
-                            className="w-full text-left font-medium"
-                            asChild
-                          >
-                            <Link href={`/tag/${tag.id}`}>
-                              <span className="flex justify-between items-center w-full">
-                                <span>{tag.name}</span>
-                                <span className="text-muted-foreground text-xs">
-                                  {tag.note_count > 1
-                                    ? `${tag.note_count} notes`
-                                    : `${tag.note_count} note`}
-                                </span>
+                  ? [...tagsData].map((tag) => (
+                      <SidebarMenuItem key={tag.id}>
+                        <SidebarMenuButton
+                          className="w-full text-left font-medium"
+                          asChild
+                        >
+                          <Link href={`/tag/${tag.id}`}>
+                            <span className="flex justify-between items-center w-full">
+                              <span>{tag.name}</span>
+                              <span className="text-muted-foreground text-xs">
+                                {tag.note_count > 1
+                                  ? `${tag.note_count} notes`
+                                  : `${tag.note_count} note`}
                               </span>
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))
+                            </span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))
                   : null}
               </SidebarMenu>
             )}
