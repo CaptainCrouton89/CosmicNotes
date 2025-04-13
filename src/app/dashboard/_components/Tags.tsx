@@ -65,10 +65,10 @@ function TagCard({ tag, onClick }: TagCardProps) {
         <div className="flex items-center justify-between mb-auto">
           <div className="flex items-center gap-0.5">
             <span className="text-[10px] font-medium text-blue-800">
-              {tag.clusters?.length || 0}
+              {tag.notes?.length || 0}
             </span>
             <span className="text-[10px] text-blue-600">
-              {tag.clusters?.length === 1 ? " cluster" : " clusters"}
+              {tag.notes?.length === 1 ? " note" : " notes"}
             </span>
           </div>
           {/* {tag.items && tag.items.length > 0 && (

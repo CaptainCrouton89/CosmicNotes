@@ -155,7 +155,7 @@ export default function Dashboard() {
 
       {/* Tags Section */}
       <Tags
-        tags={tagsData ?? []}
+        tags={tagsData?.slice(0, 6) ?? []}
         isLoading={tagsLoading}
         error={tagsError}
         onTagClick={handleTagClick}
