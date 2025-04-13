@@ -15,12 +15,17 @@ export async function POST() {
       return NextResponse.json({ message: "No tags to refine" });
     }
 
+    const { settingsService } = await initializeServices();
+    const userSettings = await settingsService.getSettings();
+
     // Use AI to identify similar tags and suggest merges
     const result = await generateObject({
       model: openai("gpt-4o-mini"),
       temperature: 0,
-      system:
-        "You are a helpful assistant that analyzes tags and identifies similar or related ones that should be merged.",
+      system: `You are a helpful assistant that analyzes tags and identifies similar or related ones that should be merged. 
+        
+        Additional user information:
+        ${userSettings.merge_tag_prompt}`,
       prompt: `Analyze these tags and identify groups of similar or related tags that should be merged.
                For each group, select the most appropriate tag as the primary tag.
                Only suggest merging tags that are truly similar or represent the same concept.

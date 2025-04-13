@@ -3,6 +3,7 @@ import { setupListeners } from "@reduxjs/toolkit/query";
 import { clustersApi } from "./services/clustersApi";
 import { itemsApi } from "./services/itemsApi";
 import { notesApi } from "./services/notesApi";
+import { settingsApi } from "./services/settingsApi";
 import { tagsApi } from "./services/tagsApi";
 import noteReducer from "./slices/noteSlice";
 import searchReducer from "./slices/searchSlice";
@@ -17,13 +18,15 @@ export const store = configureStore({
     [tagsApi.reducerPath]: tagsApi.reducer,
     [clustersApi.reducerPath]: clustersApi.reducer,
     [itemsApi.reducerPath]: itemsApi.reducer,
+    [settingsApi.reducerPath]: settingsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       notesApi.middleware,
       tagsApi.middleware,
       clustersApi.middleware,
-      itemsApi.middleware
+      itemsApi.middleware,
+      settingsApi.middleware
     ),
 });
 

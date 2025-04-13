@@ -58,8 +58,6 @@ export class ClusterService {
 
     if (error) throw error;
 
-    console.log("Cluster data:", data);
-
     // Get all memories associated with this tag id
     const { data: tagMappings, error: notesError } = await this.supabase
       .from("cosmic_memory_tag_map")
@@ -68,11 +66,8 @@ export class ClusterService {
 
     if (notesError) throw notesError;
 
-    console.log("Tag mappings:", tagMappings);
-
     // If no memories are found
     if (!tagMappings || tagMappings.length === 0) {
-      console.log("No tag mappings found for tag ID:", id);
       return {
         ...data,
         tag: data.cosmic_tags,
@@ -83,7 +78,6 @@ export class ClusterService {
 
     // Get all the memory IDs
     const memoryIds = tagMappings.map((mapping) => mapping.note);
-    console.log("Memory IDs:", memoryIds);
 
     // Fetch the actual memories - REMOVED category filter
     const { data: memories, error: memoriesError } = await this.supabase
@@ -93,8 +87,6 @@ export class ClusterService {
       .in("id", memoryIds);
 
     if (memoriesError) throw memoriesError;
-
-    console.log("Memories:", memories);
 
     // Fetch all tags and items for these memories in batch
     const notesWithTagsAndItems = await Promise.all(
@@ -122,8 +114,6 @@ export class ClusterService {
         };
       })
     );
-
-    console.log("Notes with tags and items:", notesWithTagsAndItems);
 
     return {
       ...data,

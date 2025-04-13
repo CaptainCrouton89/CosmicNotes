@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ClusterService } from "./cluster-service";
 import { ItemService } from "./item-service";
 import { NoteService } from "./note-service";
+import { SettingsService } from "./settings-service";
 import { TagService } from "./tag-service";
 /**
  * Initialize services with proper dependencies
@@ -15,6 +16,7 @@ export async function initializeServices() {
   const tagService = new TagService(supabaseClient);
   const itemService = new ItemService(supabaseClient);
   const clusterService = new ClusterService(supabaseClient);
+  const settingsService = new SettingsService(supabaseClient);
 
   // Now set the dependencies
   noteService.setTagService(tagService);
@@ -25,6 +27,7 @@ export async function initializeServices() {
   tagService.setClusterService(clusterService);
 
   return {
+    settingsService,
     noteService,
     tagService,
     itemService,
@@ -33,4 +36,4 @@ export async function initializeServices() {
 }
 
 // Export services for direct imports
-export { NoteService, TagService };
+export { NoteService, SettingsService, TagService };

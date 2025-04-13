@@ -14,9 +14,9 @@ export async function POST(req: Request) {
     const { messages, tagId }: { messages: Message[]; tagId: number } =
       await req.json();
 
-    const { noteService } = await initializeServices();
+    const { noteService, settingsService } = await initializeServices();
     const notes = await noteService.getCompleteNotesByTag(tagId);
-
+    const userSettings = await settingsService.getSettings();
     if (!notes) {
       return Response.json({ error: "Cluster not found" }, { status: 404 });
     }
@@ -51,6 +51,8 @@ ${
 
       # Metadata
       Current tag: ${tagId}
+      Additional user information:
+      ${userSettings.chat_system_instructions}
       
       ## Instructions
       Help the user in any way they wish. If you use notes to answer the question, cite them like this:

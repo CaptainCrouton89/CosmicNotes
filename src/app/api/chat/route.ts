@@ -1,3 +1,4 @@
+import { initializeServices } from "@/lib/services";
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
 import {
@@ -5,7 +6,6 @@ import {
   basicSearchNotesTool,
   deepSearchNotesTool,
 } from "./noteTools";
-
 const openAiKey = process.env.OPENAI_API_KEY;
 
 export const runtime = "edge";
@@ -18,6 +18,9 @@ export async function POST(req: Request) {
     );
   }
 
+  const { settingsService } = await initializeServices();
+  const userSettings = await settingsService.getSettings();
+
   try {
     const { messages }: { messages: Message[] } = await req.json();
 
@@ -25,8 +28,10 @@ export async function POST(req: Request) {
     const result = streamText({
       model: openai("gpt-4o"),
       temperature: 0.2,
-      system:
-        "You are an insightful, intelligent, assistant managing a user's notes, like a personal librarian.",
+      system: `You are an insightful, intelligent, assistant managing a user's notes, like a personal librarian.
+      
+      Additional user information:
+      ${userSettings.chat_system_instructions}`,
       messages,
       tools: {
         addNoteTool,
