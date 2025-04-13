@@ -4,6 +4,7 @@ import { openai } from "@ai-sdk/openai";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { generateObject } from "ai";
 import { z } from "zod";
+import { ITEM_CATEGORIES } from "../constants";
 import { capitalize } from "../utils";
 import { ClusterService } from "./cluster-service";
 import { NoteService } from "./note-service";
@@ -41,10 +42,16 @@ export interface TagMergeResult {
 export class TagService {
   private supabase: SupabaseClient<Database>;
   private noteService?: NoteService;
+  private clusterService?: ClusterService;
 
-  constructor(supabase: SupabaseClient<Database>, noteService?: NoteService) {
+  constructor(
+    supabase: SupabaseClient<Database>,
+    noteService?: NoteService,
+    clusterService?: ClusterService
+  ) {
     this.supabase = supabase;
     this.noteService = noteService;
+    this.clusterService = clusterService;
   }
 
   /**
@@ -52,6 +59,10 @@ export class TagService {
    */
   setNoteService(noteService: NoteService): void {
     this.noteService = noteService;
+  }
+
+  setClusterService(clusterService: ClusterService): void {
+    this.clusterService = clusterService;
   }
 
   async getTag(id: number): Promise<CompleteTag> {
@@ -303,8 +314,6 @@ export class TagService {
       completeTag = await this.getTag(tagId!);
     }
 
-    const clusterService = new ClusterService(this.supabase);
-
     if (!force) {
       const existingCluster = completeTag.clusters.find(
         (cluster) => cluster.category === category
@@ -314,18 +323,25 @@ export class TagService {
       }
     }
 
-    clusterService.deleteClusterByCategory(completeTag.id, category);
+    this.clusterService!.deleteClusterByCategory(completeTag.id, category);
     const notesInCategory = completeTag.notes.filter(
       (note) => note.category === category
     );
 
-    const newCluster = await clusterService.createClusterFromNotes(
-      completeTag.id,
-      notesInCategory,
-      category
-    );
-
-    return newCluster;
+    if (ITEM_CATEGORIES.includes(category)) {
+      const newCluster = await this.clusterService!.createClusterFromNotes(
+        completeTag.id,
+        notesInCategory,
+        category
+      );
+      return newCluster;
+    } else {
+      const newCluster = await this.clusterService!.createEmptyCluster(
+        completeTag.id,
+        category
+      );
+      return newCluster;
+    }
   }
 
   async generateAllClusters(

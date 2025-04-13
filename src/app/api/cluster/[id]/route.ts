@@ -1,5 +1,4 @@
-import { ClusterService } from "@/lib/services/cluster-service";
-import { createClient } from "@/lib/supabase/server";
+import { initializeServices } from "@/lib/services";
 import type { NextRequest } from "next/server";
 
 export async function GET(
@@ -10,8 +9,7 @@ export async function GET(
     const { id } = await params;
     const clusterId = parseInt(id, 10);
 
-    const supabase = await createClient();
-    const clusterService = new ClusterService(supabase);
+    const { clusterService } = await initializeServices();
     const cluster = await clusterService.getClusterById(clusterId);
 
     return new Response(JSON.stringify(cluster), {

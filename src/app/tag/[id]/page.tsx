@@ -28,6 +28,10 @@ export default function TagPage() {
   const categoryParam = searchParams.get("category");
   const tagId = parseInt(String(params.id), 10);
   const dispatch = useDispatch();
+  const [generateCluster, { isLoading }] =
+    tagsApi.useGenerateClusterForCategoryMutation();
+
+  console.log(categoryParam);
 
   // Use global UI state for chat visibility
   const isChatVisible = useSelector(
@@ -78,15 +82,17 @@ export default function TagPage() {
   }, [tag, categoryParam, activeCategory]);
 
   useEffect(() => {
-    if (tag && tag.clusters && tag.clusters.length > 0) {
+    console.log("tag", tag, "activeCategory", activeCategory);
+    if (tag && tag.clusters) {
       // Find a cluster matching the active category if possible
+      console.log("tag.clusters", tag.clusters);
       const matchingCluster = tag.clusters.find(
         (c) => c.category === activeCategory
       );
       if (matchingCluster) {
         setActiveCluster(matchingCluster);
       } else {
-        setActiveCluster(null);
+        generateCluster({ tagId, category: activeCategory });
       }
     } else {
       setActiveCluster(null);
@@ -144,6 +150,8 @@ export default function TagPage() {
     }
   };
 
+  console.log("activeCluster", activeCluster, "activeCategory", activeCategory);
+
   // Loading states
   if (tagLoading) return <LoadingState />;
 
@@ -186,6 +194,8 @@ export default function TagPage() {
     (categoryNotes.length > 0 && !categoryCluster) ||
     (categoryCluster && categoryCluster.dirty === true);
 
+  console.log("categoryCluster", categoryCluster, activeCluster);
+
   return (
     <div className="flex flex-col md:flex-row min-h-0 h-full relative">
       <div
@@ -210,7 +220,7 @@ export default function TagPage() {
             <ClusterSummary cluster={activeCluster} />
 
             {/* Show generate button if cluster is dirty */}
-            {activeCluster.dirty && (
+            {activeCluster.dirty && activeCluster.notes?.length === 0 && (
               <div className="mt-4 mb-2">
                 <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-3">
                   <p className="text-amber-800 text-sm">

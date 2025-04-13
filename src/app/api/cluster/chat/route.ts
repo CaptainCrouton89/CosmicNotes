@@ -1,8 +1,11 @@
-import { NoteService } from "@/lib/services/note-service";
-import { createClient } from "@/lib/supabase/server";
+import { initializeServices } from "@/lib/services";
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
-import { addNoteTool, searchNotesTool } from "../../chat/noteTools";
+import {
+  addNoteTool,
+  basicSearchNotesTool,
+  deepSearchNotesTool,
+} from "../../chat/noteTools";
 
 export const runtime = "edge";
 
@@ -11,9 +14,7 @@ export async function POST(req: Request) {
     const { messages, tagId }: { messages: Message[]; tagId: number } =
       await req.json();
 
-    const supabase = await createClient();
-
-    const noteService = new NoteService(supabase);
+    const { noteService } = await initializeServices();
     const notes = await noteService.getCompleteNotesByTag(tagId);
 
     if (!notes) {
@@ -61,10 +62,9 @@ ${
       temperature: 0.8,
       topP: 0.95,
       tools: {
-        searchNotesTool,
-        // getNotesWithTagsTool,
+        basicSearchNotesTool,
+        deepSearchNotesTool,
         addNoteTool,
-        // addTodoTool,
       },
     });
 

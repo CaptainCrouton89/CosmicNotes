@@ -1,5 +1,4 @@
-import { ClusterService } from "@/lib/services/cluster-service";
-import { createClient } from "@/lib/supabase/server";
+import { initializeServices } from "@/lib/services";
 import { Category } from "@/types/types";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -11,8 +10,7 @@ export async function GET(req: NextRequest) {
     const tagId = url.searchParams.get("tagId");
     const category = url.searchParams.get("category");
 
-    const supabase = await createClient();
-    const clusterService = new ClusterService(supabase);
+    const { clusterService } = await initializeServices();
     const clusters = await clusterService.getClusters(
       tagId ? parseInt(tagId) : undefined,
       category ? (category as Category) : undefined,

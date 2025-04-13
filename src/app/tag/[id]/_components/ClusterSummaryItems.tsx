@@ -1,12 +1,13 @@
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+// This file is no longer used.
+// Use SimilarItemsList.tsx instead.
+
 import { useToast } from "@/components/ui/use-toast";
 import { clustersApi } from "@/lib/redux/services/clustersApi";
 import { itemsApi } from "@/lib/redux/services/itemsApi";
 import { Cluster, Item } from "@/types/types";
-import { Loader2, TrashIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-
+import { ClusterSummary } from "./ClusterSummary";
 interface ClusterSummaryItemsProps {
   cluster: Cluster;
 }
@@ -151,42 +152,7 @@ export function ClusterSummaryItems({ cluster }: ClusterSummaryItemsProps) {
     <div className="space-y-4 mt-6">
       <h3 className="text-lg font-medium">Related Items</h3>
 
-      <div className="space-y-2">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className={`flex items-center gap-2 p-3 rounded-md border ${
-              item.done ? "bg-gray-50" : "bg-white"
-            }`}
-          >
-            <Checkbox
-              checked={item.done}
-              disabled={loading[item.id]}
-              onCheckedChange={() => handleToggleStatus(item.id, item.done)}
-              className="h-5 w-5"
-            />
-            <span
-              onClick={() =>
-                !loading[item.id] && handleToggleStatus(item.id, item.done)
-              }
-              className={`flex-grow ${
-                item.done ? "line-through text-gray-500" : ""
-              } cursor-pointer hover:bg-gray-50 px-2 py-1 rounded`}
-            >
-              {item.item}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDeleteItem(item.id)}
-              disabled={deleting[item.id]}
-              className="h-8 w-8 text-gray-500 hover:text-red-500"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
-      </div>
+      <ClusterSummary cluster={cluster} />
     </div>
   );
 }

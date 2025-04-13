@@ -223,7 +223,7 @@ export function AppSidebar() {
                             className="w-full text-left font-medium"
                             asChild
                           >
-                            <Link href={`/tag/${tag.id}?category=scratchpad`}>
+                            <Link href={`/tag/${tag.id}`}>
                               <span className="flex justify-between items-center w-full">
                                 <span>{tag.name}</span>
                                 <span className="text-muted-foreground text-xs">

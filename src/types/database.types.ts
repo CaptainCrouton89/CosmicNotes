@@ -329,6 +329,7 @@ export type Database = {
       cosmic_user_settings: {
         Row: {
           chat_prompt: string | null
+          chat_system_instructions: string | null
           cluster_prompt: string | null
           created_at: string
           id: number
@@ -338,6 +339,7 @@ export type Database = {
         }
         Insert: {
           chat_prompt?: string | null
+          chat_system_instructions?: string | null
           cluster_prompt?: string | null
           created_at?: string
           id?: number
@@ -347,6 +349,7 @@ export type Database = {
         }
         Update: {
           chat_prompt?: string | null
+          chat_system_instructions?: string | null
           cluster_prompt?: string | null
           created_at?: string
           id?: number

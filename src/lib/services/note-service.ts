@@ -9,6 +9,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { ITEM_CATEGORIES } from "../constants";
 import { generateEmbedding } from "../embeddings";
 import { generateNoteCategory, generateNoteFields } from "./ai-service";
+import { ClusterService } from "./cluster-service";
 import { ItemService } from "./item-service";
 import { searchNotes } from "./search-service";
 import { TagService } from "./tag-service";
@@ -24,10 +25,18 @@ export type NoteWithTagsAndItems = Note & {
 export class NoteService {
   private supabase: SupabaseClient<Database>;
   private tagService?: TagService;
-
-  constructor(supabase: SupabaseClient<Database>, tagService?: TagService) {
+  private clusterService?: ClusterService;
+  private itemService?: ItemService;
+  constructor(
+    supabase: SupabaseClient<Database>,
+    tagService?: TagService,
+    clusterService?: ClusterService,
+    itemService?: ItemService
+  ) {
     this.supabase = supabase;
     this.tagService = tagService;
+    this.clusterService = clusterService;
+    this.itemService = itemService;
   }
 
   /**
@@ -35,6 +44,109 @@ export class NoteService {
    */
   setTagService(tagService: TagService): void {
     this.tagService = tagService;
+  }
+
+  setClusterService(clusterService: ClusterService): void {
+    this.clusterService = clusterService;
+  }
+
+  setItemService(itemService: ItemService): void {
+    this.itemService = itemService;
+  }
+
+  async getNotesWithFilter(
+    category?: Category,
+    zone?: Zone,
+    tags?: string[],
+    tagIds?: number[]
+  ): Promise<Note[]> {
+    let query = this.supabase
+      .from("cosmic_memory")
+      .select(
+        "*, cosmic_memory_tag_map(tag, created_at, tag(id, name, parent_tag))"
+      )
+      .order("updated_at", { ascending: false, nullsFirst: false });
+
+    if (category) {
+      query = query.eq("category", category);
+    }
+
+    if (zone) {
+      query = query.eq("zone", zone);
+    }
+
+    // For tags and tagIds, we need to find the matching note IDs first
+    let noteIdsToFilter: number[] | null = null;
+
+    // Handle tag filtering by first getting the tag IDs, then finding notes with those tags
+    if (tags && tags.length > 0) {
+      const { data: tagData, error: tagError } = await this.supabase
+        .from("cosmic_tags")
+        .select("id")
+        .in("name", tags);
+
+      if (tagError) throw tagError;
+
+      if (tagData && tagData.length > 0) {
+        const matchedTagIds = tagData.map((tag) => tag.id);
+        const { data: noteMappings, error: mappingError } = await this.supabase
+          .from("cosmic_memory_tag_map")
+          .select("note")
+          .in("tag", matchedTagIds);
+
+        if (mappingError) throw mappingError;
+
+        if (noteMappings && noteMappings.length > 0) {
+          noteIdsToFilter = noteMappings.map((mapping) => mapping.note);
+        } else {
+          return []; // No notes with these tags
+        }
+      } else {
+        return []; // No matching tags found
+      }
+    }
+
+    // Handle tagIds filtering
+    if (tagIds && tagIds.length > 0) {
+      const { data: noteMappings, error: mappingError } = await this.supabase
+        .from("cosmic_memory_tag_map")
+        .select("note")
+        .in("tag", tagIds);
+
+      if (mappingError) throw mappingError;
+
+      if (noteMappings && noteMappings.length > 0) {
+        const noteIds = noteMappings.map((mapping) => mapping.note);
+
+        // If we already have noteIdsToFilter from the tags filter, get the intersection
+        if (noteIdsToFilter) {
+          noteIdsToFilter = noteIdsToFilter.filter((id) =>
+            noteIds.includes(id)
+          );
+          if (noteIdsToFilter.length === 0) {
+            return []; // No overlap between tags and tagIds filters
+          }
+        } else {
+          noteIdsToFilter = noteIds;
+        }
+      } else {
+        return []; // No notes with these tagIds
+      }
+    }
+
+    // Apply the note IDs filter if we have any
+    if (noteIdsToFilter) {
+      query = query.in("id", noteIdsToFilter);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    return data.map((note) => ({
+      ...note,
+      tags: note.cosmic_memory_tag_map?.map((map) => map.tag) || [],
+    })) as Note[];
   }
 
   async getNotes(offset: number, limit: number): Promise<Note[]> {
@@ -95,6 +207,9 @@ export class NoteService {
   }
 
   async deleteTagFromNote(noteId: number, tagId: number): Promise<void> {
+    // Get the note to determine its category before deleting the tag
+    const note = await this.getNoteById(noteId);
+
     const { error } = await this.supabase
       .from("cosmic_memory_tag_map")
       .delete()
@@ -118,7 +233,17 @@ export class NoteService {
 
       if (tagDeleteError) throw tagDeleteError;
     } else {
-      this.tagService?.setTagDirty(tagId);
+      // Mark the tag as dirty if it's not being deleted
+      const promises = [this.tagService!.setTagDirty(tagId)];
+
+      // Mark the cluster as dirty only if the tag still exists
+      if (note) {
+        promises.push(
+          this.clusterService!.setClusterDirty(tagId, note.category)
+        );
+      }
+
+      await Promise.all(promises);
     }
   }
 
@@ -186,12 +311,22 @@ export class NoteService {
         if (error) throw error;
       }
 
-      // Only set tags as dirty if tagService is available
-      if (this.tagService) {
-        for (const tagId of allTagIds) {
-          this.tagService.setTagDirty(tagId);
+      // Get the note to determine its category
+      const note = await this.getNoteById(noteId);
+
+      const promises = [];
+      for (const tagId of allTagIds) {
+        promises.push(this.tagService!.setTagDirty(tagId));
+
+        // Mark the cluster as dirty for each tag
+        if (note) {
+          promises.push(
+            this.clusterService!.setClusterDirty(tagId, note.category)
+          );
         }
       }
+
+      await Promise.all(promises);
     }
   }
 
@@ -203,8 +338,11 @@ export class NoteService {
   async createNote(
     note: Omit<NoteInsert, "id" | "created_at" | "updated_at" | "embedding"> & {
       content: string;
+      title?: string;
+      zone?: Zone;
+      category?: Category;
       tags?: string[];
-      tagIds: number[];
+      tagIds?: number[];
     }
   ): Promise<Note> {
     const embedding = note.content
@@ -212,6 +350,8 @@ export class NoteService {
       : "[]";
 
     let newNoteCategory = note.category;
+    let newNoteTitle = note.title;
+    let newNoteZone = note.zone;
 
     if (!newNoteCategory) {
       const similarNotes = await searchNotes(note.content, 3, 0.8);
@@ -223,14 +363,18 @@ export class NoteService {
       newNoteCategory = category;
     }
 
-    const { title, zone } = await generateNoteFields(note.content);
+    if (!note.title || !note.zone) {
+      const { title, zone } = await generateNoteFields(note.content);
+      newNoteTitle = title;
+      newNoteZone = zone;
+    }
 
     const { data: noteData, error: noteError } = await this.supabase
       .from("cosmic_memory")
       .insert({
         ...note,
-        title,
-        zone: note.zone || zone,
+        title: newNoteTitle,
+        zone: newNoteZone,
         category: newNoteCategory,
         embedding,
       })
@@ -264,6 +408,9 @@ export class NoteService {
       updates.embedding = await generateEmbedding(updates.content);
     }
 
+    // Get all tags associated with this note
+    let tagsToMarkDirty = existingNote.tags.map((tag) => tag.id);
+
     if (updates.tags) {
       await this.upsertTagsToNote(id, updates.tags, updates.tagIds);
       const existingTags = (await this.getNoteById(id))?.tags;
@@ -277,15 +424,32 @@ export class NoteService {
       }
     }
 
-    // If the note is being converted to a collection, convert it
-    if (
-      updates.category &&
-      updates.category !== existingNote.category &&
-      ITEM_CATEGORIES.includes(updates.category) &&
-      existingNote.items.length === 0
-    ) {
-      const itemService = new ItemService(this.supabase);
-      await itemService.saveNoteAsItems(existingNote, updates.category);
+    // If the note category is changing, mark affected tags and clusters as dirty
+    if (updates.category && updates.category !== existingNote.category) {
+      // Mark clusters in both the old and new categories as dirty
+      const allPromises = tagsToMarkDirty.flatMap((tagId) => [
+        this.clusterService!.setClusterDirty(tagId, existingNote.category),
+        this.clusterService!.setClusterDirty(tagId, updates.category),
+        this.tagService!.setTagDirty(tagId),
+      ]);
+
+      // If the note is being converted to a collection, convert it
+      if (
+        ITEM_CATEGORIES.includes(updates.category) &&
+        existingNote.items.length === 0
+      ) {
+        await this.itemService!.saveNoteAsItems(existingNote, updates.category);
+      }
+
+      await Promise.all(allPromises);
+    } else {
+      // If just content or other fields are changing, mark all associated tags and their clusters as dirty
+      const allPromises = tagsToMarkDirty.flatMap((tagId) => [
+        this.clusterService!.setClusterDirty(tagId),
+        this.tagService!.setTagDirty(tagId),
+      ]);
+
+      await Promise.all(allPromises);
     }
 
     // Remove tags from updates since these are objects, and tags are tracked via tagmap
@@ -445,9 +609,23 @@ export class NoteService {
       .insert({ note: noteId, tag: tagId });
 
     if (error) throw error;
+
+    const promises = [this.tagService!.setTagDirty(tagId)];
+
+    // Get the note to determine its category
+    const note = await this.getNoteById(noteId);
+    if (note) {
+      // Mark the cluster for this tag and category as dirty
+      promises.push(this.clusterService!.setClusterDirty(tagId, note.category));
+    }
+
+    await Promise.all(promises);
   }
 
   async removeTagFromNote(noteId: number, tagId: number): Promise<void> {
+    // Get the note to determine its category before removing the tag
+    const note = await this.getNoteById(noteId);
+
     const { error } = await this.supabase
       .from("cosmic_memory_tag_map")
       .delete()
@@ -455,6 +633,15 @@ export class NoteService {
       .eq("tag", tagId);
 
     if (error) throw error;
+
+    const promises = [this.tagService!.setTagDirty(tagId)];
+
+    // Mark the cluster for this tag and category as dirty
+    if (note) {
+      promises.push(this.clusterService!.setClusterDirty(tagId, note.category));
+    }
+
+    await Promise.all(promises);
   }
 
   async refreshNote(noteId: number): Promise<NoteRow> {

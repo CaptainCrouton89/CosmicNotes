@@ -133,6 +133,25 @@ export class ClusterService {
     };
   }
 
+  async createEmptyCluster(
+    tagId: number,
+    category: Category
+  ): Promise<Database["public"]["Tables"]["cosmic_cluster"]["Row"]> {
+    const { data: insertResult, error: insertError } = await this.supabase
+      .from("cosmic_cluster")
+      .insert({
+        summary: "",
+        category,
+        embedding: "[]",
+        tag: tagId,
+      })
+      .select("*")
+      .single();
+
+    if (insertError) throw insertError;
+    return insertResult;
+  }
+
   async createClusterFromNotes(
     tagId: number,
     notes: Database["public"]["Tables"]["cosmic_memory"]["Row"][],
@@ -172,24 +191,6 @@ export class ClusterService {
     }
 
     return insertResult;
-
-    //   const { error: insertError } = await this.supabase
-    //     .from("cosmic_items")
-    //     .insert(
-    //       todos.map((todo) => ({
-    //         item: todo,
-    //         tag: tagFamilyId,
-    //       }))
-    //     );
-
-    //   if (insertError) {
-    //     console.error(
-    //       `Error creating todos for tag family ID ${tagFamilyId}/${category}:`,
-    //       insertError
-    //     );
-    //     return null;
-    //   }
-    // }
   }
 
   async deleteClusterByCategory(
@@ -201,5 +202,25 @@ export class ClusterService {
       .delete()
       .eq("tag", tagId)
       .eq("category", category);
+  }
+
+  /**
+   * Marks a cluster as dirty to indicate it needs to be regenerated
+   * @param tagId The ID of the tag associated with the cluster
+   * @param category Optional category filter
+   */
+  async setClusterDirty(tagId: number, category?: Category): Promise<void> {
+    let query = this.supabase
+      .from("cosmic_cluster")
+      .update({ dirty: true, updated_at: new Date().toISOString() })
+      .eq("tag", tagId);
+
+    if (category) {
+      query = query.eq("category", category);
+    }
+
+    const { error } = await query;
+
+    if (error) throw error;
   }
 }

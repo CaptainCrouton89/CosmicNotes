@@ -15,7 +15,10 @@ export async function searchNotes(
   query: string,
   matchCount: number = 10,
   matchThreshold: number = 0.5,
-  category: string | null = null
+  category: string | null = null,
+  zone: string | null = null,
+  tags: string[] | null = null,
+  tagIds: number[] | null = null
 ): Promise<(Note & { tags: Tag[]; score: number })[]> {
   // Get embedding for the query
   const embeddingString = await generateEmbedding(query);
@@ -42,6 +45,10 @@ export async function searchNotes(
     filteredNotes = notes.filter((note) => note.category === category);
   }
 
+  if (zone) {
+    filteredNotes = filteredNotes.filter((note) => note.zone === zone);
+  }
+
   // Get tags for each note
   const notesWithTagsPromises = filteredNotes.map(async (note) => {
     const { data: tagMappings } = await supabaseClient
@@ -66,7 +73,21 @@ export async function searchNotes(
     return noteResult;
   });
 
-  return await Promise.all(notesWithTagsPromises);
+  const notesWithTags = await Promise.all(notesWithTagsPromises);
+
+  if (tagIds) {
+    return notesWithTags.filter((note) =>
+      note.tags.some((tag) => tagIds.includes(tag.id))
+    );
+  }
+
+  if (tags) {
+    return notesWithTags.filter((note) =>
+      note.tags.some((tag) => tags.includes(tag.name))
+    );
+  }
+
+  return notesWithTags;
 }
 
 /**

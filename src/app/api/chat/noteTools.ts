@@ -1,72 +1,150 @@
-import { generateEmbedding } from "@/lib/embeddings";
-import { ApplicationError } from "@/lib/errors";
+import { initializeServices } from "@/lib/services";
 import { searchNotes } from "@/lib/services/search-service";
-import { createClient } from "@/lib/supabase/server";
-import { CATEGORIES } from "@/types/types";
+import { CATEGORIES, ZONES } from "@/types/types";
 import { tool } from "ai";
-import { Configuration, OpenAIApi } from "openai-edge";
 import { z } from "zod";
-
-const openAiKey = process.env.OPENAI_API_KEY!;
-
-const config = new Configuration({
-  apiKey: openAiKey,
-});
-const openaiEmbedder = new OpenAIApi(config);
 
 export const runtime = "edge";
 
-export const searchNotesTool = tool({
-  description: "Do deep search on the notes",
+export const basicSearchNotesTool = tool({
+  description: "Search the notes for information",
   parameters: z.object({
-    query: z.string().describe("The query to search the notes for"),
     limit: z
       .number()
       .optional()
       .default(5)
       .describe("Maximum number of results to return after reranking"),
+    category: z
+      .enum(CATEGORIES)
+      .optional()
+      .describe("The category of the notes to search"),
+    zone: z.enum(ZONES).optional().describe("The zone of the notes to search"),
+    tags: z
+      .array(z.string())
+      .optional()
+      .describe("The tags of the notes to search"),
+    tagIds: z
+      .array(z.number())
+      .optional()
+      .describe("The tag IDs of the notes to search"),
   }),
-  execute: async ({ query, limit = 5 }) => {
-    const embeddingResponse = await openaiEmbedder.createEmbedding({
-      model: "text-embedding-ada-002",
-      input: query.replace(/\n/g, " "),
+  execute: async ({ limit, category, zone, tags, tagIds }) => {
+    console.log("basicSearchNotesTool", {
+      limit,
+      category,
+      zone,
+      tags,
+      tagIds,
     });
+    const { noteService } = await initializeServices();
+    const notes = await noteService.getNotesWithFilter(
+      category,
+      zone,
+      tags,
+      tagIds
+    );
 
-    if (!embeddingResponse.ok) {
-      const error = await embeddingResponse.json();
-      throw new ApplicationError("Failed to generate embedding", error);
-    }
+    console.log(
+      "basicSearchNotesTool",
+      notes.map((note) => note.title)
+    );
 
-    const embeddingData = await embeddingResponse.json();
-    const [{ embedding }] = embeddingData.data;
-
-    const notes = await searchNotes(query, limit, 0.8, null);
-    console.log("notes", notes);
-
-    // Rerank the results using OpenAI
-    if (notes.length > 0) {
-      try {
-        const rerankedResults = await rerankResults(query, notes);
-
-        // Limit to top results
-        return rerankedResults.slice(0, limit);
-      } catch (rerankError) {
-        console.error("Error during reranking:", rerankError);
-        // Fall back to original vector similarity order if reranking fails
-        return notes.slice(0, limit);
-      }
-    }
-
-    return notes;
+    return notes
+      .map((note) => ({
+        title: note.title,
+        content: note.content,
+        tags: note.tags?.map((tag) => tag.name),
+        zone: note.zone,
+        category: note.category,
+      }))
+      .slice(0, limit);
   },
 });
 
 /**
- * Rerank using cross-encoder
+ * Do deep search on the notes
+ * @param query An optimized query to search the notes for
+ * @param threshold The match threshold for the search
+ * @param limit Maximum number of results to return after reranking
+ * @param category The category of the notes to search
+ * @param zone The zone of the notes to search
+ * @param tags The tags of the notes to search
+ * @param tagIds The tag IDs of the notes to search
  */
-async function rerankResults(query: string, notes: Record<string, unknown>[]) {
-  return notes;
-}
+export const deepSearchNotesTool = tool({
+  description: "Do deep search on the notes",
+  parameters: z.object({
+    query: z.string().describe("An optimized query to search the notes for"),
+    threshold: z
+      .number()
+      .optional()
+      .default(0.8)
+      .describe(
+        "The match threshold for the search. .8 is a high threshold, .3 is a low threshold."
+      ),
+    limit: z
+      .number()
+      .optional()
+      .default(5)
+      .describe("Maximum number of results to return after reranking"),
+    category: z
+      .enum(CATEGORIES)
+      .optional()
+      .describe("The category of the notes to search"),
+    zone: z.enum(ZONES).optional().describe("The zone of the notes to search"),
+    tags: z
+      .array(z.string())
+      .optional()
+      .describe("The tags of the notes to search"),
+    tagIds: z
+      .array(z.number())
+      .optional()
+      .describe("The tag IDs of the notes to search"),
+  }),
+  execute: async ({
+    query,
+    limit = 5,
+    category,
+    zone,
+    tags,
+    tagIds,
+    threshold,
+  }) => {
+    console.log("deepSearchNotesTool", {
+      query,
+      limit,
+      threshold,
+      category,
+      zone,
+      tags,
+      tagIds,
+    });
+    const notes = await searchNotes(
+      query,
+      limit,
+      threshold,
+      category,
+      zone,
+      tags,
+      tagIds
+    );
+
+    console.log("deepSearchNotesTool", {
+      notes: notes.map((note) => note.title),
+    });
+
+    return notes.map((note) => ({
+      title: note.title,
+      content: note.content,
+      tags: note.tags.map((tag) => ({
+        id: tag.id,
+        name: tag.name,
+      })),
+      zone: note.zone,
+      category: note.category,
+    }));
+  },
+});
 
 export const addNoteTool = tool({
   description: "Add a note to the database",
@@ -89,174 +167,17 @@ export const addNoteTool = tool({
     category: z.enum(CATEGORIES).describe("The category of the note"),
   }),
   execute: async ({ content, title, tags, tagIds, zone, category }) => {
-    const client = await createClient();
-    const { error: noteError, data: note } = await client
-      .from("cosmic_memory")
-      .insert({
-        content,
-        title,
-        embedding: await generateEmbedding(content),
-        zone,
-        category,
-      })
-      .select()
-      .single();
+    const { noteService } = await initializeServices();
 
-    if (noteError) {
-      throw new ApplicationError("Failed to add note", {
-        supabaseError: noteError,
-      });
-    }
-
-    if (tags || tagIds) {
-      let existingTags: { id: number; name: string }[] = [];
-      if (tags) {
-        const { data: existingTagsFromNames } = await client
-          .from("cosmic_tags")
-          .select("id, name")
-          .in("name", tags);
-
-        if (existingTagsFromNames) {
-          existingTags = existingTagsFromNames;
-        }
-      }
-      if (tagIds) {
-        const { data: existingTagsFromIds } = await client
-          .from("cosmic_tags")
-          .select("id, name")
-          .in("id", tagIds);
-
-        if (existingTagsFromIds) {
-          existingTags = existingTagsFromIds;
-        }
-      }
-
-      const newTags = tags?.filter(
-        (tag) => !existingTags.map((t) => t.name).includes(tag)
-      );
-
-      if (newTags) {
-        const { error: tagError, data: newTagsData } = await client
-          .from("cosmic_tags")
-          .insert(
-            newTags.map((tag) => ({
-              name: tag,
-              tag_count: 0,
-            }))
-          )
-          .select("id, name");
-        if (tagError) {
-          throw new ApplicationError("Failed to add tags", {
-            supabaseError: tagError,
-          });
-        }
-        existingTags = existingTags.concat(newTagsData);
-      }
-
-      const { error: tagError } = await client
-        .from("cosmic_memory_tag_map")
-        .insert(
-          existingTags.map((tag) => ({
-            note: note.id,
-            tag: tag.id,
-          }))
-        );
-
-      if (tagError) {
-        throw new ApplicationError("Failed to add tags", {
-          supabaseError: tagError,
-        });
-      }
-    }
-    if (noteError) {
-      throw new ApplicationError("Failed to add note", {
-        supabaseError: noteError,
-      });
-    }
+    await noteService.createNote({
+      content,
+      title,
+      zone,
+      category,
+      tags,
+      tagIds,
+    });
 
     return "Note added successfully";
   },
 });
-
-// export const addTodoTool = tool({
-//   description: "Add a todo item for a tag",
-//   parameters: z.object({
-//     item: z.string().describe("The content of the todo item"),
-//     tagFamilyId: z
-//       .number()
-//       .optional()
-//       .describe("The tag family ID to associate the todo item with"),
-//     tag: z
-//       .string()
-//       .optional()
-//       .describe("The tag to associate the todo item with"),
-//   }),
-//   execute: async ({ item, tagFamilyId, tag }) => {
-//     try {
-//       if (!tagFamilyId && !tag) {
-//         throw new ApplicationError(
-//           "Either tagFamilyId or tag must be provided"
-//         );
-//       }
-
-//       // First, find the tag family ID for the given tag
-//       const client = await createClient();
-
-//       let tagFamily, tagFamilyError;
-//       if (tagFamilyId) {
-//         const { data: tagFamilyData, error: tagFamilyErrorData } = await client
-//           .from("cosmic_tags")
-//           .select("tag_family_id")
-//           .eq("id", tagFamilyId)
-//           .maybeSingle();
-
-//         tagFamily = tagFamilyData;
-//         tagFamilyError = tagFamilyErrorData;
-//       } else if (tag) {
-//         const { data: tagFamilyData, error: tagFamilyErrorData } = await client
-//           .from("cosmic_tags")
-//           .select("tag_family_id")
-//           .eq("name", tag)
-//           .maybeSingle();
-
-//         tagFamily = tagFamilyData;
-//         tagFamilyError = tagFamilyErrorData;
-//       }
-
-//       if (tagFamilyError) {
-//         throw new ApplicationError("Failed to find tag family", {
-//           supabaseError: tagFamilyError,
-//         });
-//       }
-
-//       if (!tagFamily) {
-//         throw new ApplicationError("Tag family not found", {
-//           identifier: tag || tagFamilyId || "unknown",
-//         });
-//       }
-
-//       const supabase = await createClient();
-//       const { error: todoItemError } = await supabase
-//         .from("cosmic_collection_item")
-//         .insert({
-//           item,
-//           tag: tagFamily.id,
-//         });
-
-//       if (todoItemError) {
-//         throw new ApplicationError("Failed to add todo item", {
-//           supabaseError: todoItemError,
-//         });
-//       }
-
-//       return `Todo item "${item}" added successfully for tag "${tag}"`;
-//     } catch (error) {
-//       if (error instanceof ApplicationError) {
-//         throw error;
-//       }
-//       throw new ApplicationError("Failed to add todo item", {
-//         error: String(error),
-//       });
-//     }
-//   },
-// });
