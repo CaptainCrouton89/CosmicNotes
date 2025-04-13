@@ -77,6 +77,7 @@ export class ItemService {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
       .update(item)
+      .eq("id", item.id!)
       .select("*, memory:cosmic_memory(*)")
       .single();
 

@@ -3,6 +3,7 @@ import { capitalize } from "@/lib/utils";
 import { CATEGORIES, Category, Cluster } from "@/types/types";
 import { format } from "date-fns";
 import { Calendar, Clock } from "lucide-react";
+import { useParams } from "next/navigation";
 
 interface TagHeaderProps {
   noteCount: number;
@@ -23,6 +24,9 @@ export function TagHeader({
   onCategoryChange,
   noteCategories = [],
 }: TagHeaderProps) {
+  const params = useParams();
+  const tagId = params.id;
+
   // Get unique categories from clusters
   const clusterCategories = [...new Set(clusters.map((c) => c.category))];
 
@@ -35,6 +39,17 @@ export function TagHeader({
   // Function to check if a category has content (notes)
   const hasContent = (category: Category) =>
     categoriesWithContent.has(category);
+
+  // Handle category change and update URL
+  const handleCategoryChange = (category: Category) => {
+    // First update the UI state
+    onCategoryChange(category);
+
+    // Then update URL without triggering a full navigation using the native History API
+    const url = new URL(window.location.href);
+    url.searchParams.set("category", category);
+    window.history.replaceState({ path: url.href }, "", url.href);
+  };
 
   return (
     <div className="mb-6">
@@ -62,7 +77,7 @@ export function TagHeader({
         <Tabs
           defaultValue={activeCategory}
           value={activeCategory}
-          onValueChange={(value) => onCategoryChange(value as Category)}
+          onValueChange={(value) => handleCategoryChange(value as Category)}
           className="w-full"
         >
           <TabsList className="h-auto min-h-8 flex flex-wrap gap-1 pt-0.5 pb-0">

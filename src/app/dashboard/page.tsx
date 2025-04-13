@@ -42,8 +42,12 @@ export default function Dashboard() {
 
   // Handle navigation to tag
   const handleTagClick = useCallback(
-    (tagId: number) => {
-      router.push(`/tag/${tagId}`);
+    (tagId: number, category?: string) => {
+      if (category) {
+        router.push(`/tag/${tagId}?category=${category}`);
+      } else {
+        router.push(`/tag/${tagId}`);
+      }
     },
     [router]
   );
