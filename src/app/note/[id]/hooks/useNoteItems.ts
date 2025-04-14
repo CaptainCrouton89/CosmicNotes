@@ -110,7 +110,7 @@ export function useNoteItems(note: Note | undefined) {
     try {
       const newItem = await createItemMutation({
         item: itemText,
-        tag: note.id, // Using note.id as the tag reference
+        noteId: note.id,
       }).unwrap();
 
       // Add the new item and sort

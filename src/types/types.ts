@@ -21,7 +21,8 @@ export type CompleteItem = {
   embedding?: string;
   created_at: string;
   updated_at: string;
-  memory: Database["public"]["Tables"]["cosmic_memory"]["Row"];
+  memory?: Database["public"]["Tables"]["cosmic_memory"]["Row"];
+  cluster?: Database["public"]["Tables"]["cosmic_cluster"]["Row"];
 };
 
 export type Note = Partial<CompleteNote> & {
@@ -94,6 +95,7 @@ export type CompleteCluster = {
     name: string;
   };
   notes: CompleteNote[];
+  cluster_items: Item[];
 };
 
 export const ZONES = ["personal", "work", "other"] as const;

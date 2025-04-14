@@ -1,6 +1,5 @@
 import { UserError } from "@/lib/errors";
 import { initializeServices } from "@/lib/services";
-import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
@@ -29,7 +28,8 @@ export async function PUT(req: NextRequest) {
       ...item,
       done,
       updated_at: new Date().toISOString(),
-      memory: item.memory.id,
+      memory: item.memory?.id,
+      cluster: item.cluster?.id,
     });
 
     return NextResponse.json(updatedItem);
@@ -51,24 +51,15 @@ export async function PUT(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const { item, tag } = await req.json();
+    const { item, noteId, clusterId } = await req.json();
 
-    if (typeof item !== "string" || typeof tag !== "number") {
+    if (
+      typeof item !== "string" ||
+      (typeof noteId !== "number" && typeof clusterId !== "number")
+    ) {
       throw new UserError(
-        "Invalid request. Expected 'item' (string) and 'tag' (number)"
+        "Invalid request. Expected 'item' (string) and 'noteId' (number) and 'clusterId' (number)"
       );
-    }
-
-    // Get the note to associate with this item
-    const supabase = await createClient();
-    const { data: note, error: noteError } = await supabase
-      .from("cosmic_memory")
-      .select("*")
-      .eq("id", tag)
-      .single();
-
-    if (noteError || !note) {
-      throw new UserError("Note not found");
     }
 
     // Initialize services
@@ -77,7 +68,8 @@ export async function POST(req: NextRequest) {
     const timestamp = new Date().toISOString();
     const newItem = await itemService.createItem({
       item,
-      memory: note.id,
+      memory: noteId ? noteId : undefined,
+      cluster: clusterId ? clusterId : undefined,
       done: false,
       created_at: timestamp,
       updated_at: timestamp,

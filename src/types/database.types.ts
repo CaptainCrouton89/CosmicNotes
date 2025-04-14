@@ -170,6 +170,7 @@ export type Database = {
       }
       cosmic_collection_item: {
         Row: {
+          cluster: number | null
           created_at: string
           done: boolean
           embedding: string | null
@@ -179,6 +180,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cluster?: number | null
           created_at?: string
           done?: boolean
           embedding?: string | null
@@ -188,6 +190,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cluster?: number | null
           created_at?: string
           done?: boolean
           embedding?: string | null
@@ -197,6 +200,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cosmic_collection_item_cluster_fkey"
+            columns: ["cluster"]
+            isOneToOne: false
+            referencedRelation: "cosmic_cluster"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cosmic_collection_item_memory_fkey"
             columns: ["memory"]
@@ -705,6 +715,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wiki_doc: {
+        Row: {
+          content: string
+          created_at: string
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

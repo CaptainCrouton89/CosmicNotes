@@ -15,7 +15,10 @@ export const itemsApi = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: "Item", id }],
     }),
 
-    createItem: builder.mutation<Item, { item: string; tag: number }>({
+    createItem: builder.mutation<
+      Item,
+      { item: string; noteId?: number; clusterId?: number }
+    >({
       query: (body) => ({
         url: "item",
         method: "POST",

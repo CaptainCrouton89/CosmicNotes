@@ -20,7 +20,7 @@ export class ItemService {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
       .insert(item)
-      .select("*, memory:cosmic_memory(*)")
+      .select("*, memory:cosmic_memory(*), cluster:cosmic_cluster(*)")
       .single();
 
     if (error) throw new Error(error.message);
@@ -31,6 +31,8 @@ export class ItemService {
       ...data,
       memory:
         data.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
+      cluster:
+        data.cluster as unknown as Database["public"]["Tables"]["cosmic_cluster"]["Row"],
       embedding,
     };
   }
@@ -39,7 +41,7 @@ export class ItemService {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
       .insert(items)
-      .select("*, memory:cosmic_memory(*)");
+      .select("*, memory:cosmic_memory(*), cluster:cosmic_cluster(*)");
 
     if (error) throw new Error(error.message);
 
@@ -49,6 +51,8 @@ export class ItemService {
         memory:
           item.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
         embedding: item.embedding || undefined,
+        cluster:
+          item.cluster as unknown as Database["public"]["Tables"]["cosmic_cluster"]["Row"],
       };
     });
   }
@@ -56,7 +60,7 @@ export class ItemService {
   async getItems(noteId: number): Promise<Item[]> {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
-      .select("*, memory:cosmic_memory(*)")
+      .select("*, memory:cosmic_memory(*), cluster:cosmic_cluster(*)")
       .eq("memory", noteId);
 
     if (error) throw new Error(error.message);
@@ -67,18 +71,20 @@ export class ItemService {
         memory:
           item.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
         embedding: item.embedding || undefined,
+        cluster:
+          item.cluster as unknown as Database["public"]["Tables"]["cosmic_cluster"]["Row"],
       };
     });
   }
 
   async updateItem(
-    item: ItemInsert & { memory: number }
+    item: ItemInsert & { memory?: number; cluster?: number }
   ): Promise<CompleteItem> {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
       .update(item)
       .eq("id", item.id!)
-      .select("*, memory:cosmic_memory(*)")
+      .select("*, memory:cosmic_memory(*), cluster:cosmic_cluster(*)")
       .single();
 
     if (error) throw new Error(error.message);
@@ -87,6 +93,8 @@ export class ItemService {
       ...data,
       memory:
         data.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
+      cluster:
+        data.cluster as unknown as Database["public"]["Tables"]["cosmic_cluster"]["Row"],
       embedding: data.embedding || undefined,
     };
   }
@@ -103,7 +111,7 @@ export class ItemService {
   async getItem(id: number): Promise<CompleteItem> {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
-      .select("*, memory:cosmic_memory(*)")
+      .select("*, memory:cosmic_memory(*), cluster:cosmic_cluster(*)")
       .eq("id", id)
       .single();
 
@@ -114,6 +122,8 @@ export class ItemService {
       memory:
         data.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
       embedding: data.embedding || undefined,
+      cluster:
+        data.cluster as unknown as Database["public"]["Tables"]["cosmic_cluster"]["Row"],
     };
   }
 
@@ -147,6 +157,7 @@ export class ItemService {
       ...item,
       memory: undefined,
       embedding: item.embedding || undefined,
+      cluster: undefined,
     }));
   }
 }

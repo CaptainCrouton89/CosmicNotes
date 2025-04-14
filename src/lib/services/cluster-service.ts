@@ -52,7 +52,7 @@ export class ClusterService {
   async getClusterById(id: number): Promise<CompleteCluster> {
     const { data, error } = await this.supabase
       .from("cosmic_cluster")
-      .select("*, cosmic_tags(name, id)")
+      .select("*, cosmic_tags(name, id), cosmic_collection_item(*)")
       .eq("id", id)
       .single();
 
@@ -73,6 +73,12 @@ export class ClusterService {
         tag: data.cosmic_tags,
         note_count: 0,
         notes: [],
+        cluster_items: data.cosmic_collection_item.map((item) => ({
+          ...item,
+          cluster: undefined,
+          embedding: item.embedding || "[]",
+          memory: undefined,
+        })),
       };
     }
 
@@ -120,6 +126,12 @@ export class ClusterService {
       tag: data.cosmic_tags,
       note_count: notesWithTagsAndItems.length,
       notes: notesWithTagsAndItems,
+      cluster_items: data.cosmic_collection_item.map((item) => ({
+        ...item,
+        cluster: undefined,
+        embedding: item.embedding || "[]",
+        memory: undefined,
+      })),
     };
   }
 

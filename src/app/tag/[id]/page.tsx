@@ -1,18 +1,21 @@
 "use client";
 
+import { ITEM_CATEGORIES } from "@/lib/constants";
 import { tagsApi } from "@/lib/redux/services/tagsApi";
 import {
   setChatVisibility,
   toggleChatVisibility,
 } from "@/lib/redux/slices/uiSlice";
 import { RootState } from "@/lib/redux/store";
-import { Category, Cluster, Note } from "@/types/types";
+import { Category, CompleteCluster, Note } from "@/types/types";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import Markdown from "react-markdown";
 import { useDispatch, useSelector } from "react-redux";
+import remarkGfm from "remark-gfm";
 import {
   ChatButtons,
-  ClusterSummary,
+  ClusterSummaryItems,
   EmptyState,
   ErrorState,
   GenerateClusterButton,
@@ -43,7 +46,7 @@ export default function TagPage() {
     (categoryParam as Category) || "scratchpad"
   );
   const [activeCluster, setActiveCluster] = useState<Omit<
-    Cluster,
+    CompleteCluster,
     "tag"
   > | null>(null);
 
@@ -216,7 +219,21 @@ export default function TagPage() {
         {/* Cluster summary and/or Generate Cluster button */}
         {activeCluster && (
           <>
-            <ClusterSummary cluster={activeCluster} />
+            <div className="mt-4">
+              {ITEM_CATEGORIES.includes(activeCategory) ? (
+                // Show items from notes using the clusterId
+                <ClusterSummaryItems cluster={activeCluster} />
+              ) : (
+                // Show markdown summary
+                <div className="markdown">
+                  <Markdown
+                    remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
+                  >
+                    {activeCluster.summary}
+                  </Markdown>
+                </div>
+              )}
+            </div>
 
             {/* Show generate button if cluster is dirty */}
             {activeCluster.dirty && activeCluster.notes?.length === 0 && (
