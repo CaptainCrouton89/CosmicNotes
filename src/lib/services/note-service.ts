@@ -347,7 +347,7 @@ export class NoteService {
   ): Promise<Note> {
     const embedding = note.content
       ? await generateEmbedding(note.content)
-      : "[]";
+      : JSON.stringify(new Array(1536).fill(0));
 
     let newNoteCategory = note.category;
     let newNoteTitle = note.title;

@@ -127,12 +127,15 @@ export class ClusterService {
     tagId: number,
     category: Category
   ): Promise<Database["public"]["Tables"]["cosmic_cluster"]["Row"]> {
+    // Create a zero vector with 1536 dimensions (standard for OpenAI's text-embedding-ada-002)
+    const emptyEmbedding = JSON.stringify(new Array(1536).fill(0));
+
     const { data: insertResult, error: insertError } = await this.supabase
       .from("cosmic_cluster")
       .insert({
         summary: "",
         category,
-        embedding: "[]",
+        embedding: emptyEmbedding,
         tag: tagId,
       })
       .select("*")
