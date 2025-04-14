@@ -7,7 +7,7 @@ import {
   toggleChatVisibility,
 } from "@/lib/redux/slices/uiSlice";
 import { RootState } from "@/lib/redux/store";
-import { Category, CompleteCluster, Note } from "@/types/types";
+import { Category, Cluster, Note } from "@/types/types";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
@@ -46,7 +46,7 @@ export default function TagPage() {
     (categoryParam as Category) || "scratchpad"
   );
   const [activeCluster, setActiveCluster] = useState<Omit<
-    CompleteCluster,
+    Cluster,
     "tag"
   > | null>(null);
 
@@ -196,7 +196,11 @@ export default function TagPage() {
     (categoryNotes.length > 0 && !categoryCluster) ||
     (categoryCluster && categoryCluster.dirty === true);
 
-  console.log("categoryCluster", categoryCluster, activeCluster);
+  console.log(
+    "state:",
+    activeCluster?.dirty,
+    activeCluster?.notes?.length === 0
+  );
 
   return (
     <div className="flex flex-col md:flex-row min-h-0 h-full relative">
@@ -236,7 +240,7 @@ export default function TagPage() {
             </div>
 
             {/* Show generate button if cluster is dirty */}
-            {activeCluster.dirty && activeCluster.notes?.length === 0 && (
+            {activeCluster.dirty && (
               <div className="mt-4 mb-2">
                 <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-3">
                   <p className="text-amber-800 text-sm">

@@ -328,7 +328,7 @@ export class TagService {
       (note) => note.category === category
     );
 
-    if (ITEM_CATEGORIES.includes(category)) {
+    if (!ITEM_CATEGORIES.includes(category)) {
       const newCluster = await this.clusterService!.createClusterFromNotes(
         completeTag.id,
         notesInCategory,

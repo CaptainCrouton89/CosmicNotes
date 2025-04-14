@@ -140,7 +140,7 @@ export const getFeedbackPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `Organize these feedback notes into a single, organized, markdown formatted note, ordered by the date of the note. Use the following format:
   
 \`\`\`
-## Note Title \[ID\]
+### Note Title \[ID\]
 Date: [Date]
 Organized, concise, and actionable feedback notes.
 \`\`\`
