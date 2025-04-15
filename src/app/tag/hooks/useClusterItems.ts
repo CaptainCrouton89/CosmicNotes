@@ -79,7 +79,7 @@ export const useClusterItems = (cluster: Cluster) => {
           id,
           done: !currentStatus,
         }).unwrap();
-
+        await refetch();
         toast({
           title: !currentStatus
             ? "Task completed"
@@ -109,11 +109,7 @@ export const useClusterItems = (cluster: Cluster) => {
           item: itemText,
           clusterId: cluster.id,
         }).unwrap();
-
-        toast({
-          title: "Task added",
-          duration: 2000,
-        });
+        await refetch();
       } catch (error) {
         toast({
           title: "Failed to create task",
@@ -135,17 +131,7 @@ export const useClusterItems = (cluster: Cluster) => {
 
       try {
         await deleteItemMutation(id).unwrap();
-
-        // Manually trigger refetch to ensure data is updated
         await refetch();
-
-        // Clear local items to ensure we use fresh data
-        setLocalItems([]);
-
-        toast({
-          title: "Task deleted",
-          duration: 2000,
-        });
       } catch (error) {
         toast({
           title: "Failed to delete task",
