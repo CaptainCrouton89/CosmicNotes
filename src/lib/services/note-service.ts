@@ -469,11 +469,22 @@ export class NoteService {
   }
 
   async deleteNote(id: number): Promise<void> {
+    // Get the tags associated with this note before deleting it
+    const note = await this.getNoteById(id);
+    if (!note) throw new Error("Note not found");
+
+    const associatedTagIds = note.tags.map((tag) => tag.id);
+    const noteCategory = note.category;
+
+    // Delete all tag mappings for this note
     const { error: noteTagMapsError } = await this.supabase
       .from("cosmic_memory_tag_map")
       .delete()
       .eq("note", id);
 
+    if (noteTagMapsError) throw noteTagMapsError;
+
+    // Delete the note itself
     const { error } = await this.supabase
       .from("cosmic_memory")
       .delete()
@@ -481,7 +492,49 @@ export class NoteService {
 
     if (error) throw error;
 
-    if (noteTagMapsError) throw noteTagMapsError;
+    // Check if any of the tags no longer have associated notes and delete them
+    if (associatedTagIds.length > 0) {
+      await Promise.all(
+        associatedTagIds.map(async (tagId) => {
+          const { count, error: countError } = await this.supabase
+            .from("cosmic_memory_tag_map")
+            .select("*", { count: "exact", head: true })
+            .eq("tag", tagId);
+
+          if (countError) throw countError;
+
+          if (count === 0) {
+            // No more notes use this tag, so delete it
+            const { error: deleteTagError } = await this.supabase
+              .from("cosmic_tags")
+              .delete()
+              .eq("id", tagId);
+
+            if (deleteTagError) throw deleteTagError;
+
+            // Also delete any clusters associated with this tag
+            if (this.clusterService) {
+              try {
+                // Delete clusters for this tag in the specific category
+                await this.clusterService.deleteClusterByCategory(
+                  tagId,
+                  noteCategory
+                );
+              } catch (clusterError) {
+                console.error("Error deleting clusters for tag:", clusterError);
+              }
+            }
+          } else if (this.clusterService) {
+            // If the tag still has notes but the cluster for this specific category might need updating
+            try {
+              await this.clusterService.setClusterDirty(tagId, noteCategory);
+            } catch (error) {
+              console.error("Error marking cluster as dirty:", error);
+            }
+          }
+        })
+      );
+    }
   }
 
   async getNotesByCategory(category: Category): Promise<Note[]> {

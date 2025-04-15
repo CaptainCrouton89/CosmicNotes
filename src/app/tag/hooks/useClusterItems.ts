@@ -97,7 +97,7 @@ export const useClusterItems = (cluster: Cluster) => {
         setLoading((prev) => ({ ...prev, [id]: false }));
       }
     },
-    [updateItemMutation, toast]
+    [updateItemMutation, toast, refetch]
   );
 
   // Create new item
@@ -121,7 +121,7 @@ export const useClusterItems = (cluster: Cluster) => {
         setCreating(false);
       }
     },
-    [createItemMutation, cluster.id, toast]
+    [createItemMutation, cluster.id, toast, refetch]
   );
 
   // Delete item

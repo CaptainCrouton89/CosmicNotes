@@ -29,7 +29,7 @@ export function TagList({
         <Link key={tag.id} href={`/tag/${tag.id}`}>
           <Badge
             variant="secondary"
-            className="text-xs flex items-center gap-1.5 pr-1 group cursor-default transition-all duration-300 hover:bg-primary/20 cursor-pointer"
+            className="text-xs flex items-center gap-1.5 pr-1 group cursor-default transition-all duration-300 hover:bg-primary/10 cursor-pointer"
           >
             <span>{tag.name}</span>
 

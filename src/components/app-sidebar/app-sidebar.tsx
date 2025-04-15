@@ -7,14 +7,12 @@ import {
   Layers,
   LayoutDashboard,
   MessageCircle,
-  Plus,
   Search,
   Settings,
   Tag,
 } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -175,13 +173,6 @@ export function AppSidebar() {
           <SidebarGroupLabel className="flex items-center gap-2 justify-between">
             <span className="flex items-center gap-2">
               <Tag className="h-4 w-4" />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
               Tags
             </span>
             {/* <Button

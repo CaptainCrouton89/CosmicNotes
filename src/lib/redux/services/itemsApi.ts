@@ -27,10 +27,10 @@ export const itemsApi = createApi({
         method: "POST",
         body,
       }),
-      onQueryStarted: async (arg, { queryFulfilled }) => {
+      onQueryStarted: async () => {
         await tagsApi.util.invalidateTags([{ type: "Tag", id: "LIST" }]);
       },
-      invalidatesTags: (result, error, arg) => [{ type: "Item", id: "LIST" }],
+      invalidatesTags: () => [{ type: "Item", id: "LIST" }],
     }),
 
     deleteItem: builder.mutation<void, number>({
@@ -38,7 +38,7 @@ export const itemsApi = createApi({
         url: `item/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (_, __, id) => [
         { type: "Item", id },
         { type: "Item", id: "LIST" },
       ],
