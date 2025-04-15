@@ -31,6 +31,7 @@ import {
   useNoteMetadata,
   useNoteTags,
 } from "./hooks";
+import { useExports } from "./hooks/useExports";
 
 export default function NotePage() {
   const params = useParams();
@@ -128,6 +129,8 @@ export default function NotePage() {
     }
   };
 
+  const { exportRawText, exportToPDF } = useExports(editorRef, note);
+
   // Skip rendering or processing if deletion is in progress
   if (deleting) {
     return (
@@ -144,6 +147,8 @@ export default function NotePage() {
         onRefresh={refreshNote}
         onSave={saveNote}
         onDelete={deleteNote}
+        onExportRawText={exportRawText}
+        onExportToPDF={exportToPDF}
         hasChanges={hasChanges}
         isRefreshing={refreshing}
         isSaving={saving}

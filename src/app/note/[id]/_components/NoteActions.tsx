@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -5,13 +7,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Save, Trash2 } from "lucide-react";
+import { FileText, MoreVertical, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 interface NoteActionsProps {
   onRefresh: () => void;
   onSave: () => void;
   onDelete: () => void;
+  onExportRawText: () => void;
+  onExportToPDF: () => void;
   hasChanges: boolean;
   isRefreshing: boolean;
   isSaving: boolean;
@@ -22,6 +26,8 @@ export function NoteActions({
   onRefresh,
   onSave,
   onDelete,
+  onExportRawText,
+  onExportToPDF,
   hasChanges,
   isRefreshing,
   isSaving,
@@ -53,6 +59,22 @@ export function NoteActions({
             className="cursor-pointer"
           >
             {isRefreshing ? "Regenerating..." : "Regenerate AI Classifications"}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={onExportRawText}
+            disabled={isRefreshing || disabled}
+            className="cursor-pointer"
+          >
+            <FileText className="h-4 w-4" />
+            Export Raw Text
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={onExportToPDF}
+            disabled={isRefreshing || disabled}
+            className="cursor-pointer"
+          >
+            <FileText className="h-4 w-4" />
+            Export to PDF
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
