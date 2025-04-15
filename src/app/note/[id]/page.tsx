@@ -32,7 +32,7 @@ import {
   Loader2,
   MoreVertical,
 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { KeyboardEvent, useEffect, useState } from "react";
 import {
   CategorySelector,
@@ -110,7 +110,6 @@ const ChatButton = ({
 export default function NotePage() {
   const params = useParams();
   const noteId = Number(params.id);
-  const router = useRouter();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const { toggleChat, isChatVisible } = useChatWindow();

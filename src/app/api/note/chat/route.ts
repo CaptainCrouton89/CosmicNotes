@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     }: { messages: Message[]; mode: Mode; note: CompleteNote } =
       await req.json();
 
-    const { noteService, settingsService } = await initializeServices();
+    const { settingsService } = await initializeServices();
     const userSettings = await settingsService.getSettings();
 
     if (!note) {

@@ -39,7 +39,7 @@ export default function MainContent({
     } else {
       dispatch(setChatVisibility(false));
     }
-  }, []);
+  }, [dispatch]);
 
   const { header } = useSelector((state: RootState) => state.ui);
 

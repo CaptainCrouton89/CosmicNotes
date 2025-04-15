@@ -68,7 +68,7 @@ export default function TagPage() {
         console.warn("No valid categories found");
       }
     }
-  }, [categoryParam, validNoteCategories]);
+  }, [categoryParam, validNoteCategories, dispatch]);
 
   useEffect(() => {
     console.log("tag", tag, "activeCategory", activeCategory);
