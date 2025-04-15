@@ -22,6 +22,15 @@ export type NoteWithTagsAndItems = Note & {
   items: Database["public"]["Tables"]["cosmic_collection_item"]["Row"][];
 };
 
+type CreateNoteType = Omit<NoteInsert, "id" | "created_at" | "updated_at"> & {
+  content: string;
+  title?: string;
+  zone?: Zone;
+  category?: Category;
+  tags?: string[];
+  tagIds?: number[];
+};
+
 export class NoteService {
   private supabase: SupabaseClient<Database>;
   private tagService?: TagService;
@@ -330,53 +339,52 @@ export class NoteService {
     }
   }
 
+  private async updateNoteCategory(note: CreateNoteType): Promise<void> {
+    if (note.category) return;
+    const similarNotes = await searchNotes(note.content, 4, 0.8);
+    const category: Category = await generateNoteCategory(
+      note.content,
+      similarNotes
+    );
+
+    note.category = category;
+  }
+
+  private async updateNoteEmbedding(note: CreateNoteType): Promise<void> {
+    const embedding = note.content
+      ? await generateEmbedding(note.content)
+      : JSON.stringify(new Array(1536).fill(0));
+
+    note.embedding = embedding;
+  }
+
+  private async updateNoteFields(note: CreateNoteType): Promise<void> {
+    if (!note.title || !note.zone) {
+      const { title, zone } = await generateNoteFields(note.content);
+      note.title = title;
+      note.zone = zone;
+    }
+  }
+
   /**
    * Creates a new note with tags. Automatically creates new tags if they don't exist.
    * @param note The note to create
    * @returns The created note
    */
-  async createNote(
-    note: Omit<NoteInsert, "id" | "created_at" | "updated_at" | "embedding"> & {
-      content: string;
-      title?: string;
-      zone?: Zone;
-      category?: Category;
-      tags?: string[];
-      tagIds?: number[];
-    }
-  ): Promise<Note> {
-    const embedding = note.content
-      ? await generateEmbedding(note.content)
-      : JSON.stringify(new Array(1536).fill(0));
+  async createNote(note: CreateNoteType): Promise<Note> {
+    const promises = [];
 
-    let newNoteCategory = note.category;
-    let newNoteTitle = note.title;
-    let newNoteZone = note.zone;
+    promises.push(this.updateNoteEmbedding(note));
+    promises.push(this.updateNoteCategory(note));
+    promises.push(this.updateNoteFields(note));
 
-    if (!newNoteCategory) {
-      const similarNotes = await searchNotes(note.content, 3, 0.8);
-
-      const category: Category = await generateNoteCategory(
-        note.content,
-        similarNotes
-      );
-      newNoteCategory = category;
-    }
-
-    if (!note.title || !note.zone) {
-      const { title, zone } = await generateNoteFields(note.content);
-      newNoteTitle = title;
-      newNoteZone = zone;
-    }
+    await Promise.all(promises);
 
     const { data: noteData, error: noteError } = await this.supabase
       .from("cosmic_memory")
       .insert({
         ...note,
-        title: newNoteTitle,
-        zone: newNoteZone,
-        category: newNoteCategory,
-        embedding,
+        embedding: note.embedding,
       })
       .select()
       .single();

@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
     // Use streamText for streaming response
     const result = streamText({
-      model: openai("gpt-4o"),
+      model: openai("gpt-4.1-2025-04-14"),
       temperature: 0.2,
       system: `You are an insightful, intelligent, assistant managing a user's notes, like a personal librarian.
       

@@ -20,7 +20,7 @@ const getNoAlterationsPrompt = (category: string) =>
   `Convert these ${category} notes into a single organized list. Make it more readable, but do not summarize the content. Do not add any additional information or formatting.`;
 
 export const getToDoPrompt = (content: string): ItemsPrompt => ({
-  model: openai("gpt-4o"),
+  model: openai("gpt-4.1-2025-04-14"),
   prompt: `Here is an unstructured collection of things to do. It might not be organized or make much sense. Please organize it into a single list of actionable items, and make it more readable.
 
 # To-Do Notes
@@ -30,7 +30,7 @@ ${content}`,
 });
 
 export const getCollectionsPrompt = (content: string): ItemsPrompt => ({
-  model: openai("gpt-4o-mini"),
+  model: openai("gpt-4.1-mini-2025-04-14"),
   prompt: `${getNoAlterationsPrompt("collection")}
 
 Note Content:
@@ -40,7 +40,7 @@ ${content}`,
 });
 
 export const getFeedbackPrompt = (content: string): ItemsPrompt => ({
-  model: openai("gpt-4o"),
+  model: openai("gpt-4.1-2025-04-14"),
   prompt: `Here is a bunch of unstructured feedback. Please organize it and make it more readable. If there are multiple ideas, please list them out. Treat each idea as a separate item.
 
 # Feedback Notes

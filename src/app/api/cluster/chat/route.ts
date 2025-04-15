@@ -43,7 +43,7 @@ ${
       .join("\n");
 
     const result = streamText({
-      model: openai("gpt-4o-mini"),
+      model: openai("gpt-4.1-2025-04-14"),
       system: `You are an insightful, intelligent, partner in a conversation. You are discussing a topic with the user. Here are their notes for this particular topic: 
       
       ## User Notes

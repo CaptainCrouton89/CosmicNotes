@@ -20,7 +20,7 @@ export async function POST() {
 
     // Use AI to identify similar tags and suggest merges
     const result = await generateObject({
-      model: openai("gpt-4o-mini"),
+      model: openai("gpt-4.1-mini-2025-04-14"),
       temperature: 0,
       system: `You are a helpful assistant that analyzes tags and identifies similar or related ones that should be merged. 
         

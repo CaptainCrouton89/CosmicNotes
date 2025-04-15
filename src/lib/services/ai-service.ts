@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { CATEGORIES, Category, Note, Zone, ZONES } from "@/types/types";
 import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
@@ -15,43 +14,6 @@ const CATEGORY_DESCRIPTIONS = `- to-do: The note contains a list of things to do
     - learning: The note contains notes from a class or course.
     - feedback: The note contains feedback for a product or service.
     - scratchpad: The note contains random thoughts or ideas, or the content doesn't fit into other categories.`;
-
-export async function generateTodos(notes: Note[], tagId: number) {
-  const supabase = await createClient();
-
-  const { data: existingTodoItems, error: existingTodoItemsError } =
-    await supabase
-      .from("cosmic_collection_item")
-      .select("item")
-      .eq("tag", tagId);
-
-  if (existingTodoItemsError) {
-    throw new Error(existingTodoItemsError.message);
-  }
-
-  const result = await generateObject({
-    model: openai("gpt-4o-mini"),
-    temperature: 0,
-    system:
-      "You are a helpful assistant that specializes in combining todo items from notes.",
-    prompt: `Here are the existing todo items:
-
-${existingTodoItems.map((item) => `${item.item}`).join("\n")}
-
-# Todo Items in Notes
-
-${notes.map((note) => `${note.content}`).join("\n")}
-
-# Instructions
-
-Based on the notes, return a list of todo items that are not already in the existing todo list.`,
-    schema: z.object({
-      todos: z.array(z.string()).describe("A list of todos"),
-    }),
-  });
-
-  return result.object.todos;
-}
 
 export async function generateNoteSummary(notes: Note[], category: Category) {
   const getPrompt = getPromptFunction(category);
@@ -97,7 +59,7 @@ export async function generateNoteCategory(
   similarNotes: (Note & { tags: { name: string }[] })[]
 ): Promise<Category> {
   const result = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: openai("gpt-4.1-nano-2025-04-14"),
     temperature: 0.1,
     system:
       "You are an assistant that helps categorize notes into a few broad categories.",
@@ -135,7 +97,7 @@ export async function generateNoteFields(content: string): Promise<{
   zone: Zone;
 }> {
   const result = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: openai("gpt-4.1-nano-2025-04-14"),
     temperature: 0.2,
     system:
       "You are a helpful assistant that specializes in organizing and categorizing notes.",
@@ -173,7 +135,7 @@ export async function generateNoteFields(content: string): Promise<{
 
 export async function generateWeeklyReview(notes: Note[]) {
   const result = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: openai("gpt-4.1-2025-04-14"),
     temperature: 0.3,
     topP: 0.1,
     system:
@@ -237,7 +199,7 @@ export async function convertContentToItems(
 
 export async function generateTags(cleanedContent: string, tagPrompt?: string) {
   return await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: openai("gpt-4.1-nano-2025-04-14"),
     temperature: 0.3,
     system:
       "You are a helpful assistant that extracts relevant tags from content.",
