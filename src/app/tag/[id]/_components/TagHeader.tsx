@@ -1,4 +1,7 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { tagsApi } from "@/lib/redux/services/tagsApi";
+import { setActiveCategory } from "@/lib/redux/slices/clusterSlice";
 import { capitalize } from "@/lib/utils";
 import { CATEGORIES, Category, Cluster } from "@/types/types";
 import { format } from "date-fns";
@@ -8,46 +11,24 @@ import { useEffect, useRef, useState } from "react";
 interface TagHeaderProps {
   noteCount: number;
   tagName: string;
+  tagId: number;
   activeCluster: Omit<Cluster, "tag"> | null;
-  clusters: Omit<Cluster, "tag">[];
-  activeCategory: Category;
-  onCategoryChange: (category: Category) => void;
-  noteCategories?: Category[];
-  onTagNameUpdate?: (newName: string) => void;
 }
 
-export function TagHeader({
-  noteCount,
-  tagName,
-  activeCluster,
-  clusters,
-  activeCategory,
-  onCategoryChange,
-  noteCategories = [],
-  onTagNameUpdate,
-}: TagHeaderProps) {
+export function TagHeader({ noteCount, tagName, tagId }: TagHeaderProps) {
+  const dispatch = useAppDispatch();
+  const { activeCategory, activeCluster, validNoteCategories } = useAppSelector(
+    (state) => state.cluster
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [editedTagName, setEditedTagName] = useState(tagName);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Get unique categories from clusters
-  const clusterCategories = [...new Set(clusters.map((c) => c.category))];
-
-  // Combine cluster categories with note categories to get categories with content
-  const categoriesWithContent = new Set<Category>([
-    ...clusterCategories,
-    ...noteCategories,
-  ]);
-  console.log("activeCategory", activeCategory);
-
-  // Function to check if a category has content (notes)
-  const hasContent = (category: Category) =>
-    categoriesWithContent.has(category);
+  const [updateTag] = tagsApi.useUpdateTagMutation();
 
   // Handle category change and update URL
   const handleCategoryChange = (category: Category) => {
     // First update the UI state
-    onCategoryChange(category);
+    dispatch(setActiveCategory(category));
 
     // Then update URL without triggering a full navigation using the native History API
     const url = new URL(window.location.href);
@@ -61,12 +42,11 @@ export function TagHeader({
   };
 
   const saveTagName = () => {
-    if (
-      editedTagName.trim() !== "" &&
-      editedTagName !== tagName &&
-      onTagNameUpdate
-    ) {
-      onTagNameUpdate(editedTagName.trim());
+    if (editedTagName.trim() !== "" && editedTagName !== tagName) {
+      updateTag({
+        id: tagId,
+        updates: { name: editedTagName.trim() },
+      });
     }
     setIsEditing(false);
   };
@@ -126,15 +106,13 @@ export function TagHeader({
         ) : (
           <div className="flex items-center">
             <h1 className="text-2xl font-bold">{tagName}</h1>
-            {onTagNameUpdate && (
-              <button
-                onClick={startEditing}
-                className="ml-2 p-1 text-gray-500 hover:bg-gray-100 rounded-full"
-                aria-label="Edit tag name"
-              >
-                <Pencil size={16} />
-              </button>
-            )}
+            <button
+              onClick={startEditing}
+              className="ml-2 p-1 text-gray-500 hover:bg-gray-100 rounded-full"
+              aria-label="Edit tag name"
+            >
+              <Pencil size={16} />
+            </button>
           </div>
         )}
         <span className="text-muted-foreground">({noteCount} notes)</span>
@@ -156,8 +134,8 @@ export function TagHeader({
       {/* Category tabs */}
       <div className="flex items-center mb-4">
         <Tabs
-          defaultValue={activeCategory}
-          value={activeCategory}
+          defaultValue={activeCategory || "scratchpad"}
+          value={activeCategory || "scratchpad"}
           onValueChange={(value) => handleCategoryChange(value as Category)}
           className="w-full"
         >
@@ -166,15 +144,17 @@ export function TagHeader({
               <TabsTrigger
                 key={category}
                 value={category}
-                disabled={!hasContent(category)}
+                disabled={!validNoteCategories.includes(category)}
                 className={`text-xs px-3 py-1 h-7 mb-1 ${
                   activeCategory === category ? "font-semibold" : ""
                 } ${
-                  !hasContent(category)
+                  !validNoteCategories.includes(category)
                     ? "opacity-50 cursor-not-allowed"
                     : "cursor-pointer"
                 }`}
-                data-has-content={hasContent(category).toString()}
+                data-has-content={validNoteCategories
+                  .includes(category)
+                  .toString()}
               >
                 {capitalize(category)}
               </TabsTrigger>

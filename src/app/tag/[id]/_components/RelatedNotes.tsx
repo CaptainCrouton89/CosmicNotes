@@ -39,7 +39,7 @@ export function RelatedNotes({ notes, isLoading, error }: RelatedNotesProps) {
   }
 
   return (
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 pb-16">
       {notes.map((note) => (
         <div
           key={note.id}

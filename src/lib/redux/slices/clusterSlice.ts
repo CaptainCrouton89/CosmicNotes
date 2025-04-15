@@ -1,46 +1,119 @@
+import { ITEM_CATEGORIES } from "@/lib/constants";
+import { CATEGORIES, Category, Cluster } from "@/types/types";
 import { createSlice } from "@reduxjs/toolkit";
+import { tagsApi } from "../services/tagsApi";
+
+type ClusterRecordMap = {
+  [key in Cluster["category"]]: {
+    clusterExists: boolean;
+    hasNotes: boolean;
+    isItemCategory: boolean;
+  };
+};
+
+const defaultClusterMap: ClusterRecordMap = {
+  scratchpad: {
+    clusterExists: false,
+    hasNotes: false,
+    isItemCategory: false,
+  },
+  "to-do": {
+    clusterExists: false,
+    hasNotes: false,
+    isItemCategory: false,
+  },
+  journal: {
+    clusterExists: false,
+    hasNotes: false,
+    isItemCategory: false,
+  },
+  collection: {
+    clusterExists: false,
+    hasNotes: false,
+    isItemCategory: false,
+  },
+  brainstorm: {
+    clusterExists: false,
+    hasNotes: false,
+    isItemCategory: false,
+  },
+  research: {
+    clusterExists: false,
+    hasNotes: false,
+    isItemCategory: false,
+  },
+  learning: {
+    clusterExists: false,
+    hasNotes: false,
+    isItemCategory: false,
+  },
+  feedback: {
+    clusterExists: false,
+    hasNotes: false,
+    isItemCategory: false,
+  },
+  meeting: {
+    clusterExists: false,
+    hasNotes: false,
+    isItemCategory: false,
+  },
+};
 
 // Define a simplified version of Cluster for state management
 // to avoid recursive type instantiation
 type ClusterState = {
-  clusters: {
-    id: number;
-    category: string;
-    summary: string;
-    tag_count: number;
-    created_at: string;
-    updated_at: string;
-    // Omit deeply nested references
-  }[];
-  hasLoaded: boolean;
+  activeCluster: Omit<Cluster, "tag"> | null;
+  activeCategory: Category | null;
+  clusterMap: ClusterRecordMap;
+  validNoteCategories: Category[];
 };
 
 const initialState: ClusterState = {
-  clusters: [],
-  hasLoaded: false,
+  activeCluster: null,
+  activeCategory: null,
+  clusterMap: defaultClusterMap,
+  validNoteCategories: [],
 };
 
 const clusterSlice = createSlice({
   name: "cluster",
   initialState,
   reducers: {
-    clearClusters: (state) => {
-      state.clusters = [];
-      state.hasLoaded = false;
+    setClusterMap: (state, action) => {
+      state.clusterMap = action.payload;
+    },
+    setActiveCluster: (state, action) => {
+      state.activeCluster = action.payload;
+    },
+    setActiveCategory: (state, action) => {
+      state.activeCategory = action.payload;
     },
   },
-  // extraReducers: (builder) => {
-  //   // builder.addMatcher(
-  //   //   clustersApi.endpoints.getClusters.matchFulfilled,
-  //   //   (state, { payload }) => {
-  //   //     if (payload && payload.content) {
-  //   //       state.content = payload.content;
-  //   //       state.hasLoaded = true;
-  //   //     }
-  //   //   }
-  //   // );
-  // },
+  extraReducers: (builder) => {
+    builder.addMatcher(
+      tagsApi.endpoints.getTag.matchFulfilled,
+      (state, { payload }) => {
+        const map: ClusterRecordMap = {} as ClusterRecordMap;
+        CATEGORIES.forEach((category) => {
+          map[category] = {
+            clusterExists:
+              payload?.clusters?.some((c) => c.category === category) || false,
+            hasNotes:
+              payload?.notes.some((note) => note.category === category) ||
+              false,
+            isItemCategory: ITEM_CATEGORIES.includes(category),
+          };
+        });
+        state.validNoteCategories = [
+          ...new Set(payload.notes.map((note) => note.category)),
+        ];
+        state.activeCategory = payload.notes[0].category;
+        state.clusterMap = map;
+      }
+    );
+  },
 });
 
-export const { clearClusters } = clusterSlice.actions;
+export const { setClusterMap, setActiveCluster, setActiveCategory } =
+  clusterSlice.actions;
 export default clusterSlice.reducer;

@@ -1,18 +1,20 @@
 "use client";
 
 import { ITEM_CATEGORIES } from "@/lib/constants";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { tagsApi } from "@/lib/redux/services/tagsApi";
 import {
-  setChatVisibility,
-  toggleChatVisibility,
-} from "@/lib/redux/slices/uiSlice";
+  setActiveCategory,
+  setActiveCluster,
+} from "@/lib/redux/slices/clusterSlice";
 import { RootState } from "@/lib/redux/store";
-import { Category, Cluster, Note } from "@/types/types";
+import { Category, Note } from "@/types/types";
 import { useParams, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import Markdown from "react-markdown";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import remarkGfm from "remark-gfm";
+import { useChatWindow } from "../hooks/useChatWindow";
 import {
   ChatButtons,
   ClusterSummaryItems,
@@ -26,30 +28,16 @@ import {
 import { ChatPanel } from "./_components/ChatPanel";
 
 export default function TagPage() {
+  const { toggleChat, isChatVisible } = useChatWindow();
   const params = useParams();
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
   const tagId = parseInt(String(params.id), 10);
-  const dispatch = useDispatch();
-  const [generateCluster] = tagsApi.useGenerateClusterForCategoryMutation();
-  const [updateTag] = tagsApi.useUpdateTagMutation();
-
-  console.log(categoryParam);
-
-  // Use global UI state for chat visibility
-  const isChatVisible = useSelector(
-    (state: RootState) => state.ui.isChatVisible
-  );
-
-  // State for mobile detection and active categories
-  const [, setIsMobile] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<Category>(
-    (categoryParam as Category) || "scratchpad"
-  );
-  const [activeCluster, setActiveCluster] = useState<Omit<
-    Cluster,
-    "tag"
-  > | null>(null);
+  const dispatch = useAppDispatch();
+  const { activeCategory, activeCluster, clusterMap, validNoteCategories } =
+    useSelector((state: RootState) => state.cluster);
+  const [generateCluster, { isLoading: isGeneratingCluster }] =
+    tagsApi.useGenerateClusterForCategoryMutation();
 
   // Fetch tag family data
   const {
@@ -60,115 +48,51 @@ export default function TagPage() {
     skip: isNaN(tagId),
   });
 
-  // Handle tag name update
-  const handleTagNameUpdate = async (newName: string) => {
-    if (!tag || newName === tag.name) return;
+  const categoryNotes = useMemo(
+    () =>
+      tag?.notes.filter((note) => note.category === activeCategory) as Note[],
+    [tag, activeCategory]
+  );
 
-    try {
-      await updateTag({
-        id: tagId,
-        updates: { name: newName },
-      });
-    } catch (error) {
-      console.error("Failed to update tag name:", error);
-      // Optionally add error handling UI here
-    }
-  };
-
-  // Set the initial active category when tag data is loaded
   useEffect(() => {
-    if (!tag || !tag.notes || tag.notes.length === 0) return;
-
-    // Get unique categories that have notes
-    const availableCategories = [
-      ...new Set(tag.notes.map((note) => note.category)),
-    ] as Category[];
-
-    if (availableCategories.length === 0) return;
-
-    // If the category from URL params exists and has notes, use it
     if (
       categoryParam &&
-      availableCategories.includes(categoryParam as Category)
+      validNoteCategories.includes(categoryParam as Category)
     ) {
-      setActiveCategory(categoryParam as Category);
+      dispatch(setActiveCategory(categoryParam as Category));
+    } else {
+      if (validNoteCategories.length > 0) {
+        dispatch(setActiveCategory(validNoteCategories[0]));
+      } else {
+        // There are no valid categories, so note presumably has note yet loaded
+        console.warn("No valid categories found");
+      }
     }
-    // If current active category doesn't have notes, pick the first available one
-    else if (!availableCategories.includes(activeCategory)) {
-      setActiveCategory(availableCategories[0]);
-    }
-  }, [tag, categoryParam, activeCategory]);
+  }, [categoryParam, validNoteCategories]);
 
   useEffect(() => {
     console.log("tag", tag, "activeCategory", activeCategory);
-    if (tag && tag.clusters) {
-      // Find a cluster matching the active category if possible
-      console.log("tag.clusters", tag.clusters);
-      const matchingCluster = tag.clusters.find(
-        (c) => c.category === activeCategory
-      );
-      if (matchingCluster) {
-        setActiveCluster(matchingCluster);
-      } else {
-        generateCluster({ tagId, category: activeCategory });
-      }
-    } else {
-      setActiveCluster(null);
-    }
-  }, [tag, activeCategory, generateCluster, tagId]);
-
-  // Initialize chat visibility based on screen size
-  useEffect(() => {
-    const checkScreenSize = () => {
-      const isMobileView = window.innerWidth < 1300;
-      setIsMobile(isMobileView);
-
-      // Only update chat visibility on initial load
-      if (!sessionStorage.getItem("initialUiStateSet")) {
-        dispatch(setChatVisibility(!isMobileView));
-        sessionStorage.setItem("initialUiStateSet", "true");
-      }
-    };
-
-    // Check on initial render
-    checkScreenSize();
-
-    // Setup listener for window resize
-    window.addEventListener("resize", checkScreenSize);
-
-    // Cleanup listener
-    return () => window.removeEventListener("resize", checkScreenSize);
-  }, [dispatch]);
-
-  const toggleChat = () => {
-    dispatch(toggleChatVisibility());
-  };
-
-  const handleCategoryChange = (category: Category) => {
-    // Get available categories with notes
-    const availableCategories = tag?.notes
-      ? ([...new Set(tag.notes.map((note) => note.category))] as Category[])
-      : [];
-
-    // Only change category if it has notes
-    if (availableCategories.includes(category)) {
-      setActiveCategory(category);
-
-      // Try to find a matching cluster for the selected category
-      if (tag?.clusters && tag.clusters.length > 0) {
-        const matchingCluster = tag.clusters.find(
-          (c) => c.category === category
+    if (tag && activeCategory) {
+      if (clusterMap[activeCategory].clusterExists) {
+        console.log(
+          "clusterMap[activeCategory].clusterExists",
+          clusterMap[activeCategory].clusterExists
         );
-        if (matchingCluster) {
-          setActiveCluster(matchingCluster);
-        } else {
-          setActiveCluster(null);
+        // Find a cluster matching the active category if possible
+        const matchingCluster = tag.clusters.find(
+          (c) => c.category === activeCategory
+        );
+        dispatch(setActiveCluster(matchingCluster));
+      } else {
+        // cluster doesn't exist, but should automatically be created since it's a collection-type
+        if (clusterMap[activeCategory].isItemCategory) {
+          generateCluster({ tagId, category: activeCategory });
         }
       }
+    } else {
+      dispatch(setActiveCluster(null));
     }
-  };
-
-  console.log("activeCluster", activeCluster, "activeCategory", activeCategory);
+  }, [tag, activeCategory, generateCluster, tagId]);
 
   // Loading states
   if (tagLoading) return <LoadingState />;
@@ -179,44 +103,12 @@ export default function TagPage() {
   // Empty state - only return this if there is no tag at all
   if (!tag) return <EmptyState tagId={tagId} tagName={undefined} />;
 
-  // Get unique categories from notes if they exist
-  const noteCategories: Category[] =
-    tag.notes && tag.notes.length > 0
-      ? ([...new Set(tag.notes.map((note) => note.category))] as Category[])
-      : [];
-
   // If there are no notes in any category, show the empty state
   if (!tag.notes || tag.notes.length === 0) {
     return <EmptyState tagId={tagId} tagName={tag.name} />;
   }
 
-  // Get notes for the current category
-  const categoryNotes = tag.notes.filter(
-    (note) => note.category === activeCategory
-  ) as Note[];
-
-  // If no notes in the active category, and no other notes in different categories, show empty state
-  if (categoryNotes.length === 0 && noteCategories.length === 0) {
-    return <EmptyState tagId={tagId} tagName={tag.name} />;
-  }
-
-  // Check if a cluster exists for the current category
-  const categoryCluster = tag.clusters?.find(
-    (cluster) => cluster.category === activeCategory
-  );
-
-  // Check if we need to show the generate button:
-  // - No cluster exists for the category, OR
-  // - Cluster exists but is marked as dirty (needs refresh)
-  const shouldShowGenerateButton =
-    (categoryNotes.length > 0 && !categoryCluster) ||
-    (categoryCluster && categoryCluster.dirty === true);
-
-  console.log(
-    "state:",
-    activeCluster?.dirty,
-    activeCluster?.notes?.length === 0
-  );
+  console.log("activeCluster", activeCluster);
 
   return (
     <div className="flex flex-col md:flex-row min-h-0 h-full relative">
@@ -227,21 +119,30 @@ export default function TagPage() {
       >
         {/* Header component */}
         <TagHeader
+          tagId={tagId}
           tagName={tag.name}
           activeCluster={activeCluster}
-          clusters={tag.clusters || []}
-          activeCategory={activeCategory}
-          onCategoryChange={handleCategoryChange}
           noteCount={categoryNotes.length}
-          noteCategories={noteCategories}
-          onTagNameUpdate={handleTagNameUpdate}
         />
 
         {/* Cluster summary and/or Generate Cluster button */}
-        {activeCluster && (
+        {activeCluster && activeCluster.category === activeCategory && (
           <>
             <div className="mt-4">
-              {ITEM_CATEGORIES.includes(activeCategory) ? (
+              {isGeneratingCluster ? (
+                <div className="p-4 border border-gray-200 rounded-md bg-blue-50">
+                  <div className="flex items-center space-x-4">
+                    <div className="h-4 w-4 bg-blue-500 rounded-full animate-pulse"></div>
+                    <p className="text-blue-700">
+                      Updating {activeCategory} cluster...
+                    </p>
+                  </div>
+                  <p className="text-sm text-blue-600 mt-2 ml-8">
+                    This may take a few moments depending on how many notes you
+                    have.
+                  </p>
+                </div>
+              ) : ITEM_CATEGORIES.includes(activeCluster.category) ? (
                 // Show items from notes using the clusterId
                 <ClusterSummaryItems cluster={activeCluster} />
               ) : (
@@ -257,39 +158,59 @@ export default function TagPage() {
             </div>
 
             {/* Show generate button if cluster is dirty */}
-            {activeCluster.dirty && (
-              <div className="mt-4 mb-2">
-                <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-3">
-                  <p className="text-amber-800 text-sm">
-                    This cluster needs to be updated with new content.
-                  </p>
+            {activeCluster.dirty &&
+              !ITEM_CATEGORIES.includes(activeCluster.category) && (
+                <div className="mt-4 mb-2">
+                  <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-3">
+                    <p className="text-amber-800 text-sm">
+                      This cluster needs to be updated with new content.
+                    </p>
+                  </div>
+                  <GenerateClusterButton
+                    tagId={tagId}
+                    category={activeCluster.category}
+                    isRefresh={true}
+                  />
                 </div>
-                <GenerateClusterButton
-                  tagId={tagId}
-                  category={activeCategory}
-                  isRefresh={true}
-                />
-              </div>
-            )}
+              )}
 
             <hr className="my-6 border-t border-gray-200" />
           </>
         )}
 
         {/* Show generate button if no cluster exists */}
-        {!activeCluster && shouldShowGenerateButton && (
-          <>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-2">Cluster Analysis</h2>
-              <p className="text-gray-600 mb-3">
-                Generate a cluster to get AI-powered insights for your{" "}
-                {activeCategory} notes.
-              </p>
-              <GenerateClusterButton tagId={tagId} category={activeCategory} />
-            </div>
-            <hr className="my-6 border-t border-gray-200" />
-          </>
-        )}
+        {(!activeCluster || activeCluster.category !== activeCategory) &&
+          !isGeneratingCluster && (
+            <>
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold mb-2">Cluster Analysis</h2>
+                <p className="text-gray-600 mb-3">
+                  Generate a cluster to get AI-powered insights for your{" "}
+                  {activeCategory} notes.
+                </p>
+                {isGeneratingCluster ? (
+                  <div className="p-4 border border-gray-200 rounded-md mt-2 bg-blue-50">
+                    <div className="flex items-center space-x-4">
+                      <div className="h-4 w-4 bg-blue-500 rounded-full animate-pulse"></div>
+                      <p className="text-blue-700">
+                        Generating {activeCategory} cluster...
+                      </p>
+                    </div>
+                    <p className="text-sm text-blue-600 mt-2 ml-8">
+                      This may take a few moments depending on how many notes
+                      you have.
+                    </p>
+                  </div>
+                ) : (
+                  <GenerateClusterButton
+                    tagId={tagId}
+                    category={activeCategory!}
+                  />
+                )}
+              </div>
+              <hr className="my-6 border-t border-gray-200" />
+            </>
+          )}
 
         <h2 className="text-xl font-semibold mb-4">Related Notes</h2>
 

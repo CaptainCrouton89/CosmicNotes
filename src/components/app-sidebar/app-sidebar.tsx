@@ -2,6 +2,8 @@
 
 import {
   BookOpen,
+  ChevronDown,
+  ChevronRight,
   Clock,
   Home,
   Layers,
@@ -13,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -27,7 +30,7 @@ import {
 } from "@/components/ui/sidebar";
 import { notesApi } from "@/lib/redux/services/notesApi";
 import { tagsApi } from "@/lib/redux/services/tagsApi";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ExpandableSection } from "./expandable-section";
 import { NotesList } from "./notes-list";
 
@@ -48,6 +51,32 @@ export function AppSidebar() {
     error: tagsError,
     isLoading: tagsLoading,
   } = tagsApi.useGetAllTagsQuery();
+
+  // State for showing all tags
+  const [showAllTags, setShowAllTags] = useState(false);
+
+  // Filter tags by date
+  const { recentTags, olderTags } = useMemo(() => {
+    if (!tagsData) {
+      return { recentTags: [], olderTags: [] };
+    }
+
+    const now = new Date();
+    const oneWeekAgo = new Date(now);
+    oneWeekAgo.setDate(now.getDate() - 7);
+
+    const recentTags = tagsData.filter((tag) => {
+      const tagDate = new Date(tag.created_at);
+      return tagDate >= oneWeekAgo;
+    });
+
+    const olderTags = tagsData.filter((tag) => {
+      const tagDate = new Date(tag.created_at);
+      return tagDate < oneWeekAgo;
+    });
+
+    return { recentTags, olderTags };
+  }, [tagsData]);
 
   // Filter notes by time periods and category
   const { lastDayNotes, lastWeekNotes, collectionNotes, journalNotes } =
@@ -175,17 +204,6 @@ export function AppSidebar() {
               <Tag className="h-4 w-4" />
               Tags
             </span>
-            {/* <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={handleRefreshClusters}
-              disabled={isGathering}
-            >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${isGathering ? "animate-spin" : ""}`}
-              />
-            </Button> */}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             {tagsLoading ? (
@@ -204,9 +222,10 @@ export function AppSidebar() {
                 No tags found
               </div>
             ) : (
-              <SidebarMenu>
-                {tagsData
-                  ? [...tagsData].map((tag) => (
+              <>
+                <SidebarMenu>
+                  {recentTags.length > 0 ? (
+                    recentTags.map((tag) => (
                       <SidebarMenuItem key={tag.id}>
                         <SidebarMenuButton
                           className="w-full text-left font-medium"
@@ -225,8 +244,58 @@ export function AppSidebar() {
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     ))
-                  : null}
-              </SidebarMenu>
+                  ) : (
+                    <div className="px-4 py-2 text-muted-foreground">
+                      No recent tags
+                    </div>
+                  )}
+                </SidebarMenu>
+
+                {olderTags.length > 0 && (
+                  <div className="mt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full flex justify-between items-center px-3 py-1.5 font-medium text-xs text-muted-foreground"
+                      onClick={() => setShowAllTags(!showAllTags)}
+                    >
+                      <span>
+                        {showAllTags ? "Hide" : "Show"} older tags (
+                        {olderTags.length})
+                      </span>
+                      {showAllTags ? (
+                        <ChevronDown className="h-3 w-3" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3" />
+                      )}
+                    </Button>
+
+                    {showAllTags && (
+                      <SidebarMenu className="mt-1 pt-1 border-t">
+                        {olderTags.map((tag) => (
+                          <SidebarMenuItem key={tag.id}>
+                            <SidebarMenuButton
+                              className="w-full text-left font-medium"
+                              asChild
+                            >
+                              <Link href={`/tag/${tag.id}`}>
+                                <span className="flex justify-between items-center w-full">
+                                  <span>{tag.name}</span>
+                                  <span className="text-muted-foreground text-xs">
+                                    {tag.note_count > 1
+                                      ? `${tag.note_count} notes`
+                                      : `${tag.note_count} note`}
+                                  </span>
+                                </span>
+                              </Link>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </SidebarGroupContent>
         </SidebarGroup>
