@@ -20,7 +20,7 @@ export function ChatPanel({ isVisible, chatId, onToggle }: ChatPanelProps) {
           <ChevronRight size={20} />
         </Button>
       </div>
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden pb-4 md:pb-0">
         <ChatInterface endpoint="/api/cluster/chat" chatId={chatId} />
       </div>
     </>
