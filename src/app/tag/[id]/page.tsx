@@ -222,8 +222,8 @@ export default function TagPage() {
     <div className="flex flex-col md:flex-row min-h-0 h-full relative">
       <div
         className={`w-full ${
-          isChatVisible ? "md:w-3/5" : "md:w-full"
-        } overflow-y-auto py-6 px-4 md:py-8 md:px-6 transition-all duration-300`}
+          isChatVisible ? "md:w-3/5 overflow-y-auto" : "md:w-full"
+        } py-6 px-4 md:py-8 md:px-6 transition-all duration-300`}
       >
         {/* Header component */}
         <TagHeader
