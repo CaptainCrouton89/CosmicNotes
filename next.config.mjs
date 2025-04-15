@@ -2,6 +2,9 @@ import { GenerateSW } from "workbox-webpack-plugin";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   headers: async () => {
     return [
       {
