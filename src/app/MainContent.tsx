@@ -20,7 +20,7 @@ export default function MainContent({
     setMounted(true);
   }, []);
 
-  const { header, headerMeta } = useSelector((state: RootState) => state.ui);
+  const { header } = useSelector((state: RootState) => state.ui);
 
   // Default padding class (use this for SSR)
   const defaultPaddingClass = "px-2 md:px-4 lg:px-10";
@@ -39,7 +39,7 @@ export default function MainContent({
         </header>
         <main className="flex-1 overflow-auto min-h-0">
           <div
-            className={`container h-full flex flex-col ${
+            className={`h-full flex flex-col ${
               mounted && isChatVisible ? chatPaddingClass : defaultPaddingClass
             }`}
           >

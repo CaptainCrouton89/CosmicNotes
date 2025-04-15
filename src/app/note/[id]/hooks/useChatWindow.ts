@@ -3,7 +3,7 @@ import {
   toggleChatVisibility,
 } from "@/lib/redux/slices/uiSlice";
 import { RootState } from "@/lib/redux/store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 export const useChatWindow = () => {
@@ -11,23 +11,26 @@ export const useChatWindow = () => {
   const isChatVisible = useSelector(
     (state: RootState) => state.ui.isChatVisible
   );
+  const [hasMounted, setHasMounted] = useState(false);
 
   const toggleChat = () => {
     dispatch(toggleChatVisibility());
   };
 
   useEffect(() => {
-    const checkScreenSize = () => {
-      const isMobileView = window.innerWidth < 1300;
+    setHasMounted(true);
 
-      // Only update chat visibility on initial load
-      if (!sessionStorage.getItem("initialUiStateSet")) {
+    // Only run this logic once the component is mounted client-side
+    const checkScreenSize = () => {
+      // Only update chat visibility on initial client-side load
+      if (hasMounted && !sessionStorage.getItem("initialUiStateSet")) {
+        const isMobileView = window.innerWidth < 1300;
         dispatch(setChatVisibility(!isMobileView));
         sessionStorage.setItem("initialUiStateSet", "true");
       }
     };
 
-    // Check on initial render
+    // Check on initial client-side render
     checkScreenSize();
 
     // Setup listener for window resize
@@ -35,7 +38,7 @@ export const useChatWindow = () => {
 
     // Cleanup listener
     return () => window.removeEventListener("resize", checkScreenSize);
-  }, [dispatch]);
+  }, [dispatch, hasMounted]);
 
   return { toggleChat, isChatVisible };
 };

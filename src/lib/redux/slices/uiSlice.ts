@@ -6,16 +6,9 @@ interface UiState {
   headerMeta: string;
 }
 
-// Initialize based on screen size with fallback to desktop default
-const getInitialChatVisibility = () => {
-  if (typeof window !== "undefined") {
-    return window.innerWidth >= 1300; // Same breakpoint used in component
-  }
-  return true; // Default to visible on initial SSR render
-};
-
+// Use a fixed initial state for SSR to prevent hydration mismatch
 const initialState: UiState = {
-  isChatVisible: getInitialChatVisibility(),
+  isChatVisible: false, // Default to not visible for SSR to avoid hydration issues
   header: "Cosmic Notes",
   headerMeta: "",
 };

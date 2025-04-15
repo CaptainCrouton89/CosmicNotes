@@ -57,14 +57,14 @@ export function GenericSelector<T extends string>({
           ) : selectedOption ? (
             <>
               {selectedOption.icon}
-              <span className="hidden sm:inline text-xs">
+              <span className="hidden md:inline text-xs">
                 {selectedOption.label}
               </span>
             </>
           ) : (
             <>
               {placeholderIcon}
-              <span className="hidden sm:inline text-xs">
+              <span className="hidden md:inline text-xs">
                 {placeholderLabel}
               </span>
             </>

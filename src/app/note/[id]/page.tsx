@@ -3,7 +3,14 @@
 import { ChatPanel } from "@/components/ChatPanel";
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
 import { ToolbarHeader } from "@/components/editor/ToolbarHeader";
+import { RightHeader } from "@/components/header/RightHeader";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -16,9 +23,16 @@ import { setHeader } from "@/lib/redux/slices/uiSlice";
 import { formatDate, formatDateOnly } from "@/lib/utils";
 import { Category, Zone } from "@/types/types";
 import "@mdxeditor/editor/style.css";
-import { ArrowLeft, ChevronLeft, Clock, Loader2 } from "lucide-react";
+import {
+  Brain,
+  ChevronLeft,
+  Clock,
+  FileText,
+  Loader2,
+  MoreVertical,
+} from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { KeyboardEvent, useEffect, useRef, useState } from "react";
+import { KeyboardEvent, useEffect, useState } from "react";
 import {
   CategorySelector,
   ItemList,
@@ -35,6 +49,63 @@ import {
 } from "./hooks";
 import { useChatWindow } from "./hooks/useChatWindow";
 import { useExports } from "./hooks/useExports";
+// Client-side only chat button to prevent hydration issues
+const ChatButton = ({
+  isChatVisible,
+  toggleChat,
+}: {
+  isChatVisible: boolean;
+  toggleChat: () => void;
+}) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Return null during SSR and initial render
+  if (!mounted) {
+    return (
+      <Button variant="outline" size="sm" className="ml-2 whitespace-nowrap">
+        Loading...
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      variant={isChatVisible ? "default" : "outline"}
+      size="sm"
+      onClick={toggleChat}
+      className="ml-2 whitespace-nowrap"
+    >
+      {isChatVisible ? (
+        <>
+          <div className="flex items-center gap-1 hidden lg:flex">
+            <span>Close Chat</span>
+          </div>
+          <div className="flex items-center gap-1 lg:hidden">
+            <Brain className="h-4 w-4" />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex items-center gap-1 hidden lg:block flex">
+            <ChevronLeft
+              className={`h-4 w-4 inline-flex ${
+                isChatVisible ? "rotate-180" : ""
+              } transition-transform`}
+            />
+            <span className="inline-flex">AI Chat</span>
+          </div>
+          <div className="flex items-center gap-1 lg:hidden">
+            <Brain className="h-4 w-4" />
+          </div>
+        </>
+      )}
+    </Button>
+  );
+};
 
 export default function NotePage() {
   const params = useParams();
@@ -43,9 +114,6 @@ export default function NotePage() {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const { toggleChat, isChatVisible } = useChatWindow();
-  const headerRightElementRef = useRef<HTMLElement | null>(null);
-  const [mounted, setMounted] = useState(false);
-
   // Use custom hooks
   const { deleting, deleteNote } = useNoteActions(noteId);
   const dispatch = useAppDispatch();
@@ -151,12 +219,8 @@ export default function NotePage() {
 
   return (
     <div className="flex flex-col min-h-0 h-full relative">
-      {/* Persistent header - always visible */}
-      <div className="sticky top-0 z-20 w-full p-3 border-b bg-background/95 backdrop-blur-sm flex items-center justify-between">
+      <RightHeader>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
           <TooltipProvider>
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
@@ -185,83 +249,81 @@ export default function NotePage() {
               </div>
             )}
           </TooltipProvider>
-
-          <div>
-            {/* {isEditingTitle ? (
-              <div className="flex items-center gap-2">
-                <Input
-                  type="text"
-                  value={titleValue}
-                  onChange={(e) => setTitleValue(e.target.value)}
-                  onKeyDown={handleTitleKeyDown}
-                  autoFocus
-                  className="text-xl font-bold w-full max-w-xs xl:max-w-md"
-                  placeholder="Note Title"
-                  onBlur={handleTitleSave}
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleTitleSave}
-                  className="text-green-500"
-                >
-                  <Check className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleTitleCancel}
-                  className="text-red-500"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-            ) : (
-              <h1
-                className="text-xl font-bold truncate max-w-[200px] sm:max-w-xs md:max-w-sm xl:max-w-md cursor-pointer hover:text-primary transition-colors px-2 py-1"
-                onClick={handleTitleClick}
-                title="Click to edit title"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={refreshNote}
+                disabled={!note || isEditingTitle}
+                className="cursor-pointer"
               >
-                {note?.title || "Note Details"}
-              </h1>
-            )} */}
-          </div>
+                {refreshing
+                  ? "Regenerating..."
+                  : "Regenerate AI Classifications"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={exportRawText}
+                disabled={!note || isEditingTitle}
+                className="cursor-pointer"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Export Raw Text
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={exportToPDF}
+                disabled={!note || isEditingTitle}
+                className="cursor-pointer"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Export to PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-
+      </RightHeader>
+      <div className="sticky top-0 z-20 w-full p-3 border-b bg-background/95 backdrop-blur-sm flex items-center justify-between flex-wrap gap-y-2">
         <div className="flex items-center gap-2">
-          {/* Note Actions */}
+          {note?.zone !== undefined && (
+            <ZoneSelector
+              zone={note.zone as Zone}
+              updating={updatingField === "zone"}
+              onUpdateZone={(zone) => updateZone(zone as Zone)}
+              allowNull={false}
+            />
+          )}
+
+          {note?.category !== undefined && (
+            <CategorySelector
+              category={note.category}
+              updating={updatingField === "category"}
+              onUpdateCategory={(category) =>
+                updateCategory(category as Category)
+              }
+              allowNull={false}
+            />
+          )}
+          <TagList
+            tags={tags}
+            onDeleteTag={handleTagDelete}
+            deletingTag={tagDeleting}
+            onAddTags={addTag}
+          />
+        </div>
+        <div className="flex items-center gap-2">
           <NoteActions
-            onRefresh={refreshNote}
             onSave={saveNote}
             onDelete={deleteNote}
-            onExportRawText={exportRawText}
-            onExportToPDF={exportToPDF}
             hasChanges={hasChanges}
-            isRefreshing={refreshing}
             isSaving={saving}
             disabled={!note || isEditingTitle}
           />
 
-          {/* Chat Toggle Button */}
-          <Button
-            variant={isChatVisible ? "default" : "outline"}
-            size="sm"
-            onClick={toggleChat}
-            className="ml-2 whitespace-nowrap"
-          >
-            {isChatVisible ? (
-              "Close Chat"
-            ) : (
-              <div className="flex items-center gap-1">
-                <span>AI Chat</span>
-                <ChevronLeft
-                  className={`h-4 w-4 ${
-                    isChatVisible ? "rotate-180" : ""
-                  } transition-transform`}
-                />
-              </div>
-            )}
-          </Button>
+          {/* Chat Toggle Button - Now using the client-only wrapper component */}
+          <ChatButton isChatVisible={isChatVisible} toggleChat={toggleChat} />
         </div>
       </div>
 
@@ -273,37 +335,6 @@ export default function NotePage() {
             isChatVisible ? "md:w-3/5 overflow-y-auto" : "md:w-full"
           } pt-4 px-4 md:px-6 transition-all duration-300 flex flex-col overflow-y-auto pb-4`}
         >
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground text-xs px-2 mb-4">
-            {/* Note Metadata */}
-            {note?.zone !== undefined && (
-              <ZoneSelector
-                zone={note.zone as Zone}
-                updating={updatingField === "zone"}
-                onUpdateZone={(zone) => updateZone(zone as Zone)}
-                allowNull={false}
-              />
-            )}
-
-            {note?.category !== undefined && (
-              <CategorySelector
-                category={note.category}
-                updating={updatingField === "category"}
-                onUpdateCategory={(category) =>
-                  updateCategory(category as Category)
-                }
-                allowNull={false}
-              />
-            )}
-
-            {/* Tags */}
-            <TagList
-              tags={tags}
-              onDeleteTag={handleTagDelete}
-              deletingTag={tagDeleting}
-              onAddTags={addTag}
-            />
-          </div>
-
           {loading ? (
             <div className="h-40 flex items-center justify-center">
               <p>Loading note...</p>
@@ -315,7 +346,7 @@ export default function NotePage() {
               Note not found
             </div>
           ) : (
-            <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex flex-col flex-1">
               {/* Show ItemList if note has items, otherwise show the markdown editor */}
               {ITEM_CATEGORIES.includes(note.category) ? (
                 <div className="w-full overflow-hidden flex-1">

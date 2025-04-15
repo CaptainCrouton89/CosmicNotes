@@ -1,3 +1,4 @@
+import { RightHeader } from "@/components/header/RightHeader";
 import { Button } from "@/components/ui/button";
 import { Brain, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -8,7 +9,7 @@ interface ChatButtonsProps {
 
 export function ChatButtons({ isChatVisible, onToggle }: ChatButtonsProps) {
   return (
-    <>
+    <RightHeader>
       {/* Chat toggle button for mobile */}
       {!isChatVisible && (
         <button
@@ -24,7 +25,7 @@ export function ChatButtons({ isChatVisible, onToggle }: ChatButtonsProps) {
       <Button
         variant="outline"
         onClick={onToggle}
-        className="hidden md:flex fixed right-4 top-3 z-10 items-center gap-2 my-auto"
+        className="hidden md:flex fixed z-10 items-center gap-2 my-auto"
         aria-label={isChatVisible ? "Close chat" : "Open chat"}
       >
         {!isChatVisible ? (
@@ -34,6 +35,11 @@ export function ChatButtons({ isChatVisible, onToggle }: ChatButtonsProps) {
         )}
         <span>{isChatVisible ? "Close Chat" : "Open Chat"}</span>
       </Button>
-    </>
+      {isChatVisible && (
+        <Button variant="outline" onClick={onToggle} className="md:hidden">
+          <Brain size={16} />
+        </Button>
+      )}
+    </RightHeader>
   );
 }
