@@ -17,6 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useChatWindow } from "@/hooks/useChatWindow";
 import { ITEM_CATEGORIES } from "@/lib/constants";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setHeader } from "@/lib/redux/slices/uiSlice";
@@ -47,7 +48,6 @@ import {
   useNoteMetadata,
   useNoteTags,
 } from "./hooks";
-import { useChatWindow } from "./hooks/useChatWindow";
 import { useExports } from "./hooks/useExports";
 // Client-side only chat button to prevent hydration issues
 const ChatButton = ({

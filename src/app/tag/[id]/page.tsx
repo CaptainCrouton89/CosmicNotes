@@ -15,7 +15,7 @@ import Markdown from "react-markdown";
 import { useSelector } from "react-redux";
 import remarkGfm from "remark-gfm";
 import { ChatPanel } from "../../../components/ChatPanel";
-import { useChatWindow } from "../hooks/useChatWindow";
+import { useChatWindow } from "../../../hooks/useChatWindow";
 import {
   ChatButtons,
   ClusterSummaryItems,

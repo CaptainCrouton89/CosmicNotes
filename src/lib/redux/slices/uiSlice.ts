@@ -8,7 +8,7 @@ interface UiState {
 
 // Use a fixed initial state for SSR to prevent hydration mismatch
 const initialState: UiState = {
-  isChatVisible: false, // Default to not visible for SSR to avoid hydration issues
+  isChatVisible: false,
   header: "Cosmic Notes",
   headerMeta: "",
 };

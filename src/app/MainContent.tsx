@@ -2,6 +2,8 @@
 
 import { AppSidebar } from "@/components/app-sidebar/app-sidebar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setChatVisibility } from "@/lib/redux/slices/uiSlice";
 import { RootState } from "@/lib/redux/store";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
@@ -14,10 +16,29 @@ export default function MainContent({
   const isChatVisible = useSelector(
     (state: RootState) => state.ui.isChatVisible
   );
+  const dispatch = useAppDispatch();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Set chat visibility to true on wider screens, false on mobile
+    if (typeof window !== "undefined") {
+      const isWideScreen = window.innerWidth >= 1024; // lg breakpoint
+      dispatch(setChatVisibility(isWideScreen));
+
+      // Optional: Add resize listener to adjust chat visibility on window resize
+      const handleResize = () => {
+        dispatch(setChatVisibility(window.innerWidth >= 1024));
+      };
+
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    } else {
+      dispatch(setChatVisibility(false));
+    }
   }, []);
 
   const { header } = useSelector((state: RootState) => state.ui);
