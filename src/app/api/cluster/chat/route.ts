@@ -122,8 +122,7 @@ Assistant: "I'd be happy to create a new note with the key points from our conve
 - Key insights: [list of important points discussed]
 - Action items: [any next steps identified]
 
-Would you like me to create this note now? Or would you prefer to adjust anything before saving?"
-      `,
+Would you like me to create this note now? Or would you prefer to adjust anything before saving?"`,
       messages,
       temperature: 0.8,
       topP: 0.95,
