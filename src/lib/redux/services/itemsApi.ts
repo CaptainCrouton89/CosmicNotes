@@ -1,5 +1,6 @@
 import { CompleteItem, Item } from "@/types/types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { tagsApi } from "./tagsApi";
 
 // Define the tag types for proper typing
 
@@ -26,6 +27,9 @@ export const itemsApi = createApi({
         method: "POST",
         body,
       }),
+      onQueryStarted: async (arg, { queryFulfilled }) => {
+        await tagsApi.util.invalidateTags([{ type: "Tag", id: "LIST" }]);
+      },
       invalidatesTags: (result, error, arg) => [{ type: "Item", id: "LIST" }],
     }),
 

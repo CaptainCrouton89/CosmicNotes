@@ -3,6 +3,7 @@ import { Category, CompleteItem, Item, Note } from "@/types/types";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { generateEmbedding } from "../embeddings";
 import { convertContentToItems } from "./ai-service";
+import { TagService } from "./tag-service";
 
 type ItemInsert =
   Database["public"]["Tables"]["cosmic_collection_item"]["Insert"];
@@ -10,8 +11,40 @@ type ItemInsert =
 export class ItemService {
   private supabase: SupabaseClient<Database>;
 
+  private tagService: TagService;
+
   constructor(supabase: SupabaseClient<Database>) {
     this.supabase = supabase;
+    this.tagService = new TagService(supabase);
+  }
+
+  async setTagService(tagService: TagService): Promise<void> {
+    this.tagService = tagService;
+  }
+
+  private async updateClusterAndTagForItem(
+    memory?: number,
+    tagId?: number
+  ): Promise<void> {
+    if (!memory && !tagId) return;
+    if (tagId) {
+      await this.tagService.setTagDirty(tagId);
+      return;
+    }
+    if (memory) {
+      const { data: relatedTags, error: relatedTagsError } = await this.supabase
+        .from("cosmic_memory_tag_map")
+        .select("*")
+        .eq("note", memory);
+
+      if (relatedTagsError) throw new Error(relatedTagsError.message);
+
+      const tagIds = relatedTags?.map((tag) => tag.tag) ?? [];
+
+      await Promise.all(
+        tagIds.map((tagId) => this.tagService.setTagDirty(tagId))
+      );
+    }
   }
 
   async createItem(
@@ -20,14 +53,18 @@ export class ItemService {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
       .insert(item)
-      .select("*, memory:cosmic_memory(*), cluster:cosmic_cluster(*)")
+      .select(
+        "*, memory:cosmic_memory(*), cluster:cosmic_cluster(*, tag:cosmic_tags(*))"
+      )
       .single();
+
+    console.log("data", data);
 
     if (error) throw new Error(error.message);
 
     const embedding = await generateEmbedding(data.item);
 
-    return {
+    const newItem = {
       ...data,
       memory:
         data.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
@@ -35,15 +72,31 @@ export class ItemService {
         data.cluster as unknown as Database["public"]["Tables"]["cosmic_cluster"]["Row"],
       embedding,
     };
+
+    await this.updateClusterAndTagForItem(
+      data.memory?.id,
+      data.cluster?.tag.id
+    );
+
+    return newItem;
   }
 
   async createItems(items: ItemInsert[]): Promise<CompleteItem[]> {
     const { data, error } = await this.supabase
       .from("cosmic_collection_item")
       .insert(items)
-      .select("*, memory:cosmic_memory(*), cluster:cosmic_cluster(*)");
+      .select(
+        "*, memory:cosmic_memory(*), cluster:cosmic_cluster(*, tag:cosmic_tags(*))"
+      );
 
     if (error) throw new Error(error.message);
+
+    if (data.length === 0) return [];
+
+    await this.updateClusterAndTagForItem(
+      data[0].memory?.id,
+      data[0].cluster?.tag.id
+    );
 
     return data.map((item) => {
       return {
@@ -84,12 +137,16 @@ export class ItemService {
       .from("cosmic_collection_item")
       .update(item)
       .eq("id", item.id!)
-      .select("*, memory:cosmic_memory(*), cluster:cosmic_cluster(*)")
+      .select(
+        "*, memory:cosmic_memory(*), cluster:cosmic_cluster(*, tag:cosmic_tags(*))"
+      )
       .single();
 
     if (error) throw new Error(error.message);
 
-    return {
+    console.log("data", { ...data, embedding: "" });
+
+    const newItem = {
       ...data,
       memory:
         data.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
@@ -97,15 +154,39 @@ export class ItemService {
         data.cluster as unknown as Database["public"]["Tables"]["cosmic_cluster"]["Row"],
       embedding: data.embedding || undefined,
     };
+
+    await this.updateClusterAndTagForItem(
+      data.memory?.id,
+      data.cluster?.tag.id
+    );
+
+    return newItem;
   }
 
   async deleteItem(id: number): Promise<void> {
+    // Get the item's cluster ID before deleting
+    const { data: item, error: fetchError } = await this.supabase
+      .from("cosmic_collection_item")
+      .select(
+        "cluster, memory:cosmic_memory(*), cluster:cosmic_cluster(*, tag:cosmic_tags(*))"
+      )
+      .eq("id", id)
+      .single();
+
+    if (fetchError) throw new Error(fetchError.message);
+
     const { error } = await this.supabase
       .from("cosmic_collection_item")
       .delete()
       .eq("id", id);
 
     if (error) throw new Error(error.message);
+
+    // Update the tag's timestamp if the item had a cluster
+    await this.updateClusterAndTagForItem(
+      item.memory?.id,
+      item.cluster?.tag.id
+    );
   }
 
   async getItem(id: number): Promise<CompleteItem> {
