@@ -14,7 +14,7 @@ export function ChatButtons({ isChatVisible, onToggle }: ChatButtonsProps) {
         <button
           onClick={onToggle}
           className="md:hidden fixed bottom-4 right-4 bg-primary text-white p-3 rounded-full shadow-lg z-10"
-          aria-label={isChatVisible ? "Hide chat" : "Show chat"}
+          aria-label="Show chat"
         >
           <Brain size={20} />
         </button>
