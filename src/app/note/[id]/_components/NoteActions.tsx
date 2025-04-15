@@ -91,7 +91,13 @@ export function NoteActions({
           if (deleteConfirmOpen) setDeleteConfirmOpen(false);
         }}
       >
-        {deleteConfirmOpen ? "Confirm Delete" : <Trash2 className="h-4 w-4" />}
+        {deleteConfirmOpen ? (
+          "Confirm Delete"
+        ) : (
+          <div className="hover:text-destructive">
+            <Trash2 className="h-4 w-4 " />
+          </div>
+        )}
       </Button>
     </div>
   );
