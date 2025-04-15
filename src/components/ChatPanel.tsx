@@ -2,6 +2,7 @@ import { ChatInterface } from "@/components/chat-interface";
 
 interface ChatPanelProps {
   isVisible: boolean;
+  endpoint: string;
   chatId: string;
   onToggle: () => void;
   additionalBody?: Record<string, any>;
@@ -9,6 +10,7 @@ interface ChatPanelProps {
 
 export function ChatPanel({
   isVisible,
+  endpoint,
   chatId,
   additionalBody,
 }: ChatPanelProps) {
@@ -17,7 +19,7 @@ export function ChatPanel({
   return (
     <div className="flex-1 overflow-hidden pb-4 md:pb-0">
       <ChatInterface
-        endpoint="/api/cluster/chat"
+        endpoint={endpoint}
         chatId={chatId}
         additionalBody={additionalBody}
       />

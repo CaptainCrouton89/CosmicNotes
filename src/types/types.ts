@@ -1,5 +1,7 @@
 import { Database, Json } from "./database.types";
 
+export type Mode = "standard" | "medium" | "high";
+
 export interface TagSuggestion {
   name: string;
   confidence: number;

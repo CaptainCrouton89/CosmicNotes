@@ -1,5 +1,5 @@
 import { initializeServices } from "@/lib/services";
-import { CompleteNote } from "@/types/types";
+import { CompleteNote, Mode } from "@/types/types";
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
 import {
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       messages,
       mode,
       note,
-    }: { messages: Message[]; mode: string; note: CompleteNote } =
+    }: { messages: Message[]; mode: Mode; note: CompleteNote } =
       await req.json();
 
     const { noteService, settingsService } = await initializeServices();
@@ -28,6 +28,8 @@ export async function POST(req: Request) {
     if (!note) {
       return Response.json({ error: "Note not found" }, { status: 404 });
     }
+
+    console.log("note", note);
 
     // Format the note content
     const noteContent = `## Title: ${note.title}
@@ -38,6 +40,7 @@ Category: ${note.category}
 Zone: ${note.zone}
 Tags: ${note.tags ? note.tags.map((tag) => tag.name).join(", ") : "None"}
 
+Items:
 ${
   note.items
     ? note.items
@@ -48,7 +51,11 @@ ${
 
     const result = streamText({
       model: openai(
-        mode === "smart" ? "gpt-4.1-2025-04-14" : "gpt-4.1-mini-2025-04-14"
+        mode === "standard"
+          ? "gpt-4.1-nano-2025-04-14"
+          : mode === "medium"
+          ? "gpt-4.1-mini-2025-04-14"
+          : "gpt-4.1-2025-04-14"
       ),
       system: `# Role and Objective
 You are Notes Assistant, an insightful companion for the user's knowledge management system. Your primary purpose is to help the user leverage their note to think creatively, retrieve relevant information, make connections between ideas, and generate new insights.

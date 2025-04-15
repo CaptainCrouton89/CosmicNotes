@@ -368,6 +368,7 @@ export default function NotePage() {
           }`}
         >
           <ChatPanel
+            endpoint="/api/note/chat"
             isVisible={isChatVisible}
             chatId={noteId.toString()}
             onToggle={toggleChat}

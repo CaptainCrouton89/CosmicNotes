@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { linkifySummary } from "@/lib/utils";
+import { Mode } from "@/types/types";
 import { useChat } from "@ai-sdk/react";
 import { Brain } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -21,6 +22,30 @@ type ChatInterfaceProps = {
   additionalBody?: any;
 };
 
+const MODES: Record<
+  Mode,
+  { label: string; description: string; maxSteps: number; color: string }
+> = {
+  standard: {
+    label: "Standard",
+    description: "Standard mode",
+    maxSteps: 15,
+    color: "text-gray-800 hover:bg-gray-200",
+  },
+  medium: {
+    label: "Medium",
+    description: "Medium mode",
+    maxSteps: 20,
+    color: "text-green-600 hover:bg-green-200",
+  },
+  high: {
+    label: "High",
+    description: "High mode",
+    maxSteps: 25,
+    color: "text-blue-600 hover:bg-blue-200",
+  },
+};
+
 export function ChatInterface({
   endpoint,
   chatId,
@@ -28,7 +53,7 @@ export function ChatInterface({
 }: Omit<ChatInterfaceProps, "className">) {
   // Generate a stable chat ID that persists across navigations
   const chatIdToUse = chatId || "default";
-  const [mode, setMode] = useState<"standard" | "smart">("standard");
+  const [mode, setMode] = useState<Mode>("standard");
 
   const { messages, input, handleInputChange, handleSubmit, status, error } =
     useChat({
@@ -72,7 +97,10 @@ export function ChatInterface({
   }, [messages, shouldAutoScroll]);
 
   const toggleMode = () => {
-    setMode(mode === "standard" ? "smart" : "standard");
+    // cycle modes
+    const currentIndex = Object.keys(MODES).indexOf(mode);
+    const nextIndex = (currentIndex + 1) % Object.keys(MODES).length;
+    setMode(Object.keys(MODES)[nextIndex] as Mode);
   };
 
   return (
@@ -135,20 +163,15 @@ export function ChatInterface({
             <Button
               type="button"
               size="icon"
-              variant={mode === "smart" ? "default" : "outline"}
+              variant="outline"
               onClick={toggleMode}
-              className="shrink-0"
+              className={`shrink-0 ${MODES[mode].color}`}
               aria-label={`Toggle ${mode} mode`}
             >
-              <Brain
-                className={mode === "smart" ? "text-primary-foreground" : ""}
-                size={20}
-              />
+              <Brain size={20} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>
-            {mode === "smart" ? "Smart" : "Standard"} mode
-          </TooltipContent>
+          <TooltipContent>{MODES[mode].label} mode</TooltipContent>
         </Tooltip>
         <Input
           value={input}

@@ -234,6 +234,7 @@ export default function TagPage() {
         }`}
       >
         <ChatPanel
+          endpoint="/api/cluster/chat"
           isVisible={isChatVisible}
           chatId={tag.id.toString()}
           onToggle={toggleChat}
