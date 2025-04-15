@@ -2,7 +2,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { capitalize } from "@/lib/utils";
 import { CATEGORIES, Category, Cluster } from "@/types/types";
 import { format } from "date-fns";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Check, Clock, Pencil, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface TagHeaderProps {
   noteCount: number;
@@ -12,6 +13,7 @@ interface TagHeaderProps {
   activeCategory: Category;
   onCategoryChange: (category: Category) => void;
   noteCategories?: Category[];
+  onTagNameUpdate?: (newName: string) => void;
 }
 
 export function TagHeader({
@@ -22,7 +24,12 @@ export function TagHeader({
   activeCategory,
   onCategoryChange,
   noteCategories = [],
+  onTagNameUpdate,
 }: TagHeaderProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTagName, setEditedTagName] = useState(tagName);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   // Get unique categories from clusters
   const clusterCategories = [...new Set(clusters.map((c) => c.category))];
 
@@ -48,11 +55,88 @@ export function TagHeader({
     window.history.replaceState({ path: url.href }, "", url.href);
   };
 
+  const startEditing = () => {
+    setIsEditing(true);
+    setEditedTagName(tagName);
+  };
+
+  const saveTagName = () => {
+    if (
+      editedTagName.trim() !== "" &&
+      editedTagName !== tagName &&
+      onTagNameUpdate
+    ) {
+      onTagNameUpdate(editedTagName.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const cancelEditing = () => {
+    setEditedTagName(tagName);
+    setIsEditing(false);
+  };
+
+  // Focus input when editing begins
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  // Handle keyboard events for input
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      saveTagName();
+    } else if (e.key === "Escape") {
+      cancelEditing();
+    }
+  };
+
   return (
     <div className="mb-6">
       {/* Compact header with title and metadata */}
       <div className="flex flex-wrap items-baseline gap-x-2 mb-2">
-        <h1 className="text-2xl font-bold">{tagName}</h1>
+        {isEditing ? (
+          <div className="flex items-center">
+            <input
+              ref={inputRef}
+              type="text"
+              value={editedTagName}
+              onChange={(e) => setEditedTagName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="text-2xl font-bold py-1 px-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              data-testid="tag-name-input"
+            />
+            <button
+              onClick={saveTagName}
+              className="ml-2 p-1 text-green-600 hover:bg-green-100 rounded-full"
+              aria-label="Save tag name"
+            >
+              <Check size={18} />
+            </button>
+            <button
+              onClick={cancelEditing}
+              className="ml-1 p-1 text-red-600 hover:bg-red-100 rounded-full"
+              aria-label="Cancel editing"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold">{tagName}</h1>
+            {onTagNameUpdate && (
+              <button
+                onClick={startEditing}
+                className="ml-2 p-1 text-gray-500 hover:bg-gray-100 rounded-full"
+                aria-label="Edit tag name"
+              >
+                <Pencil size={16} />
+              </button>
+            )}
+          </div>
+        )}
         <span className="text-muted-foreground">({noteCount} notes)</span>
 
         {activeCluster && (

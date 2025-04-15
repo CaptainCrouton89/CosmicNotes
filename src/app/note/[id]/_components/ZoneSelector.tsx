@@ -27,7 +27,7 @@ export function ZoneSelector({
         <Button
           variant="outline"
           size="sm"
-          className={`h-6 gap-1.5 px-2 flex items-center justify-center ${
+          className={`h-6 gap-1.5 px-2 flex items-center justify-center transition-all duration-300 ${
             zone === "personal"
               ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
               : zone === "work"

@@ -126,7 +126,7 @@ export function CategorySelector({
         <Button
           variant="outline"
           size="sm"
-          className={`h-6 w-8 text-xs sm:w-auto sm:px-3 flex items-center justify-center gap-2 ${
+          className={`h-6 w-8 text-xs sm:w-auto sm:px-3 flex items-center justify-center transition-all duration-300 gap-2 ${
             category === "to-do"
               ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
               : category === "scratchpad"

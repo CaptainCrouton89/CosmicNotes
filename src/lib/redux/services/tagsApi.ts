@@ -55,6 +55,21 @@ export const tagsApi = createApi({
       invalidatesTags: [{ type: "Tag", id: "LIST" }],
     }),
 
+    updateTag: builder.mutation<
+      CompleteTag,
+      { id: number; updates: Partial<Tag> }
+    >({
+      query: ({ id, updates }) => ({
+        url: `tag/${id}`,
+        method: "PUT",
+        body: updates,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Tag", id },
+        { type: "Tag", id: "LIST" },
+      ],
+    }),
+
     deleteTag: builder.mutation<void, { noteId: number; tagId: number }>({
       query: ({ noteId, tagId }) => ({
         url: `note/${noteId}/tag/${tagId}`,

@@ -40,7 +40,7 @@ export const SearchBox: React.FC<SearchBoxProps> = ({
           <Button
             type="submit"
             disabled={isSearching}
-            className="bg-blue-600 hover:bg-blue-700 px-2 sm:px-4"
+            className="bg-primary hover:bg-primary/90 px-2 sm:px-4"
           >
             {isSearching ? (
               <span className="text-xs sm:text-sm">Searching...</span>

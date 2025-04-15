@@ -32,6 +32,7 @@ export default function TagPage() {
   const tagId = parseInt(String(params.id), 10);
   const dispatch = useDispatch();
   const [generateCluster] = tagsApi.useGenerateClusterForCategoryMutation();
+  const [updateTag] = tagsApi.useUpdateTagMutation();
 
   console.log(categoryParam);
 
@@ -58,6 +59,21 @@ export default function TagPage() {
   } = tagsApi.useGetTagQuery(tagId, {
     skip: isNaN(tagId),
   });
+
+  // Handle tag name update
+  const handleTagNameUpdate = async (newName: string) => {
+    if (!tag || newName === tag.name) return;
+
+    try {
+      await updateTag({
+        id: tagId,
+        updates: { name: newName },
+      });
+    } catch (error) {
+      console.error("Failed to update tag name:", error);
+      // Optionally add error handling UI here
+    }
+  };
 
   // Set the initial active category when tag data is loaded
   useEffect(() => {
@@ -218,6 +234,7 @@ export default function TagPage() {
           onCategoryChange={handleCategoryChange}
           noteCount={categoryNotes.length}
           noteCategories={noteCategories}
+          onTagNameUpdate={handleTagNameUpdate}
         />
 
         {/* Cluster summary and/or Generate Cluster button */}

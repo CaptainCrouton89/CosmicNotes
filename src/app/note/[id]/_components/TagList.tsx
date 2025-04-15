@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 interface Tag {
@@ -25,29 +26,32 @@ export function TagList({
   return (
     <div className="flex flex-wrap gap-2 items-center">
       {tags.map((tag) => (
-        <Badge
-          key={tag.id}
-          variant="secondary"
-          className="text-xs flex items-center gap-1.5 pr-1 group"
-        >
-          <span>{tag.name}</span>
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              onDeleteTag(tag.id);
-            }}
-            className="ml-1 p-0.5 rounded-full opacity-0 group-hover:opacity-70 hover:opacity-100 hover:bg-muted-foreground/10 transition-opacity"
-            title="Remove tag"
-            aria-label={`Remove tag ${tag.name}`}
-            disabled={deletingTag === tag.id}
+        <Link key={tag.id} href={`/tag/${tag.id}`}>
+          <Badge
+            variant="secondary"
+            className="text-xs flex items-center gap-1.5 pr-1 group cursor-default transition-all duration-300 hover:bg-primary/20 cursor-pointer"
           >
-            {deletingTag === tag.id ? (
-              <div className="w-3 h-3 border-t-2 border-muted-foreground rounded-full animate-spin"></div>
-            ) : (
-              <X className="h-3 w-3" />
-            )}
-          </button>
-        </Badge>
+            <span>{tag.name}</span>
+
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDeleteTag(tag.id);
+              }}
+              className="ml-1 p-0.5 rounded-full opacity-0 group-hover:opacity-70 hover:opacity-100 hover:bg-muted-foreground/10 transition-opacity cursor-pointer"
+              title="Remove tag"
+              aria-label={`Remove tag ${tag.name}`}
+              disabled={deletingTag === tag.id}
+            >
+              {deletingTag === tag.id ? (
+                <div className="w-3 h-3 border-t-2 border-muted-foreground rounded-full animate-spin"></div>
+              ) : (
+                <X className="h-3 w-3" />
+              )}
+            </button>
+          </Badge>
+        </Link>
       ))}
 
       {onAddTags && (
