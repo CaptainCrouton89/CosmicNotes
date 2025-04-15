@@ -1,9 +1,10 @@
 import { initializeServices } from "@/lib/services";
 import { searchNotes } from "@/lib/services/search-service";
 import { CATEGORIES, ZONES } from "@/types/types";
+import FireCrawlApp, { ScrapeResponse } from "@mendable/firecrawl-js";
 import { tool } from "ai";
+import OpenAI from "openai";
 import { z } from "zod";
-
 export const runtime = "edge";
 
 export const basicSearchNotesTool = tool({
@@ -49,15 +50,17 @@ export const basicSearchNotesTool = tool({
       notes.map((note) => note.title)
     );
 
-    return notes
-      .map((note) => ({
-        title: note.title,
-        content: note.content,
-        tags: note.tags?.map((tag) => tag.name),
-        zone: note.zone,
-        category: note.category,
-      }))
-      .slice(0, limit);
+    return JSON.stringify(
+      notes
+        .map((note) => ({
+          title: note.title,
+          content: note.content,
+          tags: note.tags?.map((tag) => tag.name),
+          zone: note.zone,
+          category: note.category,
+        }))
+        .slice(0, limit)
+    );
   },
 });
 
@@ -133,16 +136,18 @@ export const deepSearchNotesTool = tool({
       notes: notes.map((note) => note.title),
     });
 
-    return notes.map((note) => ({
-      title: note.title,
-      content: note.content,
-      tags: note.tags.map((tag) => ({
-        id: tag.id,
-        name: tag.name,
-      })),
-      zone: note.zone,
-      category: note.category,
-    }));
+    return JSON.stringify(
+      notes.map((note) => ({
+        title: note.title,
+        content: note.content,
+        tags: note.tags.map((tag) => ({
+          id: tag.id,
+          name: tag.name,
+        })),
+        zone: note.zone,
+        category: note.category,
+      }))
+    );
   },
 });
 
@@ -179,5 +184,93 @@ export const addNoteTool = tool({
     });
 
     return "Note added successfully";
+  },
+});
+
+export const scrapeWebSiteTool = tool({
+  description: "Scrape a website",
+  parameters: z.object({
+    url: z.string().describe("The URL of the website to scrape"),
+  }),
+  execute: async ({ url }) => {
+    const app = new FireCrawlApp({
+      apiKey: process.env.FIRECRAWL_API_KEY!,
+    });
+
+    const scrapeResult = await app.scrapeUrl(url, {
+      formats: ["markdown"],
+      removeBase64Images: true,
+    });
+    if (scrapeResult.error) {
+      return `Error scraping website: ${scrapeResult.error}`;
+    }
+
+    const result = scrapeResult as ScrapeResponse<any, never>;
+
+    return result.markdown || "No content found";
+  },
+});
+
+export const askWebEnabledAI = tool({
+  description: "Ask a web-enabled AI for information",
+  parameters: z.object({
+    query: z.string().describe("The query to ask the web-enabled AI for"),
+  }),
+  execute: async ({ query }) => {
+    console.log("askWebEnabledAI", { query });
+    const client = new OpenAI();
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-search-preview",
+      web_search_options: {
+        search_context_size: "medium",
+        user_location: {
+          type: "approximate",
+          approximate: {
+            country: "US",
+            city: "San Francisco",
+            region: "California",
+          },
+        },
+      },
+
+      messages: [
+        {
+          role: "user",
+          content: query,
+        },
+      ],
+    });
+
+    return `
+    Response: ${completion.choices[0].message.content}
+    
+    Annotations: ${JSON.stringify(completion.choices[0].message.annotations)}
+    `;
+  },
+});
+
+export const updateNoteTool = tool({
+  description: "Update a note in the database",
+  parameters: z.object({
+    noteId: z.number().describe("The ID of the note to update"),
+    content: z.string().describe("The content of the note"),
+    title: z.string().describe("The title of the note"),
+    tags: z.array(z.string()).describe("The tags of the note"),
+    tagIds: z.array(z.number()).describe("The tag IDs of the note"),
+    zone: z.enum(ZONES).describe("The zone of the note"),
+    category: z.enum(CATEGORIES).describe("The category of the note"),
+  }),
+
+  execute: async ({ noteId, content, title, tags, tagIds, zone, category }) => {
+    const { noteService } = await initializeServices();
+    await noteService.updateNote(noteId, {
+      content,
+      title,
+      tags,
+      tagIds,
+      zone,
+      category,
+    });
+    return "Note updated successfully";
   },
 });

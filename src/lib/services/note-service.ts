@@ -22,13 +22,17 @@ export type NoteWithTagsAndItems = Note & {
   items: Database["public"]["Tables"]["cosmic_collection_item"]["Row"][];
 };
 
-type CreateNoteType = Omit<NoteInsert, "id" | "created_at" | "updated_at"> & {
+type CreateNoteType = Omit<
+  NoteInsert,
+  "id" | "created_at" | "updated_at" | "embedding"
+> & {
   content: string;
   title?: string;
   zone?: Zone;
   category?: Category;
   tags?: string[];
   tagIds?: number[];
+  embedding?: string;
 };
 
 export class NoteService {
@@ -380,12 +384,17 @@ export class NoteService {
 
     await Promise.all(promises);
 
+    const newNote = {
+      title: note.title || "",
+      content: note.content || "",
+      zone: note.zone || "other",
+      category: note.category || "scratchpad",
+      embedding: note.embedding || "",
+    };
+
     const { data: noteData, error: noteError } = await this.supabase
       .from("cosmic_memory")
-      .insert({
-        ...note,
-        embedding: note.embedding,
-      })
+      .insert(newNote)
       .select()
       .single();
 
