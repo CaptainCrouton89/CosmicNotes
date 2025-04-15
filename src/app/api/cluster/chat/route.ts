@@ -14,8 +14,11 @@ export const runtime = "edge";
 
 export async function POST(req: Request) {
   try {
-    const { messages, tagId }: { messages: Message[]; tagId: number } =
-      await req.json();
+    const {
+      messages,
+      tagId,
+      mode,
+    }: { messages: Message[]; tagId: number; mode: string } = await req.json();
 
     const { noteService, settingsService } = await initializeServices();
     const notes = await noteService.getCompleteNotesByTag(tagId);
@@ -46,7 +49,9 @@ ${
       .join("\n");
 
     const result = streamText({
-      model: openai("gpt-4.1-2025-04-14"),
+      model: openai(
+        mode === "smart" ? "gpt-4.1-2025-04-14" : "gpt-4.1-mini-2025-04-14"
+      ),
       system: `# Role and Objective
 You are Notes Assistant, an insightful companion for the user's knowledge management system. Your primary purpose is to help the user leverage their notes to think creatively, retrieve relevant information, make connections between ideas, and generate new insights.
 

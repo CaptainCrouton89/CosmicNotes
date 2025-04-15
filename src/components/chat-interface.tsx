@@ -2,8 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { linkifySummary } from "@/lib/utils";
 import { useChat } from "@ai-sdk/react";
+import { Brain } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -20,6 +26,7 @@ export function ChatInterface({
 }: Omit<ChatInterfaceProps, "className">) {
   // Generate a stable chat ID that persists across navigations
   const chatIdToUse = chatId || "default";
+  const [mode, setMode] = useState<"standard" | "smart">("standard");
 
   const { messages, input, handleInputChange, handleSubmit, status, error } =
     useChat({
@@ -31,6 +38,7 @@ export function ChatInterface({
       maxSteps: 15,
       body: {
         tagId: chatIdToUse,
+        mode: mode,
       },
     });
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -59,6 +67,10 @@ export function ChatInterface({
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, shouldAutoScroll]);
+
+  const toggleMode = () => {
+    setMode(mode === "standard" ? "smart" : "standard");
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -117,6 +129,26 @@ export function ChatInterface({
       </div>
 
       <form onSubmit={handleSubmit} className="p-4 border-t flex gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              size="icon"
+              variant={mode === "smart" ? "default" : "outline"}
+              onClick={toggleMode}
+              className="shrink-0"
+              aria-label={`Toggle ${mode} mode`}
+            >
+              <Brain
+                className={mode === "smart" ? "text-primary-foreground" : ""}
+                size={20}
+              />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {mode === "smart" ? "Smart" : "Standard"} mode
+          </TooltipContent>
+        </Tooltip>
         <Input
           value={input}
           onChange={handleInputChange}
