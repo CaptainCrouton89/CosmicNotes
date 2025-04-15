@@ -215,14 +215,17 @@ export const askWebEnabledAI = tool({
   description: "Ask a web-enabled AI for information",
   parameters: z.object({
     query: z.string().describe("The query to ask the web-enabled AI for"),
+    searchContextSize: z
+      .enum(["low", "medium", "high"])
+      .describe("The size of the search context"),
   }),
-  execute: async ({ query }) => {
+  execute: async ({ query, searchContextSize }) => {
     console.log("askWebEnabledAI", { query });
     const client = new OpenAI();
     const completion = await client.chat.completions.create({
       model: "gpt-4o-search-preview",
       web_search_options: {
-        search_context_size: "medium",
+        search_context_size: searchContextSize as "low" | "medium" | "high",
         user_location: {
           type: "approximate",
           approximate: {

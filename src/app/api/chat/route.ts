@@ -3,8 +3,11 @@ import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
 import {
   addNoteTool,
+  askWebEnabledAI,
   basicSearchNotesTool,
   deepSearchNotesTool,
+  scrapeWebSiteTool,
+  updateNoteTool,
 } from "./noteTools";
 const openAiKey = process.env.OPENAI_API_KEY;
 
@@ -96,6 +99,9 @@ ${userSettings.chat_system_instructions}`,
         addNoteTool,
         basicSearchNotesTool,
         deepSearchNotesTool,
+        scrapeWebSiteTool,
+        updateNoteTool,
+        askWebEnabledAI,
       },
     });
 
