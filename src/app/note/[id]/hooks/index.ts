@@ -1,3 +1,4 @@
+export * from "./useChatWindow";
 export * from "./useNoteActions";
 export * from "./useNoteEditor";
 export * from "./useNoteItems";

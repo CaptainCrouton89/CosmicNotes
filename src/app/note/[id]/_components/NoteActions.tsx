@@ -36,14 +36,18 @@ export function NoteActions({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   return (
-    <div className="flex items-center xl:gap-4 xl:self-auto self-start absolute top-3 right-3">
+    <div className="flex items-center gap-2">
       <Button
         variant="ghost"
+        size="sm"
         onClick={onSave}
         disabled={isSaving || !hasChanges || disabled}
+        className="flex items-center gap-1"
       >
         <Save className="h-4 w-4" />
-        {isSaving && "Saving..."}
+        <span className="hidden sm:inline">
+          {isSaving ? "Saving..." : "Save"}
+        </span>
       </Button>
 
       <DropdownMenu>
@@ -65,7 +69,7 @@ export function NoteActions({
             disabled={isRefreshing || disabled}
             className="cursor-pointer"
           >
-            <FileText className="h-4 w-4" />
+            <FileText className="h-4 w-4 mr-2" />
             Export Raw Text
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -73,7 +77,7 @@ export function NoteActions({
             disabled={isRefreshing || disabled}
             className="cursor-pointer"
           >
-            <FileText className="h-4 w-4" />
+            <FileText className="h-4 w-4 mr-2" />
             Export to PDF
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -95,7 +99,7 @@ export function NoteActions({
           "Confirm Delete"
         ) : (
           <div className="hover:text-destructive">
-            <Trash2 className="h-4 w-4 " />
+            <Trash2 className="h-4 w-4" />
           </div>
         )}
       </Button>

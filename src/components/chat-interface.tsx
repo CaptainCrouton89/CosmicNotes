@@ -18,11 +18,13 @@ type ChatInterfaceProps = {
   className?: string;
   endpoint?: string;
   chatId?: string;
+  additionalBody?: any;
 };
 
 export function ChatInterface({
   endpoint,
   chatId,
+  additionalBody,
 }: Omit<ChatInterfaceProps, "className">) {
   // Generate a stable chat ID that persists across navigations
   const chatIdToUse = chatId || "default";
@@ -39,6 +41,7 @@ export function ChatInterface({
       body: {
         tagId: chatIdToUse,
         mode: mode,
+        ...additionalBody,
       },
     });
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -79,13 +82,11 @@ export function ChatInterface({
         className="flex-1 overflow-y-auto p-4 space-y-4"
       >
         {messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-center">
-            <div className="text-muted-foreground">
-              <p className="text-lg font-medium">
-                I know your notes. Ask me anything about them.
-              </p>
-              <p className="text-sm">Seriously :)</p>
-            </div>
+          <div className="text-muted-foreground my-auto flex flex-col items-center justify-center h-full text-center">
+            <p className="text-lg font-medium">
+              I know your notes. Ask me anything about them.
+            </p>
+            <p className="text-sm">Seriously :)</p>
           </div>
         ) : (
           messages.map((message, index) => (

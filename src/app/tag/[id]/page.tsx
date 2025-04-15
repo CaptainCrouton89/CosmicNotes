@@ -14,6 +14,7 @@ import { useEffect, useMemo } from "react";
 import Markdown from "react-markdown";
 import { useSelector } from "react-redux";
 import remarkGfm from "remark-gfm";
+import { ChatPanel } from "../../../components/ChatPanel";
 import { useChatWindow } from "../hooks/useChatWindow";
 import {
   ChatButtons,
@@ -25,7 +26,6 @@ import {
   RelatedNotes,
   TagHeader,
 } from "./_components";
-import { ChatPanel } from "./_components/ChatPanel";
 
 export default function TagPage() {
   const { toggleChat, isChatVisible } = useChatWindow();
