@@ -2,7 +2,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { clustersApi } from "@/lib/redux/services/clustersApi";
 import { itemsApi } from "@/lib/redux/services/itemsApi";
 import { Cluster, Item } from "@/types/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 // Helper function to sort items
 const sortItems = (items: Item[]): Item[] => {
@@ -18,8 +18,7 @@ const sortItems = (items: Item[]): Item[] => {
 };
 
 export const useClusterItems = (cluster: Cluster) => {
-  const [items, setItems] = useState<Item[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [localItems, setLocalItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState<Record<number, boolean>>({});
   const [deleting, setDeleting] = useState<Record<number, boolean>>({});
   const [creating, setCreating] = useState(false);
@@ -29,74 +28,57 @@ export const useClusterItems = (cluster: Cluster) => {
   const [createItemMutation] = itemsApi.useCreateItemMutation();
   const [deleteItemMutation] = itemsApi.useDeleteItemMutation();
 
-  // API hooks
-  const { data: completeCluster } = clustersApi.useGetClusterQuery(cluster.id);
+  // API hooks - RTK Query will automatically refetch when cache is invalidated
+  const {
+    data: completeCluster,
+    isLoading,
+    refetch,
+  } = clustersApi.useGetClusterQuery(cluster.id, {
+    refetchOnMountOrArgChange: true,
+  });
 
-  const refetchItems = useCallback(() => {
-    setIsLoading(true);
-    try {
-      if (!completeCluster) return;
+  // Extract and sort items directly from cluster data
+  const serverItems = useMemo(() => {
+    if (!completeCluster) return [];
 
-      // Collect all items from the notes in the cluster
-      const allItems: Item[] = [...(completeCluster.cluster_items || [])];
+    // Collect all items from the notes in the cluster
+    const allItems: Item[] = [...(completeCluster.cluster_items || [])];
 
-      completeCluster.notes.forEach((note) => {
-        if (note.items && note.items.length > 0) {
-          // Convert each item to Item type and add to allItems
-          note.items.forEach((item) => {
-            if (item.id) {
-              allItems.push({
-                id: item.id,
-                item: item.item || "",
-                done: item.done || false,
-                created_at: item.created_at || new Date().toISOString(),
-                updated_at: item.updated_at || new Date().toISOString(),
-              });
-            }
-          });
-        }
-      });
+    completeCluster.notes.forEach((note) => {
+      if (note.items && note.items.length > 0) {
+        note.items.forEach((item) => {
+          if (item.id) {
+            allItems.push({
+              id: item.id,
+              item: item.item || "",
+              done: item.done || false,
+              created_at: item.created_at || new Date().toISOString(),
+              updated_at: item.updated_at || new Date().toISOString(),
+            });
+          }
+        });
+      }
+    });
 
-      setItems(sortItems(allItems));
-    } catch (error) {
-      console.error("Error extracting items:", error);
-      toast({
-        title: "Failed to load items",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [completeCluster, toast]);
-
-  // Extract items from notes in the cluster
-  useEffect(() => {
-    refetchItems();
+    return sortItems(allItems);
   }, [completeCluster]);
+
+  // Update local items whenever server items change
+  useEffect(() => {
+    if (serverItems.length > 0) {
+      setLocalItems(serverItems);
+    }
+  }, [serverItems]);
 
   const toggleItemStatus = useCallback(
     async (id: number, currentStatus: boolean) => {
       setLoading((prev) => ({ ...prev, [id]: true }));
 
       try {
-        const updated = await updateItemMutation({
+        await updateItemMutation({
           id,
           done: !currentStatus,
         }).unwrap();
-
-        // Update local state and sort
-        setItems((prevItems) => {
-          const updatedItems = prevItems.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  done: !currentStatus,
-                  updated_at: updated.updated_at,
-                }
-              : item
-          );
-          return sortItems(updatedItems);
-        });
 
         toast({
           title: !currentStatus
@@ -104,9 +86,6 @@ export const useClusterItems = (cluster: Cluster) => {
             : "Task marked as incomplete",
           duration: 2000,
         });
-
-        // Refresh items list
-        refetchItems();
       } catch (error) {
         toast({
           title: "Failed to update task",
@@ -118,7 +97,7 @@ export const useClusterItems = (cluster: Cluster) => {
         setLoading((prev) => ({ ...prev, [id]: false }));
       }
     },
-    [updateItemMutation, setLoading, toast, refetchItems]
+    [updateItemMutation, toast]
   );
 
   // Create new item
@@ -126,21 +105,15 @@ export const useClusterItems = (cluster: Cluster) => {
     async (itemText: string) => {
       setCreating(true);
       try {
-        const newItem = await createItemMutation({
+        await createItemMutation({
           item: itemText,
           clusterId: cluster.id,
         }).unwrap();
-
-        // Add the new item and sort
-        setItems((prevItems) => sortItems([...prevItems, newItem]));
 
         toast({
           title: "Task added",
           duration: 2000,
         });
-
-        // Refresh items list
-        refetchItems();
       } catch (error) {
         toast({
           title: "Failed to create task",
@@ -152,7 +125,7 @@ export const useClusterItems = (cluster: Cluster) => {
         setCreating(false);
       }
     },
-    [createItemMutation, setCreating, toast, refetchItems]
+    [createItemMutation, cluster.id, toast]
   );
 
   // Delete item
@@ -163,16 +136,16 @@ export const useClusterItems = (cluster: Cluster) => {
       try {
         await deleteItemMutation(id).unwrap();
 
-        // Remove the deleted item
-        setItems((prevItems) => prevItems.filter((item) => item.id !== id));
+        // Manually trigger refetch to ensure data is updated
+        await refetch();
+
+        // Clear local items to ensure we use fresh data
+        setLocalItems([]);
 
         toast({
           title: "Task deleted",
           duration: 2000,
         });
-
-        // Refresh items list
-        refetchItems();
       } catch (error) {
         toast({
           title: "Failed to delete task",
@@ -184,8 +157,11 @@ export const useClusterItems = (cluster: Cluster) => {
         setDeleting((prev) => ({ ...prev, [id]: false }));
       }
     },
-    [deleteItemMutation, setDeleting, toast, refetchItems]
+    [deleteItemMutation, toast, refetch]
   );
+
+  // Prefer local items if available, otherwise use server items
+  const items = localItems.length > 0 ? localItems : serverItems;
 
   return {
     creating,
@@ -196,5 +172,6 @@ export const useClusterItems = (cluster: Cluster) => {
     createItem,
     deleteItem,
     toggleItemStatus,
+    refetchItems: () => refetch(),
   };
 };
