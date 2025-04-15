@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Brain, ChevronLeft } from "lucide-react";
 
 interface ChatButtonsProps {
   isChatVisible: boolean;
@@ -15,7 +15,7 @@ export function ChatButtons({ isChatVisible, onToggle }: ChatButtonsProps) {
         className="md:hidden fixed bottom-4 right-4 bg-primary text-white p-3 rounded-full shadow-lg z-10"
         aria-label={isChatVisible ? "Hide chat" : "Show chat"}
       >
-        {isChatVisible ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        {!isChatVisible && <Brain size={20} />}
       </button>
 
       {/* Chat expand button for desktop - visible when chat is collapsed */}
