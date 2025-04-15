@@ -25,6 +25,7 @@ export async function initializeServices() {
 
   tagService.setNoteService(noteService);
   tagService.setClusterService(clusterService);
+  tagService.setSettingsService(settingsService);
 
   return {
     settingsService,

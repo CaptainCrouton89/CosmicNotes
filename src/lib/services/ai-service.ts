@@ -16,21 +16,6 @@ const CATEGORY_DESCRIPTIONS = `- to-do: The note contains a list of things to do
     - feedback: The note contains feedback for a product or service.
     - scratchpad: The note contains random thoughts or ideas, or the content doesn't fit into other categories.`;
 
-export async function demoGemeni() {
-  const result = await generateObject({
-    model: google("gemini-1.5-flash"),
-    temperature: 0,
-    system:
-      "You are a helpful assistant that specializes in turning disorganized notes into well-organized, markdown formatted notes.",
-    prompt: "Come up with a concise title for the following note",
-    schema: z.object({
-      title: z.string().describe("A concise title for the note"),
-    }),
-  });
-
-  return result.object.title;
-}
-
 export async function generateTodos(notes: Note[], tagId: number) {
   const supabase = await createClient();
 
@@ -248,4 +233,33 @@ export async function convertContentToItems(
   });
 
   return result.object.items;
+}
+
+export async function generateTags(cleanedContent: string, tagPrompt?: string) {
+  return await generateObject({
+    model: openai("gpt-4o-mini"),
+    temperature: 0.3,
+    system:
+      "You are a helpful assistant that extracts relevant tags from content.",
+    prompt: `Identify 3-5 tags that best describe the content. Try to include some that are both more and less specific.
+                 
+                 Content: ${cleanedContent}${
+      tagPrompt
+        ? `\n\nAdditional Guidelines:
+                ${tagPrompt}`
+        : ""
+    }`,
+    schema: z.object({
+      tags: z.array(
+        z.object({
+          tag: z.string().describe("The tag"),
+          confidence: z
+            .number()
+            .min(0)
+            .max(1)
+            .describe("Confidence score between 0 and 1"),
+        })
+      ),
+    }),
+  });
 }

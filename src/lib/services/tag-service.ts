@@ -1,18 +1,40 @@
 import { Database } from "@/types/database.types";
 import { Category, Note, Tag } from "@/types/types";
-import { openai } from "@ai-sdk/openai";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { generateObject } from "ai";
-import { z } from "zod";
 import { ITEM_CATEGORIES } from "../constants";
 import { capitalize } from "../utils";
+import { generateTags } from "./ai-service";
 import { ClusterService } from "./cluster-service";
 import { NoteService } from "./note-service";
 import { searchClusters, searchNotes } from "./search-service";
+import { SettingsService } from "./settings-service";
 
 function cleanTag(tag: string): string {
   // Remove X20 which may be encoding for spaces
   return tag.replace(/X20/g, " ").trim();
+}
+
+/**
+ * Adjusts a confidence score based on the recency of an item's update
+ * @param score The original confidence score
+ * @param updatedAt The timestamp when the item was last updated
+ * @returns The adjusted confidence score
+ */
+function adjustScoreByRecency(score: number, updatedAt: string): number {
+  const now = new Date();
+  const updateDate = new Date(updatedAt);
+  const diffInDays =
+    (now.getTime() - updateDate.getTime()) / (1000 * 60 * 60 * 24);
+
+  if (diffInDays < 2) {
+    return score + 0.1;
+  } else if (diffInDays < 3) {
+    return score;
+  } else if (diffInDays < 7) {
+    return score - 0.1;
+  } else {
+    return score - 0.15;
+  }
 }
 
 type TagConfidence = {
@@ -43,15 +65,17 @@ export class TagService {
   private supabase: SupabaseClient<Database>;
   private noteService?: NoteService;
   private clusterService?: ClusterService;
-
+  private settingsService?: SettingsService;
   constructor(
     supabase: SupabaseClient<Database>,
     noteService?: NoteService,
-    clusterService?: ClusterService
+    clusterService?: ClusterService,
+    settingsService?: SettingsService
   ) {
     this.supabase = supabase;
     this.noteService = noteService;
     this.clusterService = clusterService;
+    this.settingsService = settingsService;
   }
 
   /**
@@ -63,6 +87,10 @@ export class TagService {
 
   setClusterService(clusterService: ClusterService): void {
     this.clusterService = clusterService;
+  }
+
+  setSettingsService(settingsService: SettingsService): void {
+    this.settingsService = settingsService;
   }
 
   async getTag(id: number): Promise<CompleteTag> {
@@ -199,10 +227,12 @@ export class TagService {
           const tag = await this.getTag(cluster.tag);
 
           const cleanedTag = cleanTag(tag.name);
-          if (!cleanedTag || cleanedTag === "X20") return; // Skip problematic tags
-
           const capitalizedTag = capitalize(cleanedTag);
-          this.updateConfidenceMap(tagMap, capitalizedTag, cluster.score!);
+          // Adjust score based on cluster's recency before updating confidence map
+          const adjustedScore = cluster.updated_at
+            ? adjustScoreByRecency(cluster.score!, cluster.updated_at)
+            : cluster.score!;
+          this.updateConfidenceMap(tagMap, capitalizedTag, adjustedScore);
         })
       );
 
@@ -217,40 +247,26 @@ export class TagService {
             const allTags = noteWithTags.tags.map((tag) => tag.name);
             allTags.forEach((tag) => {
               const cleanedTag = cleanTag(tag);
-              if (!cleanedTag || cleanedTag === "X20") return; // Skip problematic tags
-
               const capitalizedTag = capitalize(cleanedTag);
-              this.updateConfidenceMap(tagMap, capitalizedTag, note.score!);
+              // Adjust score based on note's recency before updating confidence map
+              const adjustedScore = note.updated_at
+                ? adjustScoreByRecency(note.score!, note.updated_at)
+                : note.score!;
+              this.updateConfidenceMap(tagMap, capitalizedTag, adjustedScore);
             });
           })
         );
       }
 
+      const userSettings = await this.settingsService!.getSettings();
+
       // Generate additional tags using AI if we don't have enough tags yet
       if (tagMap.size < 3 && cleanedContent.trim()) {
         try {
-          // Generate tags using Vercel AI SDK
-          const result = await generateObject({
-            model: openai("gpt-4o-mini"),
-            temperature: 0.3,
-            system:
-              "You are a helpful assistant that extracts relevant tags from content.",
-            prompt: `Identify 3-5 tags that best describe the content. Try to include some that are both more and less specific. 
-                 
-                 Content: ${cleanedContent}`,
-            schema: z.object({
-              tags: z.array(
-                z.object({
-                  tag: z.string().describe("The tag in PascalCase"),
-                  confidence: z
-                    .number()
-                    .min(0)
-                    .max(1)
-                    .describe("Confidence score between 0 and 1"),
-                })
-              ),
-            }),
-          });
+          const result = await generateTags(
+            cleanedContent,
+            userSettings.tag_prompt ?? undefined
+          );
 
           // Process AI tags, keeping highest confidence scores
           result.object.tags.forEach((tag) => {
