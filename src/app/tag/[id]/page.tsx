@@ -23,6 +23,7 @@ import {
   EmptyState,
   ErrorState,
   GenerateClusterButton,
+  Header,
   LoadingState,
   RelatedNotes,
   TagHeader,
@@ -32,6 +33,7 @@ export default function TagPage() {
   const { toggleChat, isChatVisible } = useChatWindow();
   const params = useParams();
   const searchParams = useSearchParams();
+
   const categoryParam = searchParams.get("category");
   const tagId = parseInt(String(params.id), 10);
   const dispatch = useAppDispatch();
@@ -120,18 +122,19 @@ export default function TagPage() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-0 h-full relative">
+      <Header
+        tagName={tag.name}
+        tagId={tagId}
+        noteCount={categoryNotes.length}
+        activeCluster={activeCluster}
+      />
       <div
         className={`w-full ${
           isChatVisible ? "md:w-3/5 overflow-y-auto" : "md:w-full"
         } pb-6 px-4 md:pb-8 md:px-6 transition-all duration-300 pt-2 md:pt-4`}
       >
         {/* Header component */}
-        <TagHeader
-          tagId={tagId}
-          tagName={tag.name}
-          activeCluster={activeCluster}
-          noteCount={categoryNotes.length}
-        />
+        <TagHeader />
 
         {/* Cluster summary and/or Generate Cluster button */}
         {activeCluster && activeCluster.category === activeCategory && (

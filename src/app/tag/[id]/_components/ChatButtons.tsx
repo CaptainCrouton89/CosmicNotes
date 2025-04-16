@@ -25,7 +25,7 @@ export function ChatButtons({ isChatVisible, onToggle }: ChatButtonsProps) {
       <Button
         variant="outline"
         onClick={onToggle}
-        className="hidden md:flex fixed z-10 items-center gap-2 my-auto"
+        className="hidden md:flex z-10 items-center gap-2 my-auto"
         aria-label={isChatVisible ? "Close chat" : "Open chat"}
       >
         {!isChatVisible ? (

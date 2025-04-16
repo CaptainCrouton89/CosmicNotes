@@ -3,6 +3,7 @@
 import { ChatPanel } from "@/components/ChatPanel";
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
 import { ToolbarHeader } from "@/components/editor/ToolbarHeader";
+import { LeftHeader } from "@/components/header/LeftHeader";
 import { RightHeader } from "@/components/header/RightHeader";
 import { Button } from "@/components/ui/button";
 import {
@@ -222,6 +223,26 @@ export default function NotePage() {
 
   return (
     <div className="flex flex-col min-h-0 h-full relative">
+      <LeftHeader>
+        {isEditingTitle ? (
+          <input
+            type="text"
+            value={titleValue}
+            onChange={(e) => setTitleValue(e.target.value)}
+            onBlur={handleTitleSave}
+            onKeyDown={handleTitleKeyDown}
+            autoFocus
+            className="font-semibold ml-2 bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-primary rounded px-1"
+          />
+        ) : (
+          <div
+            className="font-semibold ml-2 cursor-pointer hover:text-primary transition-colors"
+            onClick={handleTitleClick}
+          >
+            {note?.title || "Untitled Note"}
+          </div>
+        )}
+      </LeftHeader>
       <RightHeader>
         <div className="flex items-center gap-2">
           <TooltipProvider>

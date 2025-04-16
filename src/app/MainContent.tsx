@@ -54,7 +54,8 @@ export default function MainContent({
         <header className="border-b pl-3 flex justify-between">
           <div className="container flex h-14 items-center flex-3">
             <SidebarTrigger />
-            <div className="font-semibold ml-2">{header}</div>
+            <div className="container flex h-14 items-center flex-1 justify-left pl-4 header-left" />
+            {/* <div className="font-semibold ml-2">{header}</div> */}
           </div>
           <div className="container flex h-14 items-center flex-1 justify-end pr-4 xl:pr-8 text-sm text-muted-foreground header-right" />
         </header>

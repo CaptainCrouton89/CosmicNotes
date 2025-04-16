@@ -2,6 +2,8 @@
 
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
 import { ToolbarHeader } from "@/components/editor/ToolbarHeader";
+import { LeftHeader } from "@/components/header/LeftHeader";
+import { RightHeader } from "@/components/header/RightHeader";
 import {
   TagSelectionDialog,
   TagSuggestionWithSelected,
@@ -183,6 +185,15 @@ function HomeContent() {
       {error && (
         <div className="p-4 bg-red-50 text-red-500 rounded-lg">{error}</div>
       )}
+      <LeftHeader>
+        <h1 className="font-bold">Home</h1>
+      </LeftHeader>
+      {/* <RightHeader>
+        <Button onClick={() => handleCreateNote()} size="sm">
+          <Plus className="mr-1 h-3.5 w-3.5" />
+          New Note
+        </Button>
+      </RightHeader> */}
 
       <ToolbarHeader />
       <div className="w-full flex-1 min-h-0 cursor-text" onClick={focusEditor}>
@@ -193,22 +204,28 @@ function HomeContent() {
           autoFocus={true}
         />
       </div>
-      <div className="flex items-center gap-2 xl:gap-4 xl:self-auto self-start absolute top-3 right-3">
-        <CategorySelector
-          category={category}
-          updating={isSaving}
-          onUpdateCategory={setCategory}
-        />
-        <ZoneSelector zone={zone} updating={isSaving} onUpdateZone={setZone} />
-        <Button
-          onClick={handleSaveNote}
-          variant="ghost"
-          disabled={isSaving || !note.trim()}
-        >
-          <SaveIcon className="w-4 h-4" />
-          {isSaving ? "Saving..." : ""}
-        </Button>
-      </div>
+      <RightHeader>
+        <div className="flex items-center gap-2 xl:gap-4 self-auto">
+          <CategorySelector
+            category={category}
+            updating={isSaving}
+            onUpdateCategory={setCategory}
+          />
+          <ZoneSelector
+            zone={zone}
+            updating={isSaving}
+            onUpdateZone={setZone}
+          />
+          <Button
+            onClick={handleSaveNote}
+            variant="ghost"
+            disabled={isSaving || !note.trim()}
+          >
+            <SaveIcon className="w-4 h-4" />
+            {isSaving ? "Saving..." : ""}
+          </Button>
+        </div>
+      </RightHeader>
 
       {/* Tag selection dialog */}
       <TagSelectionDialog

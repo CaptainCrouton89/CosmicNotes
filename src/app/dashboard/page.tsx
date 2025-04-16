@@ -1,5 +1,7 @@
 "use client";
 
+import { LeftHeader } from "@/components/header/LeftHeader";
+import { RightHeader } from "@/components/header/RightHeader";
 import { Button } from "@/components/ui/button";
 import { notesApi } from "@/lib/redux/services/notesApi";
 import { tagsApi } from "@/lib/redux/services/tagsApi";
@@ -128,13 +130,15 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto px-4 py-4 max-w-6xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+      <LeftHeader>
+        <h1 className="font-bold">Dashboard</h1>
+      </LeftHeader>
+      <RightHeader>
         <Button onClick={() => handleCreateNote()} size="sm">
           <Plus className="mr-1 h-3.5 w-3.5" />
           New Note
         </Button>
-      </div>
+      </RightHeader>
 
       {deleteError && (
         <div className="bg-red-100 text-red-700 px-4 py-2 rounded-md mb-4 text-sm">
