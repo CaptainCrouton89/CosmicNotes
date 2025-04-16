@@ -41,8 +41,6 @@ export default function MainContent({
     }
   }, [dispatch]);
 
-  const { header } = useSelector((state: RootState) => state.ui);
-
   // Default padding class (use this for SSR)
   const defaultPaddingClass = "px-2 md:px-4 lg:px-10";
   const chatPaddingClass = "pl-0 md:pl-2 lg:pl-6";
@@ -55,7 +53,6 @@ export default function MainContent({
           <div className="container flex h-14 items-center flex-3">
             <SidebarTrigger />
             <div className="container flex h-14 items-center flex-1 justify-left pl-4 header-left" />
-            {/* <div className="font-semibold ml-2">{header}</div> */}
           </div>
           <div className="container flex h-14 items-center flex-1 justify-end pr-4 xl:pr-8 text-sm text-muted-foreground header-right" />
         </header>
