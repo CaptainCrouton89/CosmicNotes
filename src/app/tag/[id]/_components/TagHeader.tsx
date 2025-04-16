@@ -74,9 +74,9 @@ export function TagHeader({ noteCount, tagName, tagId }: TagHeaderProps) {
   };
 
   return (
-    <div className="mb-6">
+    <div className="mb-2 md:mb-4">
       {/* Compact header with title and metadata */}
-      <div className="flex flex-wrap items-baseline gap-x-2 mb-2">
+      <div className="flex flex-wrap items-baseline gap-x-2 my-2">
         {isEditing ? (
           <div className="flex items-center">
             <input
@@ -132,7 +132,7 @@ export function TagHeader({ noteCount, tagName, tagId }: TagHeaderProps) {
       </div>
 
       {/* Category tabs */}
-      <div className="flex items-center mb-4">
+      <div className="flex items-center">
         <Tabs
           defaultValue={activeCategory || "scratchpad"}
           value={activeCategory || "scratchpad"}
@@ -145,7 +145,7 @@ export function TagHeader({ noteCount, tagName, tagId }: TagHeaderProps) {
                 key={category}
                 value={category}
                 disabled={!validNoteCategories.includes(category)}
-                className={`text-xs px-3 py-1 h-7 mb-1 ${
+                className={`text-xs px-1 sm:px-2 md:px-3 lg:px-4 py-1 h-7 mb-1 ${
                   activeCategory === category ? "font-semibold" : ""
                 } ${
                   !validNoteCategories.includes(category)

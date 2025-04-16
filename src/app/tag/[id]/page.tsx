@@ -7,6 +7,7 @@ import {
   setActiveCategory,
   setActiveCluster,
 } from "@/lib/redux/slices/clusterSlice";
+import { setHeader } from "@/lib/redux/slices/uiSlice";
 import { RootState } from "@/lib/redux/store";
 import { Category, Note } from "@/types/types";
 import { useParams, useSearchParams } from "next/navigation";
@@ -47,6 +48,15 @@ export default function TagPage() {
   } = tagsApi.useGetTagQuery(tagId, {
     skip: isNaN(tagId),
   });
+
+  useEffect(() => {
+    if (tag) {
+      dispatch(setHeader(tag.name));
+    }
+    return () => {
+      dispatch(setHeader("Cosmic Notes"));
+    };
+  }, [tag, dispatch]);
 
   const categoryNotes = useMemo(
     () =>
@@ -108,14 +118,12 @@ export default function TagPage() {
     return <EmptyState tagId={tagId} tagName={tag.name} />;
   }
 
-  console.log("activeCluster", activeCluster);
-
   return (
     <div className="flex flex-col md:flex-row min-h-0 h-full relative">
       <div
         className={`w-full ${
           isChatVisible ? "md:w-3/5 overflow-y-auto" : "md:w-full"
-        } py-6 px-4 md:py-8 md:px-6 transition-all duration-300`}
+        } pb-6 px-4 md:pb-8 md:px-6 transition-all duration-300 pt-2 md:pt-4`}
       >
         {/* Header component */}
         <TagHeader
