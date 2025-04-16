@@ -145,7 +145,7 @@
     @apply text-base mb-4;
   }
   a {
-    @apply text-primary hover:underline;
+    @apply text-secondary hover:underline;
   }
   blockquote {
     @apply pl-4 border-l-4 border-muted italic my-4;

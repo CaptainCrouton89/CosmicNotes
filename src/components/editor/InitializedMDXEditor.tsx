@@ -26,7 +26,6 @@ export default function InitializedMDXEditor({
   return (
     <MDXEditor
       plugins={[
-        // headingsPlugin(),
         listsPlugin(),
         quotePlugin(),
         thematicBreakPlugin(),

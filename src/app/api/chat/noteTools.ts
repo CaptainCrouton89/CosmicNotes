@@ -256,24 +256,41 @@ export const updateNoteTool = tool({
   description: "Update a note in the database",
   parameters: z.object({
     noteId: z.number().describe("The ID of the note to update"),
-    content: z.string().describe("The content of the note"),
-    title: z.string().describe("The title of the note"),
-    tags: z.array(z.string()).describe("The tags of the note"),
-    tagIds: z.array(z.number()).describe("The tag IDs of the note"),
-    zone: z.enum(ZONES).describe("The zone of the note"),
-    category: z.enum(CATEGORIES).describe("The category of the note"),
+    content: z.string().optional().describe("The new content of the note"),
+    title: z.string().optional().describe("The new title of the note"),
+    tags: z
+      .array(z.string())
+      .optional()
+      .describe("The tags of the note (as alternative to tagIds)"),
+    tagIds: z
+      .array(z.number())
+      .optional()
+      .describe("The tag IDs of the note (as alternative to tags)"),
+    zone: z.enum(ZONES).optional().describe("The new zone of the note"),
+    category: z
+      .enum(CATEGORIES)
+      .optional()
+      .describe("The new category of the note"),
   }),
 
   execute: async ({ noteId, content, title, tags, tagIds, zone, category }) => {
     const { noteService } = await initializeServices();
-    await noteService.updateNote(noteId, {
+
+    if (!content && !title && !tags && !tagIds && !zone && !category) {
+      return "No changes to update";
+    }
+
+    const newNote = {
       content,
       title,
       tags,
       tagIds,
       zone,
       category,
-    });
+    };
+
+    await noteService.updateNote(noteId, newNote);
+
     return "Note updated successfully";
   },
 });

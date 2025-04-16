@@ -27,7 +27,7 @@ export function NoteActions({
         variant="ghost"
         size="sm"
         onClick={onSave}
-        disabled={isSaving || !hasChanges || disabled}
+        disabled={isSaving || disabled || !hasChanges}
         className="flex items-center gap-1"
       >
         <Save className="h-4 w-4" />
