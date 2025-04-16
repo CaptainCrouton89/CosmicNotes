@@ -52,7 +52,7 @@ export default function MainContent({
       <AppSidebar />
       <div className="flex flex-col flex-1 h-screen">
         <header className="border-b pl-3 flex justify-between">
-          <div className="container flex h-14 items-center flex-1">
+          <div className="container flex h-14 items-center flex-3">
             <SidebarTrigger />
             <div className="font-semibold ml-2">{header}</div>
           </div>

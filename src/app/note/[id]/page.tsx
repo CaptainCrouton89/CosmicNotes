@@ -163,6 +163,10 @@ export default function NotePage() {
       setTitleValue(note.title);
       dispatch(setHeader(note.title));
     }
+    return () => {
+      setTitleValue("");
+      dispatch(setHeader("Cosmic Notes"));
+    };
   }, [note, editorRef, isItemCategory]);
 
   // Refresh items when note is refreshed or when category changes
