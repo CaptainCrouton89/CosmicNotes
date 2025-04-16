@@ -419,7 +419,6 @@ export class NoteService {
   ): Promise<void> {
     const existingNote = await this.getNoteById(id);
     if (!existingNote) throw new Error("Note not found");
-    console.log("updates", updates);
 
     if (updates.content && updates.content !== existingNote.content) {
       updates.embedding = await generateEmbedding(updates.content);

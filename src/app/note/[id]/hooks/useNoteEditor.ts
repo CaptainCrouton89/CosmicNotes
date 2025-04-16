@@ -33,7 +33,6 @@ export function useNoteEditor(noteId: number) {
 
   // Handle content changes in the editor
   const handleEditorChange = useCallback((markdown: string) => {
-    console.log("handleEditorChange", markdown);
     setContent(markdown);
     setHasChanges(true);
   }, []);

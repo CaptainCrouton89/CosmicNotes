@@ -58,8 +58,6 @@ export class ItemService {
       )
       .single();
 
-    console.log("data", data);
-
     if (error) throw new Error(error.message);
 
     const embedding = await generateEmbedding(data.item);

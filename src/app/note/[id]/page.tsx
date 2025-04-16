@@ -376,10 +376,7 @@ export default function NotePage() {
                     key={String(noteId)}
                     ref={editorRef}
                     markdown={content}
-                    onChange={(markdown) => {
-                      console.log("onChange", markdown);
-                      handleEditorChange(markdown);
-                    }}
+                    onChange={handleEditorChange}
                     onBlur={() => {
                       if (hasChanges) {
                         saveNote();
