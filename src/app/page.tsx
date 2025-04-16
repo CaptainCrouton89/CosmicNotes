@@ -186,7 +186,7 @@ function HomeContent() {
         <div className="p-4 bg-red-50 text-red-500 rounded-lg">{error}</div>
       )}
       <LeftHeader>
-        <h1 className="font-bold">Home</h1>
+        <h1 className="font-bold">Cosmic Notes</h1>
       </LeftHeader>
       {/* <RightHeader>
         <Button onClick={() => handleCreateNote()} size="sm">
