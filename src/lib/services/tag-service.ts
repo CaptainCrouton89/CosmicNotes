@@ -94,34 +94,27 @@ export class TagService {
   }
 
   async getTag(id: number): Promise<CompleteTag> {
-    const { data: tag, error } = await this.supabase
-      .from("cosmic_tags")
-      .select("*, cosmic_cluster(*), cosmic_memory_tag_map(*, note(*))")
-      .eq("id", id)
-      .single();
+    try {
+      // Use the custom RPC function to get the tag with all its relations in one query
+      const { data, error } = await this.supabase.rpc(
+        "get_tag_with_relations" as any,
+        { tag_id: id }
+      );
 
-    if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-    const { data: tagMap, error: tagMapError } = await this.supabase
-      .from("cosmic_memory_tag_map")
-      .select("*, note(*)")
-      .eq("tag", tag.id);
+      if (!data) {
+        throw new Error(`Tag with id ${id} not found`);
+      }
 
-    if (tagMapError) throw tagMapError;
-
-    // Return only the fields on the Tag object
-    const returnedTag: CompleteTag = {
-      id: tag.id,
-      name: tag.name,
-      created_at: tag.created_at,
-      updated_at: tag.updated_at,
-      dirty: tag.dirty,
-      note_count: tagMap.length,
-      notes: tagMap.map((t) => t.note),
-      clusters: tag.cosmic_cluster,
-    };
-
-    return returnedTag;
+      // Transform the result to ensure it matches the CompleteTag type
+      return data as CompleteTag;
+    } catch (error) {
+      console.error("Error in getTag:", error);
+      throw error;
+    }
   }
 
   /**

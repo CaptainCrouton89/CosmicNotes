@@ -50,89 +50,27 @@ export class ClusterService {
   }
 
   async getClusterById(id: number): Promise<CompleteCluster> {
-    const { data, error } = await this.supabase
-      .from("cosmic_cluster")
-      .select("*, cosmic_tags(name, id), cosmic_collection_item(*)")
-      .eq("id", id)
-      .single();
+    try {
+      // Use the custom RPC function to get the cluster with all its relations in one query
+      const { data, error } = await this.supabase.rpc(
+        "get_cluster_with_relations" as any,
+        { cluster_id: id }
+      );
 
-    if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-    // Get all memories associated with this tag id
-    const { data: tagMappings, error: notesError } = await this.supabase
-      .from("cosmic_memory_tag_map")
-      .select("note")
-      .eq("tag", data.tag);
+      if (!data) {
+        throw new Error(`Cluster with id ${id} not found`);
+      }
 
-    if (notesError) throw notesError;
-
-    // If no memories are found
-    if (!tagMappings || tagMappings.length === 0) {
-      return {
-        ...data,
-        tag: data.cosmic_tags,
-        note_count: 0,
-        notes: [],
-        cluster_items: data.cosmic_collection_item.map((item) => ({
-          ...item,
-          cluster: undefined,
-          embedding: item.embedding || "[]",
-          memory: undefined,
-        })),
-      };
+      // Transform the result to ensure it matches the CompleteCluster type
+      return data as CompleteCluster;
+    } catch (error) {
+      console.error("Error in getClusterById:", error);
+      throw error;
     }
-
-    // Get all the memory IDs
-    const memoryIds = tagMappings.map((mapping) => mapping.note);
-
-    // Fetch the actual memories - REMOVED category filter
-    const { data: memories, error: memoriesError } = await this.supabase
-      .from("cosmic_memory")
-      .select("*")
-      .eq("category", data.category)
-      .in("id", memoryIds);
-
-    if (memoriesError) throw memoriesError;
-
-    // Fetch all tags and items for these memories in batch
-    const notesWithTagsAndItems = await Promise.all(
-      memories.map(async (memory) => {
-        // Get tags for this memory
-        const { data: tags, error: tagsError } = await this.supabase
-          .from("cosmic_memory_tag_map")
-          .select("*, cosmic_tags(*)")
-          .eq("note", memory.id);
-
-        if (tagsError) throw tagsError;
-
-        // Get collection items for this memory
-        const { data: items, error: itemsError } = await this.supabase
-          .from("cosmic_collection_item")
-          .select("*")
-          .eq("memory", memory.id);
-
-        if (itemsError) throw itemsError;
-
-        return {
-          ...memory,
-          tags: tags.map((tag) => tag.cosmic_tags),
-          items: items || [],
-        };
-      })
-    );
-
-    return {
-      ...data,
-      tag: data.cosmic_tags,
-      note_count: notesWithTagsAndItems.length,
-      notes: notesWithTagsAndItems,
-      cluster_items: data.cosmic_collection_item.map((item) => ({
-        ...item,
-        cluster: undefined,
-        embedding: item.embedding || "[]",
-        memory: undefined,
-      })),
-    };
   }
 
   async createEmptyCluster(

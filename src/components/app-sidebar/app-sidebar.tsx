@@ -66,12 +66,12 @@ export function AppSidebar() {
     oneWeekAgo.setDate(now.getDate() - 7);
 
     const recentTags = tagsData.filter((tag) => {
-      const tagDate = new Date(tag.created_at);
+      const tagDate = new Date(tag.updated_at);
       return tagDate >= oneWeekAgo;
     });
 
     const olderTags = tagsData.filter((tag) => {
-      const tagDate = new Date(tag.created_at);
+      const tagDate = new Date(tag.updated_at);
       return tagDate < oneWeekAgo;
     });
 

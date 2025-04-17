@@ -3,6 +3,8 @@ import { Category, CompleteItem, Item, Note } from "@/types/types";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { generateEmbedding } from "../embeddings";
 import { convertContentToItems } from "./ai-service";
+import { mapDbItemToItem } from "./database/mapper";
+import { createQueryBuilder } from "./database/query-builder";
 import { TagService } from "./tag-service";
 
 type ItemInsert =
@@ -109,23 +111,34 @@ export class ItemService {
   }
 
   async getItems(noteId: number): Promise<Item[]> {
-    const { data, error } = await this.supabase
-      .from("cosmic_collection_item")
-      .select("*, memory:cosmic_memory(*), cluster:cosmic_cluster(*)")
-      .eq("memory", noteId);
+    try {
+      // Use QueryBuilder to get items with related data in a single query
+      const queryBuilder = createQueryBuilder(
+        this.supabase,
+        "cosmic_collection_item"
+      );
+      const { data, error } = await queryBuilder.getByForeignKey(
+        "memory",
+        noteId,
+        "*",
+        {
+          memory: "cosmic_memory(*)",
+          cluster: "cosmic_cluster(*)",
+        }
+      );
 
-    if (error) throw new Error(error.message);
+      if (error) throw new Error(error.message);
 
-    return data.map((item) => {
-      return {
-        ...item,
-        memory:
-          item.memory as unknown as Database["public"]["Tables"]["cosmic_memory"]["Row"],
-        embedding: item.embedding || undefined,
-        cluster:
-          item.cluster as unknown as Database["public"]["Tables"]["cosmic_cluster"]["Row"],
-      };
-    });
+      // Cast the data to the expected type
+      const items =
+        data as unknown as Database["public"]["Tables"]["cosmic_collection_item"]["Row"][];
+
+      // Map the database items to application Item objects
+      return items.map((item) => mapDbItemToItem(item));
+    } catch (error) {
+      console.error("Error in getItems:", error);
+      throw error;
+    }
   }
 
   async updateItem(
