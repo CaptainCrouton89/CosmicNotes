@@ -1,4 +1,6 @@
 import { initializeServices } from "@/lib/services";
+import { getModeModel } from "@/lib/utils";
+import { Mode } from "@/types/types";
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
 import {
@@ -18,7 +20,7 @@ export async function POST(req: Request) {
       messages,
       tagId,
       mode,
-    }: { messages: Message[]; tagId: number; mode: string } = await req.json();
+    }: { messages: Message[]; tagId: number; mode: Mode } = await req.json();
 
     const { noteService, settingsService } = await initializeServices();
     const notes = await noteService.getCompleteNotesByTag(tagId);
@@ -49,9 +51,7 @@ ${
       .join("\n");
 
     const result = streamText({
-      model: openai(
-        mode === "smart" ? "gpt-4.1-2025-04-14" : "gpt-4.1-mini-2025-04-14"
-      ),
+      model: openai(getModeModel(mode)),
       system: `# Role and Objective
 You are Notes Assistant, an insightful companion for the user's knowledge management system. Your primary purpose is to help the user leverage their notes to think creatively, retrieve relevant information, make connections between ideas, and generate new insights.
 

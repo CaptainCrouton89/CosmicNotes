@@ -1,4 +1,5 @@
 import { initializeServices } from "@/lib/services";
+import { getModeModel } from "@/lib/utils";
 import { CompleteNote, Mode } from "@/types/types";
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
@@ -53,13 +54,7 @@ ${
 }`;
 
     const result = streamText({
-      model: openai(
-        mode === "standard"
-          ? "gpt-4.1-nano-2025-04-14"
-          : mode === "medium"
-          ? "gpt-4.1-mini-2025-04-14"
-          : "gpt-4.1-2025-04-14"
-      ),
+      model: openai(getModeModel(mode)),
       system: `# Role and Objective
 You are Notes Assistant, an insightful companion for the user's knowledge management system. Your primary purpose is to help the user leverage their note to think creatively, retrieve relevant information, make connections between ideas, and generate new insights.
 
@@ -94,7 +89,7 @@ ${userSettings.chat_system_instructions || ""}
 - When appropriate, suggest connections to other possible notes that might be relevant
 
 ## When to Search
-- If the user asks about a topic not covered in the current note, offer to search their entire database
+- If the user asks about a topic not covered in the current note, search their entire database
 - If the current note is insufficient to answer fully, suggest performing a search
 - When searching, be specific about what you're looking for
 

@@ -1,3 +1,4 @@
+import { Mode } from "@/types/types";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -82,4 +83,20 @@ export const sanitizeText = (text: string): string => {
     .replace(/[\u0000]/g, "") // Remove null bytes
     .replace(/[\u0001-\u0008\u000B-\u000C\u000E-\u001F\u007F-\u009F]/g, "") // Remove control chars except tabs and newlines
     .replace(/\\u0000/g, ""); // Also remove literal \u0000 strings
+};
+
+/**
+ * Converts the Mode to the corresponding OpenAI model name
+ */
+export const getModeModel = (mode: Mode): string => {
+  switch (mode) {
+    case "standard":
+      return "gpt-4.1-nano-2025-04-14";
+    case "medium":
+      return "gpt-4.1-mini-2025-04-14";
+    case "high":
+      return "gpt-4.1-2025-04-14";
+    default:
+      return "gpt-4.1-2025-04-14"; // Default to highest capability
+  }
 };

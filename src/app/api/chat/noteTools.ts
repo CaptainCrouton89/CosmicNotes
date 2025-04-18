@@ -90,6 +90,11 @@ export const deepSearchNotesTool = tool({
       .optional()
       .default(5)
       .describe("Maximum number of results to return after reranking"),
+    skip: z
+      .number()
+      .optional()
+      .default(0)
+      .describe("Number of results to skip"),
     category: z
       .enum(CATEGORIES)
       .optional()
@@ -107,6 +112,7 @@ export const deepSearchNotesTool = tool({
   execute: async ({
     query,
     limit = 5,
+    skip = 0,
     category,
     zone,
     tags,
@@ -115,7 +121,7 @@ export const deepSearchNotesTool = tool({
   }) => {
     console.log("deepSearchNotesTool", {
       query,
-      limit,
+      limit: limit + skip,
       threshold,
       category,
       zone,
@@ -124,7 +130,7 @@ export const deepSearchNotesTool = tool({
     });
     const notes = await searchNotes(
       query,
-      limit,
+      limit + skip,
       threshold,
       category,
       zone,
@@ -132,12 +138,15 @@ export const deepSearchNotesTool = tool({
       tagIds
     );
 
+    const notesToReturn = notes.slice(skip, skip + limit);
+
     console.log("deepSearchNotesTool", {
-      notes: notes.map((note) => note.title),
+      notes: notesToReturn.map((note) => note.title),
     });
 
     return JSON.stringify(
-      notes.map((note) => ({
+      notesToReturn.map((note) => ({
+        id: note.id,
         title: note.title,
         content: note.content,
         tags: note.tags.map((tag) => ({
