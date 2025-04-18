@@ -19,6 +19,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useChatWindow } from "@/hooks/useChatWindow";
+import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
 import { ITEM_CATEGORIES } from "@/lib/constants";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setHeader } from "@/lib/redux/slices/uiSlice";
@@ -154,6 +155,19 @@ export default function NotePage() {
     deleteItem,
     refetchItems,
   } = useNoteItems(note);
+
+  // Keyboard shortcuts
+  useKeyboardShortcut([
+    {
+      combo: {
+        key: "s",
+        metaKey: true,
+        ctrlKey: true,
+      },
+      callback: saveNote,
+      condition: note && hasChanges && !saving && !isEditingTitle,
+    },
+  ]);
 
   // Update editor content when note data is loaded
   useEffect(() => {

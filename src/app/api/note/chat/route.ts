@@ -40,6 +40,9 @@ Category: ${note.category}
 Zone: ${note.zone}
 Tags: ${note.tags ? note.tags.map((tag) => tag.name).join(", ") : "None"}
 
+Content:
+${note.content}
+
 Items:
 ${
   note.items

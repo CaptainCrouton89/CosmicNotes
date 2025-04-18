@@ -21,21 +21,20 @@ export async function generateNoteSummary(notes: Note[], category: Category) {
     return "";
   }
 
-  const { prompt, model, summary } = getPrompt(notes);
+  const { prompt, model, schemaKey, schemaValue, system } = getPrompt(notes);
 
   const result = await generateObject({
     model,
-    temperature: 0.1,
+    temperature: 0.2,
     topP: 0,
-    system:
-      "You are a helpful assistant that specializes in turning disorganized notes into well-organized, markdown formatted notes.",
+    system,
     prompt,
     schema: z.object({
-      summary: z.string().describe(summary),
+      [schemaKey]: z.string().describe(schemaValue),
     }),
   });
 
-  return result.object.summary;
+  return result.object[schemaKey];
 }
 
 export async function generateNoteTitle(content: string) {

@@ -70,6 +70,22 @@ export const notesApi = createApi({
         body: note,
       }),
       invalidatesTags: [{ type: "Note", id: "LIST" }],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const result = await queryFulfilled;
+          console.log("result", result);
+          // If the update includes tags, also invalidate the Tag cache
+          if (result.data.tags) {
+            // Import tagsApi dynamically to avoid circular dependency
+            const tagsApiModule = await import("./tagsApi");
+            dispatch(
+              tagsApiModule.tagsApi.util.invalidateTags([
+                { type: "Tag", id: "LIST" },
+              ])
+            );
+          }
+        } catch {}
+      },
     }),
 
     updateNote: builder.mutation<

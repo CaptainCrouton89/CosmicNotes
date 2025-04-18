@@ -1,6 +1,16 @@
-import { Note } from "@/types/types";
+import { Category, Note } from "@/types/types";
 import { openai } from "@ai-sdk/openai";
 import { LanguageModel } from "ai";
+import {
+  getBrainstormSystemPrompt,
+  getCollectionsSystemPrompt,
+  getFeedbackSystemPrompt,
+  getJournalSystemPrompt,
+  getLearningSystemPrompt,
+  getMeetingSystemPrompt,
+  getResearchSystemPrompt,
+  getScratchpadSystemPrompt,
+} from "./summary/index";
 
 const formatNote = (
   note: Note,
@@ -22,19 +32,12 @@ ${options.id ? `ID: [${note.id}] ` : ""}${
   }
 Content: ${note.content}`;
 
-const formatNotes = (
-  notes: Note[],
-  options: { date?: boolean; id?: boolean; title?: boolean } = {
-    date: false,
-    id: false,
-    title: false,
-  }
-) => notes.map((note) => formatNote(note, options)).join("\n");
-
 export type SummaryPrompt = {
   model: LanguageModel;
   prompt: string;
-  summary: string;
+  schemaKey: string;
+  schemaValue: string;
+  system: string;
 };
 
 export const getPromptWithGuidelines = (prompt: string, guidelines: string) =>
@@ -43,116 +46,88 @@ export const getPromptWithGuidelines = (prompt: string, guidelines: string) =>
 # AdditionalGuidelines
 ${guidelines}`;
 
-const getNoAlterationsPrompt = (category: string) =>
-  `Synthesize and reorganize these ${category} notes into a single organized note. Reorganize in a way that is most useful for the user, but do not summarize the content.`;
-
-export const getDefaultPrompt = (notes: Note[]): SummaryPrompt => ({
-  model: openai("gpt-4.1-mini-2025-04-14"),
-  prompt: `${getNoAlterationsPrompt("all")}
-
-# All Notes
-${formatNotes(notes)}`,
-  summary:
-    "A comprehensive, well-organized summary that combines the key information from all notes",
-});
-
 export const getScratchpadPrompt = (notes: Note[]): SummaryPrompt => ({
+  system: getScratchpadSystemPrompt(),
+  prompt: `Please organize the following scratchpad notes into a coherent document. Preserve all original thoughts while creating a logical structure.\n\n${notes
+    .map((note) => formatNote(note, { title: true }))
+    .join("\n\n")}`,
   model: openai("gpt-4.1-mini-2025-04-14"),
-  prompt: `${getNoAlterationsPrompt("scratchpad")}
-
-# Notes
-${formatNotes(notes, { title: true })}`,
-  summary:
-    "A single, organized scratchpad note with all the information from the notes.",
+  schemaKey: "document",
+  schemaValue: "The organized scratchpad notes",
 });
 
 export const getCollectionsPrompt = (notes: Note[]): SummaryPrompt => ({
+  system: getCollectionsSystemPrompt(),
+  prompt: `Please organize the following collection notes into a single comprehensive collection with logical groupings.\n\n${notes
+    .map((note) => formatNote(note, { title: true }))
+    .join("\n\n")}`,
   model: openai("gpt-4.1-mini-2025-04-14"),
-  prompt: `${getNoAlterationsPrompt("collection")}
-
-# Collection Notes
-${formatNotes(notes, { title: true })}`,
-  summary:
-    "A single, organized list containing all the information from the collection notes.",
+  schemaKey: "collection",
+  schemaValue: "The organized collection notes",
 });
 
 export const getBrainstormPrompt = (notes: Note[]): SummaryPrompt => ({
+  system: getBrainstormSystemPrompt(),
+  prompt: `Please organize the following brainstorm notes into a coherent ideation document that preserves all original concepts and ideas.\n\n${notes
+    .map((note) => formatNote(note, { title: true }))
+    .join("\n\n")}`,
   model: openai("gpt-4.1-2025-04-14"),
-  prompt: `Synthesize and reorganize these brainstorm notes into a single organized note. Reorganize, restructure, and bucket information. 
-
-# Brainstorm Notes
-${formatNotes(notes, { title: true })}`,
-  summary:
-    "A single, organized brainstorm note with all the information from the notes.",
+  schemaKey: "brainstorm",
+  schemaValue: "The organized brainstorm notes",
 });
 
 export const getJournalPrompt = (notes: Note[]): SummaryPrompt => ({
+  system: getJournalSystemPrompt(),
+  prompt: `Please organize the following journal entries chronologically while preserving the authentic voice and emotional context of each entry.\n\n${notes
+    .map((note) => formatNote(note, { date: true, id: true, title: true }))
+    .join("\n\n")}`,
   model: openai("gpt-4.1-mini-2025-04-14"),
-  prompt: `Organize these journal notes into a single, organized, markdown formatted note, ordered by the date of the note. Use the following format:
-  
-\`\`\`
-### [Date] \[id\]
-Accurate, concise, and complete journal notes, in long form.
-\`\`\`
-
-# Journal Notes
-${formatNotes(notes, { date: true, id: true })}`,
-  summary: "Series of journal entries, one per note, in chronological order.",
+  schemaKey: "journal",
+  schemaValue: "The organized journal notes",
 });
 
 export const getMeetingPrompt = (notes: Note[]): SummaryPrompt => ({
+  system: getMeetingSystemPrompt(),
+  prompt: `Please organize the following meeting notes into a comprehensive professional document with clear sections for decisions and action items.\n\n${notes
+    .map((note) => formatNote(note, { date: true, id: true, title: true }))
+    .join("\n\n")}`,
   model: openai("gpt-4.1-mini-2025-04-14"),
-  prompt: `Organize these meeting notes into a single, organized, markdown formatted note, ordered by the date of the note. Use the following format:
-  
-\`\`\`
-## Note Title \[ID\]
-Date: [Date]
-Organized, concise, and complete meeting notes, in long form.
-\`\`\`
-
-# Meeting Notes
-${formatNotes(notes, { title: true, date: true, id: true })}`,
-  summary: "Series of meeting notes, one per note, in chronological order.",
+  schemaKey: "meetings",
+  schemaValue: "The organized meeting notes",
 });
 
 export const getResearchPrompt = (notes: Note[]): SummaryPrompt => ({
+  system: getResearchSystemPrompt(),
+  prompt: `Please organize the following research notes into a comprehensive academic document that maintains all factual content and citations.\n\n${notes
+    .map((note) => formatNote(note, { title: true }))
+    .join("\n\n")}`,
   model: openai("gpt-4.1-2025-04-14"),
-  prompt: `${getNoAlterationsPrompt("research")}
-
-# Research Notes
-${formatNotes(notes)}`,
-  summary:
-    "A single, organized research note with all the information from the notes.",
+  schemaKey: "research",
+  schemaValue: "The organized research notes",
 });
 
 export const getLearningPrompt = (notes: Note[]): SummaryPrompt => ({
+  system: getLearningSystemPrompt(),
+  prompt: `Please organize the following learning notes into a comprehensive study guide with a logical progression from fundamental to advanced concepts.\n\n${notes
+    .map((note) => formatNote(note, { title: true }))
+    .join("\n\n")}`,
   model: openai("gpt-4.1-2025-04-14"),
-  prompt: `${getNoAlterationsPrompt("learning")}
-
-# Learning Notes
-${formatNotes(notes)}`,
-  summary:
-    "A single, organized learning note with all the information from the notes.",
+  schemaKey: "learning",
+  schemaValue: "The organized learning notes",
 });
 
 export const getFeedbackPrompt = (notes: Note[]): SummaryPrompt => ({
+  system: getFeedbackSystemPrompt(),
+  prompt: `Please organize the following feedback notes into a structured report that preserves the original sentiment and priority of each point.\n\n${notes
+    .map((note) => formatNote(note, { date: true, id: true, title: true }))
+    .join("\n\n")}`,
   model: openai("gpt-4.1-mini-2025-04-14"),
-  prompt: `Organize these feedback notes into a single, organized, markdown formatted note, ordered by the date of the note. Use the following format:
-  
-\`\`\`
-### Note Title \[ID\]
-Date: [Date]
-Organized, concise, and actionable feedback notes.
-\`\`\`
-
-
-# Feedback Notes
-${formatNotes(notes, { date: true, id: true })}`,
-  summary: "Series of feedback notes, one per note, in chronological order.",
+  schemaKey: "feedback",
+  schemaValue: "The organized feedback notes",
 });
 
 export const getPromptFunction = (
-  category: string
+  category: Category
 ): ((notes: Note[]) => SummaryPrompt) => {
   switch (category) {
     case "scratchpad":

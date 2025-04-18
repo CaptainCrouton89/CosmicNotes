@@ -2,7 +2,7 @@ import { Database } from "@/types/database.types";
 import { Category, Cluster, CompleteCluster, Note } from "@/types/types";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { generateEmbedding } from "../embeddings";
-import { linkifySummary } from "../utils";
+import { linkifySummary, sanitizeText } from "../utils";
 import { generateNoteSummary } from "./ai-service";
 
 export class ClusterService {
@@ -106,14 +106,21 @@ export class ClusterService {
     }
     const linkedSummary = linkifySummary(summary);
 
-    const embedding = await generateEmbedding(
-      notes.map((note) => note.content).join("\n")
-    );
+    // Sanitize the summary to remove null bytes and control characters
+    const sanitizedSummary = sanitizeText(linkedSummary);
+
+    // Sanitize note content but preserve newlines for embedding
+    const safeNoteContents = notes.map((note) => {
+      const sanitized = sanitizeText(note.content);
+      return sanitized;
+    });
+
+    const embedding = await generateEmbedding(safeNoteContents.join("\n\n"));
 
     const { data: insertResult, error: insertError } = await this.supabase
       .from("cosmic_cluster")
       .insert({
-        summary: linkedSummary,
+        summary: sanitizedSummary,
         category,
         embedding,
         tag: tagId,
