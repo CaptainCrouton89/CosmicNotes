@@ -79,49 +79,61 @@ export function AppSidebar() {
   }, [tagsData]);
 
   // Filter notes by time periods and category
-  const { lastDayNotes, lastWeekNotes, collectionNotes, journalNotes } =
-    useMemo(() => {
-      if (!notesData?.content) {
-        return {
-          lastDayNotes: [],
-          lastWeekNotes: [],
-          collectionNotes: [],
-          journalNotes: [],
-        };
-      }
-
-      const now = new Date();
-      const oneDayAgo = new Date(now);
-      oneDayAgo.setDate(now.getDate() - 1);
-
-      const oneWeekAgo = new Date(now);
-      oneWeekAgo.setDate(now.getDate() - 7);
-
-      const lastDayNotes = notesData.content.filter((note) => {
-        const noteDate = new Date(note.updated_at);
-        return noteDate >= oneDayAgo;
-      });
-
-      const lastWeekNotes = notesData.content.filter((note) => {
-        const noteDate = new Date(note.updated_at);
-        return noteDate >= oneWeekAgo && noteDate < oneDayAgo;
-      });
-
-      const collectionNotes = notesData.content.filter((note) => {
-        return note.category === "collection";
-      });
-
-      const journalNotes = notesData.content.filter((note) => {
-        return note.category === "journal";
-      });
-
+  const {
+    lastDayNotes,
+    lastWeekNotes,
+    olderNotes,
+    collectionNotes,
+    journalNotes,
+  } = useMemo(() => {
+    if (!notesData?.content) {
       return {
-        lastDayNotes,
-        lastWeekNotes,
-        collectionNotes,
-        journalNotes,
+        lastDayNotes: [],
+        lastWeekNotes: [],
+        olderNotes: [],
+        collectionNotes: [],
+        journalNotes: [],
       };
-    }, [notesData]);
+    }
+
+    const now = new Date();
+    const oneDayAgo = new Date(now);
+    oneDayAgo.setDate(now.getDate() - 1);
+
+    const oneWeekAgo = new Date(now);
+    oneWeekAgo.setDate(now.getDate() - 7);
+
+    const lastDayNotes = notesData.content.filter((note) => {
+      const noteDate = new Date(note.updated_at);
+      return noteDate >= oneDayAgo;
+    });
+
+    const lastWeekNotes = notesData.content.filter((note) => {
+      const noteDate = new Date(note.updated_at);
+      return noteDate >= oneWeekAgo && noteDate < oneDayAgo;
+    });
+
+    const olderNotes = notesData.content.filter((note) => {
+      const noteDate = new Date(note.updated_at);
+      return noteDate < oneWeekAgo;
+    });
+
+    const collectionNotes = notesData.content.filter((note) => {
+      return note.category === "collection";
+    });
+
+    const journalNotes = notesData.content.filter((note) => {
+      return note.category === "journal";
+    });
+
+    return {
+      lastDayNotes,
+      lastWeekNotes,
+      olderNotes,
+      collectionNotes,
+      journalNotes,
+    };
+  }, [notesData]);
 
   return (
     <Sidebar>
@@ -326,6 +338,20 @@ export function AppSidebar() {
             <NotesList
               notes={lastWeekNotes}
               emptyMessage="No notes in the last week"
+              loading={notesLoading}
+              error={notesError}
+            />
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Older Notes
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <NotesList
+              notes={olderNotes}
+              emptyMessage="No older notes"
               loading={notesLoading}
               error={notesError}
             />

@@ -52,10 +52,25 @@ export async function GET(req: NextRequest) {
     const offset = (page - 1) * limit;
     const { noteService } = await initializeServices();
     const notes = await noteService.getNotes(offset, limit);
+    console.log(notes);
+
     const totalPages = Math.ceil(notes.length / limit);
 
+    const simplifiedNotes = notes.map((note) => {
+      return {
+        id: note.id,
+        title: note.title,
+        type: note.type,
+        category: note.category,
+        updated_at: note.updated_at,
+        created_at: note.created_at,
+        tags: note.tags,
+        zone: note.zone,
+      };
+    });
+
     return NextResponse.json({
-      content: notes,
+      content: simplifiedNotes,
       page,
       limit,
       totalPages,

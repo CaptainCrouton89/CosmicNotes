@@ -1,16 +1,15 @@
 "use client";
 import {
+  BlockTypeSelect,
   BoldItalicUnderlineToggles,
+  headingsPlugin,
   imagePlugin,
   InsertTable,
   listsPlugin,
   ListsToggle,
   markdownShortcutPlugin,
   MDXEditor,
-  quotePlugin,
   Separator,
-  tablePlugin,
-  thematicBreakPlugin,
   toolbarPlugin,
   type MDXEditorMethods,
   type MDXEditorProps,
@@ -27,16 +26,15 @@ export default function InitializedMDXEditor({
     <MDXEditor
       plugins={[
         listsPlugin(),
-        quotePlugin(),
-        thematicBreakPlugin(),
         markdownShortcutPlugin(),
+        headingsPlugin(),
         imagePlugin(),
-        tablePlugin(),
         toolbarPlugin({
           toolbarContents: () => (
             <div>
               {createPortal(
                 <div className="flex items-center flex-wrap gap-2">
+                  <BlockTypeSelect />
                   <BoldItalicUnderlineToggles />
                   <Separator />
                   <ListsToggle options={["bullet", "number"]} />

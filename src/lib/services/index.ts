@@ -8,7 +8,13 @@ import { TagService } from "./tag-service";
  * Initialize services with proper dependencies
  * Breaks circular dependency by creating services first and then linking them
  */
-export async function initializeServices() {
+export async function initializeServices(): Promise<{
+  noteService: NoteService;
+  tagService: TagService;
+  itemService: ItemService;
+  clusterService: ClusterService;
+  settingsService: SettingsService;
+}> {
   const supabaseClient = await createClient();
 
   // Create services without their dependencies first
