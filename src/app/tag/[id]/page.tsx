@@ -1,6 +1,9 @@
 "use client";
 
+import { ChatInterfaceHandle } from "@/components/chat-interface";
+import { Button } from "@/components/ui/button";
 import { ITEM_CATEGORIES } from "@/lib/constants";
+import { getSuggestedPrompts } from "@/lib/prompts/categoryPrompts";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { tagsApi } from "@/lib/redux/services/tagsApi";
 import {
@@ -10,7 +13,8 @@ import {
 import { setHeader } from "@/lib/redux/slices/uiSlice";
 import { RootState } from "@/lib/redux/store";
 import { Category, Note } from "@/types/types";
-import { use, useEffect, useMemo } from "react";
+import { Brain } from "lucide-react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import { useSelector } from "react-redux";
 import remarkGfm from "remark-gfm";
@@ -46,6 +50,9 @@ export default function TagPage({
     useSelector((state: RootState) => state.cluster);
   const [generateCluster, { isLoading: isGeneratingCluster }] =
     tagsApi.useGenerateClusterForCategoryMutation();
+
+  const chatInterfaceRef = useRef<ChatInterfaceHandle>(null);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
 
   // Fetch tag family data
   const {
@@ -105,6 +112,35 @@ export default function TagPage({
       dispatch(setActiveCluster(null));
     }
   }, [tag, activeCategory, generateCluster, tagId]);
+
+  // Handler for the suggested prompt click
+  const handleSuggestedPromptClick = (promptText: string) => {
+    if (!isChatVisible) {
+      toggleChat();
+      setPendingPrompt(promptText);
+    } else {
+      if (chatInterfaceRef.current) {
+        chatInterfaceRef.current.append({
+          role: "user",
+          content: promptText,
+        });
+        setPendingPrompt(null);
+      } else {
+        setPendingPrompt(promptText);
+      }
+    }
+  };
+
+  // Effect to append message once chat is visible and flag is set
+  useEffect(() => {
+    if (isChatVisible && pendingPrompt && chatInterfaceRef.current) {
+      chatInterfaceRef.current.append({
+        role: "user",
+        content: pendingPrompt,
+      });
+      setPendingPrompt(null); // Reset flag
+    }
+  }, [isChatVisible, pendingPrompt]);
 
   // Loading states
   if (tagLoading) return <LoadingState />;
@@ -185,6 +221,26 @@ export default function TagPage({
               )}
 
             <hr className="my-6 border-t border-gray-200" />
+            {activeCategory && (
+              <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                {getSuggestedPrompts(activeCategory as Category).map(
+                  (promptObj, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        handleSuggestedPromptClick(promptObj.prompt)
+                      }
+                    >
+                      <Brain className="h-4 w-4 mr-2 flex-shrink-0" />
+                      {promptObj.label}
+                    </Button>
+                  )
+                )}
+              </div>
+            )}
+            <hr className="my-6 border-t border-gray-200" />
           </>
         )}
 
@@ -221,6 +277,7 @@ export default function TagPage({
               <hr className="my-6 border-t border-gray-200" />
             </>
           )}
+        {/* Suggested Prompts Section */}
 
         <h2 className="text-xl font-semibold mb-4">Related Notes</h2>
 
@@ -244,6 +301,7 @@ export default function TagPage({
         }`}
       >
         <ChatPanel
+          chatRef={chatInterfaceRef}
           endpoint="/api/cluster/chat"
           isVisible={isChatVisible}
           chatId={tag.id.toString()}
