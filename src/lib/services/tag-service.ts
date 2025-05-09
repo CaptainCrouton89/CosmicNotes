@@ -1,6 +1,7 @@
 import { Database } from "@/types/database.types";
 import { Category, Note, Tag } from "@/types/types";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { decode } from "he";
 import { ITEM_CATEGORIES } from "../constants";
 import { capitalize } from "../utils";
 import { generateTags } from "./ai-service";
@@ -117,29 +118,6 @@ export class TagService {
     }
   }
 
-  /**
-   * Extract hashtags from content and return them as tags with confidence 1.0
-   * @param content The content to extract hashtags from
-   * @returns Array of [tags, cleaned content]
-   */
-  private extractHashtags = (content: string): [TagConfidence[], string] => {
-    const hashtagRegex = /#(\w+)/g;
-    const hashtags: TagConfidence[] = [];
-    const cleanedContent = content.replace(hashtagRegex, (match, tag) => {
-      const cleanedTag = cleanTag(tag);
-      if (cleanedTag && cleanedTag !== "X20") {
-        // Skip empty tags or X20 tags
-        hashtags.push({
-          name: capitalize(cleanedTag),
-          confidence: 1.0,
-        });
-      }
-      return tag; // Keep the word, just remove the # symbol
-    });
-
-    return [hashtags, cleanedContent];
-  };
-
   private updateConfidenceMap(
     tagMap: Map<string, number>,
     tag: string,
@@ -185,16 +163,10 @@ export class TagService {
     maxTags: number = 5
   ): Promise<TagConfidence[]> {
     try {
-      // First extract explicit hashtags
-      const [hashTags, cleanedContent] = this.extractHashtags(content);
-
+      const cleanedContent = decode(content);
+      console.log("content:", cleanedContent);
       // Track unique tags with their highest confidence scores
       const tagMap = new Map<string, number>();
-
-      // Add hashtags with confidence 1.0
-      hashTags.forEach((tag) => {
-        tagMap.set(capitalize(tag.name), 1.0);
-      });
 
       // Get similar clusters to use as context for tagging
       let similarClusters: Database["public"]["CompositeTypes"]["matched_cluster"][] =
@@ -202,13 +174,13 @@ export class TagService {
       let similarNotes: (Note & { tags: Tag[]; score: number })[] = [];
 
       try {
-        similarClusters = await searchClusters(content, 5, 0.7);
+        similarClusters = await searchClusters(cleanedContent, 5, 0.7);
       } catch (error) {
         console.warn("Error fetching similar clusters:", error);
       }
 
       try {
-        similarNotes = await searchNotes(content, 5, 0.7);
+        similarNotes = await searchNotes(cleanedContent, 5, 0.7);
       } catch (error) {
         console.warn("Error fetching similar notes:", error);
       }
@@ -253,8 +225,16 @@ export class TagService {
 
       const userSettings = await this.settingsService!.getSettings();
 
-      // Generate additional tags using AI if we don't have enough tags yet
-      if (tagMap.size < 3 && cleanedContent.trim()) {
+      // Generate additional tags using AI if we don't have enough tags yet, or if they are low scores
+      console.log(
+        tagMap.size,
+        JSON.stringify(Array.from(tagMap.keys()), Array.from(tagMap.values()))
+      );
+      if (
+        cleanedContent.trim() &&
+        (tagMap.size < 2 ||
+          !Array.from(tagMap.values()).some((confidence) => confidence > 0.7))
+      ) {
         try {
           const result = await generateTags(
             cleanedContent,
