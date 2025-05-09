@@ -137,9 +137,8 @@ export function ChatInterface({
                       <div key={`${message.id}-${i}`} className="markdown">
                         <Markdown
                           remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
-                        >
-                          {linkifySummary(part.text)}
-                        </Markdown>
+                          children={linkifySummary(part.text)}
+                        />
                       </div>
                     );
                   }

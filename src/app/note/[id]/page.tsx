@@ -34,8 +34,7 @@ import {
   Loader2,
   MoreVertical,
 } from "lucide-react";
-import { useParams } from "next/navigation";
-import { KeyboardEvent, useEffect, useState } from "react";
+import { KeyboardEvent, use, useEffect, useState } from "react";
 import {
   CategorySelector,
   ItemList,
@@ -109,9 +108,13 @@ const ChatButton = ({
   );
 };
 
-export default function NotePage() {
-  const params = useParams();
-  const noteId = Number(params.id);
+export default function NotePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const resolvedParams = use(params);
+  const noteId = Number(resolvedParams.id);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const { toggleChat, isChatVisible } = useChatWindow();
@@ -371,7 +374,7 @@ export default function NotePage() {
         <div
           className={`w-full ${
             isChatVisible ? "md:w-3/5 overflow-y-auto" : "md:w-full"
-          } pt-4 px-4 md:px-6 transition-all duration-300 flex flex-col overflow-y-auto pb-4`}
+          } pt-4 px-4 md:px-6 transition-all duration-300 flex flex-col overflow-y-auto pb-64`}
         >
           {loading ? (
             <div className="h-40 flex items-center justify-center">

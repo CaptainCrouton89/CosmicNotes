@@ -15,12 +15,15 @@ import { CATEGORIES, Category, Zone } from "@/types/types";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 import { SaveIcon } from "lucide-react";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, use, useCallback, useEffect, useRef, useState } from "react";
 import { CategorySelector } from "./note/[id]/_components/CategorySelector";
 import { ZoneSelector } from "./note/[id]/_components/ZoneSelector";
 // Component that uses useSearchParams
-function HomeContent() {
+function HomeContent({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const [note, setNote] = useState("");
   const [category, setCategory] = useState<Category | undefined>(undefined);
   const [zone, setZone] = useState<Zone | undefined>(undefined);
@@ -36,15 +39,15 @@ function HomeContent() {
   const [createdNoteId, setCreatedNoteId] = useState<number | null>(null);
   const [savingTags, setSavingTags] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const searchParams = useSearchParams();
+  const resolvedSearchParams = use(searchParams);
 
   // Get category from URL if present
   useEffect(() => {
-    const categoryParam = searchParams.get("category");
+    const categoryParam = resolvedSearchParams.category;
     if (categoryParam && CATEGORIES.includes(categoryParam as Category)) {
       setCategory(categoryParam as Category);
     }
-  }, [searchParams]);
+  }, [resolvedSearchParams]);
 
   const handleEditorChange = useCallback((markdown: string) => {
     setNote(markdown);
@@ -243,10 +246,14 @@ function HomeContent() {
 }
 
 // Wrap the HomeContent in a Suspense boundary
-export default function Home() {
+export default function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <HomeContent />
+      <HomeContent searchParams={searchParams} />
     </Suspense>
   );
 }

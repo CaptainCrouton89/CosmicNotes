@@ -10,8 +10,7 @@ import {
 import { setHeader } from "@/lib/redux/slices/uiSlice";
 import { RootState } from "@/lib/redux/store";
 import { Category, Note } from "@/types/types";
-import { useParams, useSearchParams } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { use, useEffect, useMemo } from "react";
 import Markdown from "react-markdown";
 import { useSelector } from "react-redux";
 import remarkGfm from "remark-gfm";
@@ -29,13 +28,19 @@ import {
   TagHeader,
 } from "./_components";
 
-export default function TagPage() {
+export default function TagPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const { toggleChat, isChatVisible } = useChatWindow();
-  const params = useParams();
-  const searchParams = useSearchParams();
 
-  const categoryParam = searchParams.get("category");
-  const tagId = parseInt(String(params.id), 10);
+  const resolvedParams = use(params);
+  const resolvedSearchParams = use(searchParams);
+  const categoryParam = resolvedSearchParams.category as string;
+  const tagId = parseInt(String(resolvedParams.id), 10);
   const dispatch = useAppDispatch();
   const { activeCategory, activeCluster, clusterMap, validNoteCategories } =
     useSelector((state: RootState) => state.cluster);
@@ -131,7 +136,7 @@ export default function TagPage() {
       <div
         className={`w-full ${
           isChatVisible ? "md:w-3/5 overflow-y-auto" : "md:w-full"
-        } pb-6 px-4 md:pb-8 md:px-6 transition-all duration-300 pt-2 md:pt-4`}
+        } pb-64 px-4 md:pb-8 md:px-6 transition-all duration-300 pt-2 md:pt-4`}
       >
         {/* Header component */}
         <TagHeader />
@@ -161,9 +166,8 @@ export default function TagPage() {
                 <div className="markdown">
                   <Markdown
                     remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
-                  >
-                    {activeCluster.summary}
-                  </Markdown>
+                    children={activeCluster.summary}
+                  />
                 </div>
               )}
             </div>
