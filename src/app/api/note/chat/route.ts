@@ -4,7 +4,9 @@ import { CompleteNote, Mode } from "@/types/types";
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
 import {
+  addItemsToCollectionTool,
   addNoteTool,
+  addTodoItemsToNoteTool,
   askWebEnabledAI,
   basicSearchNotesTool,
   deepSearchNotesTool,
@@ -64,6 +66,8 @@ You have access to several tools to interact with the user's notes database and 
 - **Update Current Note**: Modify the currently focused note with new information, structure, or corrections.
 - **Scrape Website Content**: Fetch and process content from a given URL.
 - **Ask Web-Enabled AI**: Utilize a web-connected AI for general knowledge queries or information not found in the user's notes.
+- **Add Todo Items to Note**: Add todo items to the current focused note.
+- **Add Items to Collection**: Add items to the current focused note.
 
 # Operational Protocol
 
@@ -95,6 +99,8 @@ Your general approach to responding should be:
     - \`updateNoteTool\`: Offer to use this tool to modify the *current focused note* if new information, corrections, or structural improvements are discussed.
     - \`scrapeWebSiteTool\`: Use when the user provides a URL and asks for its content to be processed, summarized, or integrated into their notes.
     - \`askWebEnabledAI\`: Use for general knowledge questions, current events, or when information is clearly outside the scope of the user's notes and requires up-to-date web knowledge.
+    - \`addTodoItemsToNoteTool\`: Use when the user has todo items to add to the current focused note.
+    - \`addItemsToCollectionTool\`: Use when the user has todo items to add to a collection note.
 - **User Confirmation for Modifications**: Before creating or updating notes, generally confirm with the user unless they have explicitly requested the action.
 
 # Interaction Model
@@ -190,6 +196,8 @@ Assistant: "That's a great question! This current note [${
         scrapeWebSiteTool,
         askWebEnabledAI,
         updateNoteTool,
+        addItemsToNote: addTodoItemsToNoteTool(note.id),
+        addItemsToCollection: addItemsToCollectionTool(note.id),
       },
     });
 

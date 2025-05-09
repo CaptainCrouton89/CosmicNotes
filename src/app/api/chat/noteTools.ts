@@ -304,3 +304,45 @@ export const updateNoteTool = tool({
     return "Note updated successfully";
   },
 });
+
+export const addTodoItemsToNoteTool = (noteId: number) =>
+  tool({
+    description: "Add todo items to a note",
+    parameters: z.object({
+      items: z.array(z.string()).describe("The items to add to the note"),
+    }),
+    execute: async ({ items }) => {
+      const { itemService } = await initializeServices();
+      await itemService.createItems(
+        items.map((item) => ({
+          item,
+          memory: noteId,
+          done: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }))
+      );
+      return "Items added to note successfully";
+    },
+  });
+
+export const addItemsToCollectionTool = (collectionId: number) =>
+  tool({
+    description: "Add todo items to a collection",
+    parameters: z.object({
+      items: z.array(z.string()).describe("The items to add to the note"),
+    }),
+    execute: async ({ items }) => {
+      const { itemService } = await initializeServices();
+      await itemService.createItems(
+        items.map((item) => ({
+          item,
+          memory: collectionId,
+          done: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }))
+      );
+      return "Items added to note successfully";
+    },
+  });
