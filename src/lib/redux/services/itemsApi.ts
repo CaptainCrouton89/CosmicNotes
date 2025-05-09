@@ -191,9 +191,9 @@ export const itemsApi = createApi({
             itemsApi.util.updateQueryData(
               "getItemsByNoteId",
               noteId,
-              (draft) => {
+              (draft: Item[]) => {
                 return draft.filter(
-                  (item) => item.id !== (itemIdToDelete as number)
+                  (item) => (item.id as number) !== (itemIdToDelete as number)
                 );
               }
             )
