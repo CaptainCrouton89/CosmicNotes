@@ -26,11 +26,11 @@ export default function InitializedMDXEditor({
     <MDXEditor
       plugins={[
         listsPlugin(),
-        markdownShortcutPlugin(),
         headingsPlugin({
           allowedHeadingLevels: [1, 2, 3, 4],
         }),
         imagePlugin(),
+        markdownShortcutPlugin(),
         toolbarPlugin({
           toolbarContents: () => (
             <div>
