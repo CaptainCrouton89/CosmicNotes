@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
@@ -118,6 +118,18 @@ export const ChatInterface = forwardRef<
     }
   }, [messages, shouldAutoScroll]);
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      if (input.trim()) {
+        const syntheticEvent = {
+          preventDefault: () => {},
+        } as unknown as React.FormEvent<HTMLFormElement>;
+        handleSubmit(syntheticEvent);
+      }
+    }
+  };
+
   const toggleMode = () => {
     const currentIndex = Object.keys(MODES).indexOf(mode);
     const nextIndex = (currentIndex + 1) % Object.keys(MODES).length;
@@ -177,7 +189,10 @@ export const ChatInterface = forwardRef<
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 border-t flex gap-2">
+      <form
+        onSubmit={handleSubmit}
+        className="p-4 border-t flex gap-2 items-start"
+      >
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -193,11 +208,14 @@ export const ChatInterface = forwardRef<
           </TooltipTrigger>
           <TooltipContent>{MODES[mode].label} mode</TooltipContent>
         </Tooltip>
-        <Input
+        <Textarea
           value={input}
           onChange={handleInputChange}
-          placeholder="Type your message..."
-          className="flex-1"
+          onKeyDown={handleKeyDown}
+          placeholder="Type your message (Shift+Enter for new line)..."
+          className="flex-1 resize-none"
+          rows={1}
+          style={{ minHeight: "40px", maxHeight: "200px" }}
           disabled={status !== "ready"}
         />
         <Button type="submit" disabled={status !== "ready" || !input.trim()}>
