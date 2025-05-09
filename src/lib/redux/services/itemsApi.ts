@@ -192,8 +192,9 @@ export const itemsApi = createApi({
               "getItemsByNoteId",
               noteId,
               (draft: Item[]) => {
+                // @ts-ignore
                 return draft.filter(
-                  (item) => (item.id as number) !== (itemIdToDelete as number)
+                  (item) => (item.id !== (itemIdToDelete as number)) as any
                 );
               }
             )
