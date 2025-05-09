@@ -202,21 +202,21 @@ export default function NotePage({
   }, [refreshing, note, refetchItems]);
 
   // Handler for the "What do you think?" button
-  const handleSuggestedPromptClick = (prompt: string) => {
+  const handleSuggestedPromptClick = (promptText: string) => {
     if (!isChatVisible) {
       toggleChat(); // Request to open chat
-      setPendingPrompt(prompt); // Set specific prompt to be sent
+      setPendingPrompt(promptText); // Set specific prompt to be sent
     } else {
       // Chat is already visible
       if (chatInterfaceRef.current) {
         chatInterfaceRef.current.append({
           role: "user",
-          content: prompt,
+          content: promptText,
         });
         setPendingPrompt(null); // Clear pending prompt if sent immediately
       } else {
         // Fallback if ref not immediately available or chat just opened
-        setPendingPrompt(prompt);
+        setPendingPrompt(promptText);
       }
     }
   };
@@ -468,15 +468,17 @@ export default function NotePage({
               <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
                 {note &&
                   getSuggestedPrompts(note.category as Category).map(
-                    (prompt, index) => (
+                    (promptObj, index) => (
                       <Button
                         key={index}
                         variant="outline"
                         size="sm"
-                        onClick={() => handleSuggestedPromptClick(prompt)}
+                        onClick={() =>
+                          handleSuggestedPromptClick(promptObj.prompt)
+                        }
                       >
                         <Brain className="h-4 w-4 mr-2 flex-shrink-0" />
-                        {prompt}
+                        {promptObj.label}
                       </Button>
                     )
                   )}
