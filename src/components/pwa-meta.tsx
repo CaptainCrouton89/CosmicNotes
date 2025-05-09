@@ -16,7 +16,11 @@ export function PWAMeta() {
       <link rel="icon" type="image/svg+xml" href="/icon-template.svg" />
       <link rel="manifest" href="/manifest.json" />
       <link rel="mask-icon" href="/icon-template.svg" color="#ffffff" />
-      <link rel="shortcut icon" href="/src/app/favicon.ico" />
+      <link
+        rel="shortcut icon"
+        type="image/svg+xml"
+        href="/icon-template.svg"
+      />
 
       <meta name="twitter:card" content="summary" />
       <meta name="twitter:title" content="Cosmic Notes" />
