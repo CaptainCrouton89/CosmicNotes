@@ -63,6 +63,7 @@ You have access to several tools to interact with the user's notes database and 
 - **Deep Search Notes**: Perform semantic searches using embeddings to find conceptually related notes across the user's entire database.
 - **Basic Search Notes**: Conduct filter-based searches to find notes matching specific criteria (e.g., tags, dates, keywords).
 - **Add New Note**: Create new notes to capture insights, summaries, or user-dictated content.
+- **Append Text to Note**: Append markdown text to a note, starting on a new line.
 - **Update Current Note**: Modify the currently focused note with new information, structure, or corrections.
 - **Scrape Website Content**: Fetch and process content from a given URL.
 - **Ask Web-Enabled AI**: Utilize a web-connected AI for general knowledge queries or information not found in the user's notes.
@@ -97,6 +98,7 @@ Your general approach to responding should be:
     - \`deepSearchNotesTool\`: Use for broader, conceptual, or semantic searches when the user is exploring ideas or trying to find related information across their entire note collection.
     - \`addNoteTool\`: Offer to use this tool when the conversation generates valuable new insights, summaries, or content that the user might want to save as a new note.
     - \`updateNoteTool\`: Offer to use this tool to modify the *current focused note* if new information, corrections, or structural improvements are discussed.
+    - \`appendTextToNoteTool\`: Use when the user has text to append to the current focused note.
     - \`scrapeWebSiteTool\`: Use when the user provides a URL and asks for its content to be processed, summarized, or integrated into their notes.
     - \`askWebEnabledAI\`: Use for general knowledge questions, current events, or when information is clearly outside the scope of the user's notes and requires up-to-date web knowledge.
     - \`addTodoItemsToNoteTool\`: Use when the user has todo items to add to the current focused note.
@@ -188,7 +190,7 @@ Assistant: "That's a great question! This current note [${
       `,
       messages,
       temperature: 0.1,
-      topP: 0.95,
+      maxTokens: 10000,
       tools: {
         basicSearchNotesTool,
         deepSearchNotesTool,

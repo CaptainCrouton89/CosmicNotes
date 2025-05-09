@@ -4,7 +4,10 @@ import { Mode } from "@/types/types";
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
 import {
+  addItemsToUnknownCollectionTool,
   addNoteTool,
+  addTodoItemsToUnknownNoteTool,
+  appendTextToUnknownNoteTool,
   askWebEnabledAI,
   basicSearchNotesTool,
   deepSearchNotesTool,
@@ -33,7 +36,7 @@ export async function POST(req: Request) {
     // Use streamText for streaming response
     const result = streamText({
       model: openai(getModeModel(mode)),
-      temperature: 0.4,
+      temperature: 0.1,
       system: `# Role and Objective
 You are Notes Assistant, an insightful companion for the user's knowledge management system. Your primary purpose is to help the user leverage their notes to think creatively, retrieve relevant information, make connections between ideas, and generate new insights.
 
@@ -137,6 +140,9 @@ ${userSettings.chat_system_instructions}`,
         scrapeWebSiteTool,
         updateNoteTool,
         askWebEnabledAI,
+        appendTextToNote: appendTextToUnknownNoteTool,
+        addItemsToNote: addTodoItemsToUnknownNoteTool,
+        addItemsToCollection: addItemsToUnknownCollectionTool,
       },
     });
 

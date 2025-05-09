@@ -305,6 +305,44 @@ export const updateNoteTool = tool({
   },
 });
 
+export const appendTextToNoteTool = (noteId: number) =>
+  tool({
+    description: "Append text to a note",
+    parameters: z.object({
+      text: z.string().describe("The text to append to the note"),
+    }),
+    execute: async ({ text }) => {
+      const { noteService } = await initializeServices();
+      const note = await noteService.getNoteById(noteId);
+      if (!note) {
+        return "Note not found";
+      }
+      await noteService.updateNote(noteId, {
+        content: `${note.content}\n${text}`,
+      });
+      return "Text appended to note successfully";
+    },
+  });
+
+export const appendTextToUnknownNoteTool = tool({
+  description: "Append text to a note",
+  parameters: z.object({
+    noteId: z.number().describe("The ID of the note to append to"),
+    text: z.string().describe("The text to append to the note"),
+  }),
+  execute: async ({ text, noteId }) => {
+    const { noteService } = await initializeServices();
+    const note = await noteService.getNoteById(noteId);
+    if (!note) {
+      return "Note not found";
+    }
+    await noteService.updateNote(noteId, {
+      content: `${note.content}\n${text}`,
+    });
+    return "Text appended to note successfully";
+  },
+});
+
 export const addTodoItemsToNoteTool = (noteId: number) =>
   tool({
     description: "Add todo items to a note",
@@ -326,6 +364,27 @@ export const addTodoItemsToNoteTool = (noteId: number) =>
     },
   });
 
+export const addTodoItemsToUnknownNoteTool = tool({
+  description: "Add todo items to a note",
+  parameters: z.object({
+    noteId: z.number().describe("The ID of the note to add items to"),
+    items: z.array(z.string()).describe("The items to add to the note"),
+  }),
+  execute: async ({ items, noteId }) => {
+    const { itemService } = await initializeServices();
+    await itemService.createItems(
+      items.map((item) => ({
+        item,
+        memory: noteId,
+        done: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }))
+    );
+    return "Items added to note successfully";
+  },
+});
+
 export const addItemsToCollectionTool = (collectionId: number) =>
   tool({
     description: "Add todo items to a collection",
@@ -346,3 +405,24 @@ export const addItemsToCollectionTool = (collectionId: number) =>
       return "Items added to note successfully";
     },
   });
+
+export const addItemsToUnknownCollectionTool = tool({
+  description: "Add todo items to a collection",
+  parameters: z.object({
+    noteId: z.number().describe("The ID of the note to add items to"),
+    items: z.array(z.string()).describe("The items to add to the collection"),
+  }),
+  execute: async ({ items, noteId }) => {
+    const { itemService } = await initializeServices();
+    await itemService.createItems(
+      items.map((item) => ({
+        item,
+        memory: noteId,
+        done: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }))
+    );
+    return "Items added to collection successfully";
+  },
+});

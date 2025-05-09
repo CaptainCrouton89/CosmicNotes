@@ -4,7 +4,10 @@ import { Mode } from "@/types/types";
 import { openai } from "@ai-sdk/openai";
 import { Message, streamText } from "ai";
 import {
+  addItemsToUnknownCollectionTool,
   addNoteTool,
+  addTodoItemsToUnknownNoteTool,
+  appendTextToUnknownNoteTool,
   askWebEnabledAI,
   basicSearchNotesTool,
   deepSearchNotesTool,
@@ -133,6 +136,9 @@ Would you like me to create this note now? Or would you prefer to adjust anythin
         scrapeWebSiteTool,
         askWebEnabledAI,
         updateNoteTool,
+        appendTextToNote: appendTextToUnknownNoteTool,
+        addItemsToNote: addTodoItemsToUnknownNoteTool,
+        addItemsToCollection: addItemsToUnknownCollectionTool,
       },
     });
 
