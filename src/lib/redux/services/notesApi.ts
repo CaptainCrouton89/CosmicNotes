@@ -13,7 +13,36 @@ export const notesApi = createApi({
       PaginatedResponse<Note>,
       { page?: number; limit?: number }
     >({
-      query: ({ page = 1, limit = 10 }) => `note?page=${page}&limit=${limit}`,
+      query: ({ page = 1, limit = 10 }) => {
+        return `note?page=${page}&limit=${limit}`;
+      },
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        // Create a stable cache key that ignores the 'page' argument
+        // but respects other arguments like 'limit' or any future filter params.
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { page, ...stableArgs } = queryArgs;
+        // Sort keys for a consistent query key
+        const sortedArgs = Object.entries(stableArgs)
+          .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+          .map(([key, value]) => `${key}=${value}`)
+          .join("&");
+        return `${endpointName}(${sortedArgs})`;
+      },
+      merge: (currentCache, newItems, { arg }) => {
+        if (!arg.page || arg.page === 1 || !currentCache?.content) {
+          return newItems;
+        }
+
+        const existingIds = new Set(
+          currentCache.content.map((note) => note.id)
+        );
+        const uniqueNewNotes = newItems.content.filter(
+          (note) => !existingIds.has(note.id)
+        );
+
+        currentCache.content.push(...uniqueNewNotes);
+        currentCache.pagination = newItems.pagination;
+      },
       providesTags: (result) =>
         result
           ? [
@@ -73,7 +102,6 @@ export const notesApi = createApi({
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
           const result = await queryFulfilled;
-          console.log("result", result);
           // If the update includes tags, also invalidate the Tag cache
           if (result.data.tags) {
             // Import tagsApi dynamically to avoid circular dependency
@@ -84,7 +112,9 @@ export const notesApi = createApi({
               ])
             );
           }
-        } catch {}
+        } catch (e) {
+          console.error("Failed to create note:", e);
+        }
       },
     }),
 
@@ -117,7 +147,9 @@ export const notesApi = createApi({
               ])
             );
           }
-        } catch {}
+        } catch (e) {
+          console.error("Failed to update note:", e);
+        }
       },
     }),
 

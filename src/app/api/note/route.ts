@@ -51,16 +51,17 @@ export async function GET(req: NextRequest) {
     // Calculate offset based on page and limit
     const offset = (page - 1) * limit;
     const { noteService } = await initializeServices();
-    const notes = await noteService.getNotes(offset, limit);
-    console.log(notes);
+    // Fetch notes and totalCount from the service
+    const { notes, totalCount } = await noteService.getNotes(offset, limit);
 
-    const totalPages = Math.ceil(notes.length / limit);
+    // Calculate totalPages and hasMore
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasMore = page < totalPages;
 
     const simplifiedNotes = notes.map((note) => {
       return {
         id: note.id,
         title: note.title,
-        type: note.type,
         category: note.category,
         updated_at: note.updated_at,
         created_at: note.created_at,
@@ -69,11 +70,16 @@ export async function GET(req: NextRequest) {
       };
     });
 
+    // Structure the response to match PaginatedResponse<Note>
     return NextResponse.json({
       content: simplifiedNotes,
-      page,
-      limit,
-      totalPages,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages,
+        hasMore,
+      },
     });
   } catch (err: unknown) {
     console.error("Error fetching notes:", err);

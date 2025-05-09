@@ -162,21 +162,28 @@ export class NoteService {
     })) as Note[];
   }
 
-  async getNotes(offset: number, limit: number): Promise<Note[]> {
-    const { data, error } = await this.supabase
+  async getNotes(
+    offset: number,
+    limit: number
+  ): Promise<{ notes: Note[]; totalCount: number }> {
+    const { data, error, count } = await this.supabase
       .from("cosmic_memory")
       .select(
-        "*, cosmic_memory_tag_map(tag, created_at, tag(id, name, parent_tag))"
+        "*, cosmic_memory_tag_map(tag, created_at, tag(id, name, parent_tag))",
+        { count: "exact" } // Request total count
       )
       .order("updated_at", { ascending: false, nullsFirst: false })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
-    return data.map((note) => ({
-      ...note,
-      tags: note.cosmic_memory_tag_map?.map((map) => map.tag) || [],
-    })) as Note[];
+    const notes =
+      (data?.map((note) => ({
+        ...note,
+        tags: note.cosmic_memory_tag_map?.map((map) => map.tag) || [],
+      })) as Note[]) || [];
+
+    return { notes, totalCount: count || 0 };
   }
 
   async getNoteById(id: number): Promise<NoteWithTagsAndItems | null> {
