@@ -62,7 +62,7 @@ export const ChatInterface = forwardRef<
   Omit<ChatInterfaceProps, "className">
 >(({ endpoint, chatId, additionalBody }, ref) => {
   const chatIdToUse = chatId || "default";
-  const [mode, setMode] = useState<Mode>("standard");
+  const [mode, setMode] = useState<Mode>("medium");
 
   const {
     messages,
