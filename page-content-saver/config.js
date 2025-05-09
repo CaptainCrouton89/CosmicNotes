@@ -1,7 +1,7 @@
 // Configuration for Page Content Saver extension
 const CONFIG = {
   // API endpoint base URL - change this when your domain changes
-  API_BASE_URL: "https://cosmic-delta-gilt.vercel.app",
+  API_BASE_URL: "https://mercury.cosmo.it.com",
 
   // API endpoints
   ENDPOINTS: {
