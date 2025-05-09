@@ -1,5 +1,6 @@
 "use client";
 
+import { ChatInterfaceHandle } from "@/components/chat-interface";
 import { ChatPanel } from "@/components/ChatPanel";
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
 import { ToolbarHeader } from "@/components/editor/ToolbarHeader";
@@ -21,6 +22,7 @@ import {
 import { useChatWindow } from "@/hooks/useChatWindow";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
 import { ITEM_CATEGORIES } from "@/lib/constants";
+import { getSuggestedPrompts } from "@/lib/prompts/categoryPrompts";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setHeader } from "@/lib/redux/slices/uiSlice";
 import { formatDate, formatDateOnly } from "@/lib/utils";
@@ -34,7 +36,7 @@ import {
   Loader2,
   MoreVertical,
 } from "lucide-react";
-import { KeyboardEvent, use, useEffect, useState } from "react";
+import { KeyboardEvent, use, useEffect, useRef, useState } from "react";
 import {
   CategorySelector,
   ItemList,
@@ -50,6 +52,7 @@ import {
   useNoteTags,
 } from "./hooks";
 import { useExports } from "./hooks/useExports";
+
 // Client-side only chat button to prevent hydration issues
 const ChatButton = ({
   isChatVisible,
@@ -122,6 +125,10 @@ export default function NotePage({
   const { deleting, deleteNote } = useNoteActions(noteId);
   const dispatch = useAppDispatch();
 
+  // Ref for ChatInterface and state for pending append
+  const chatInterfaceRef = useRef<ChatInterfaceHandle>(null);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+
   const {
     note,
     loading,
@@ -193,6 +200,37 @@ export default function NotePage({
       refetchItems();
     }
   }, [refreshing, note, refetchItems]);
+
+  // Handler for the "What do you think?" button
+  const handleSuggestedPromptClick = (prompt: string) => {
+    if (!isChatVisible) {
+      toggleChat(); // Request to open chat
+      setPendingPrompt(prompt); // Set specific prompt to be sent
+    } else {
+      // Chat is already visible
+      if (chatInterfaceRef.current) {
+        chatInterfaceRef.current.append({
+          role: "user",
+          content: prompt,
+        });
+        setPendingPrompt(null); // Clear pending prompt if sent immediately
+      } else {
+        // Fallback if ref not immediately available or chat just opened
+        setPendingPrompt(prompt);
+      }
+    }
+  };
+
+  // Effect to append message once chat is visible and flag is set
+  useEffect(() => {
+    if (isChatVisible && pendingPrompt && chatInterfaceRef.current) {
+      chatInterfaceRef.current.append({
+        role: "user",
+        content: pendingPrompt,
+      });
+      setPendingPrompt(null); // Reset flag
+    }
+  }, [isChatVisible, pendingPrompt]);
 
   const handleTitleClick = () => {
     if (!note || loading) return;
@@ -427,6 +465,22 @@ export default function NotePage({
                   />
                 </div>
               )}
+              <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
+                {note &&
+                  getSuggestedPrompts(note.category as Category).map(
+                    (prompt, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSuggestedPromptClick(prompt)}
+                      >
+                        <Brain className="h-4 w-4 mr-2 flex-shrink-0" />
+                        {prompt}
+                      </Button>
+                    )
+                  )}
+              </div>
             </div>
           )}
         </div>
@@ -440,6 +494,7 @@ export default function NotePage({
           }`}
         >
           <ChatPanel
+            chatRef={chatInterfaceRef}
             endpoint="/api/note/chat"
             isVisible={isChatVisible}
             chatId={noteId.toString()}

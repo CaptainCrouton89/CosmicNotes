@@ -78,6 +78,7 @@ export const useClusterItems = (cluster: Cluster) => {
         await updateItemMutation({
           id,
           done: !currentStatus,
+          clusterId: cluster.id,
         }).unwrap();
         await refetch();
         toast({
@@ -97,7 +98,7 @@ export const useClusterItems = (cluster: Cluster) => {
         setLoading((prev) => ({ ...prev, [id]: false }));
       }
     },
-    [updateItemMutation, toast, refetch]
+    [updateItemMutation, toast, refetch, cluster.id]
   );
 
   // Create new item
@@ -130,7 +131,10 @@ export const useClusterItems = (cluster: Cluster) => {
       setDeleting((prev) => ({ ...prev, [id]: true }));
 
       try {
-        await deleteItemMutation(id).unwrap();
+        await deleteItemMutation({
+          itemId: id,
+          clusterId: cluster.id,
+        }).unwrap();
         await refetch();
       } catch (error) {
         toast({
@@ -143,7 +147,7 @@ export const useClusterItems = (cluster: Cluster) => {
         setDeleting((prev) => ({ ...prev, [id]: false }));
       }
     },
-    [deleteItemMutation, toast, refetch]
+    [deleteItemMutation, toast, refetch, cluster.id]
   );
 
   // Prefer local items if available, otherwise use server items

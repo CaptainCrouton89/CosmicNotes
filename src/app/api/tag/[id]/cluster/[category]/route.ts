@@ -7,7 +7,6 @@ export const POST = async (
   { params }: { params: Promise<{ id: number; category: Category }> }
 ) => {
   const { id, category } = await params;
-  console.log("Generating cluster for category", category, "with id", id);
   const { tagService } = await initializeServices();
   const cluster = await tagService.generateClusterForCategory(
     category,
@@ -16,13 +15,5 @@ export const POST = async (
     id
   );
 
-  console.log(
-    "Cluster generated for category",
-    category,
-    "with id",
-    id,
-    "cluster",
-    cluster
-  );
   return NextResponse.json(cluster);
 };

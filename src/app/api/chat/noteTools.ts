@@ -8,7 +8,8 @@ import { z } from "zod";
 export const runtime = "edge";
 
 export const basicSearchNotesTool = tool({
-  description: "Search the notes for information",
+  description:
+    "Query the notes by filtering on category, zone, tags, and/or tagIds",
   parameters: z.object({
     limit: z
       .number()

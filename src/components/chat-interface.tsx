@@ -10,10 +10,21 @@ import {
 import { linkifySummary } from "@/lib/utils";
 import { Mode } from "@/types/types";
 import { useChat } from "@ai-sdk/react";
+import { CreateMessage } from "ai";
 import { Brain } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+export type ChatInterfaceHandle = {
+  append: (message: CreateMessage) => Promise<string | null | undefined>;
+};
 
 type ChatInterfaceProps = {
   className?: string;
@@ -46,41 +57,53 @@ const MODES: Record<
   },
 };
 
-export function ChatInterface({
-  endpoint,
-  chatId,
-  additionalBody,
-}: Omit<ChatInterfaceProps, "className">) {
-  // Generate a stable chat ID that persists across navigations
+export const ChatInterface = forwardRef<
+  ChatInterfaceHandle,
+  Omit<ChatInterfaceProps, "className">
+>(({ endpoint, chatId, additionalBody }, ref) => {
   const chatIdToUse = chatId || "default";
   const [mode, setMode] = useState<Mode>("standard");
 
-  const { messages, input, handleInputChange, handleSubmit, status, error } =
-    useChat({
-      api: endpoint || "/api/chat",
-      onError: (err: Error) => {
-        console.error("Chat error:", err);
-      },
-      id: `chat-${chatIdToUse}`,
-      maxSteps: 15,
-      body: {
-        tagId: chatIdToUse,
-        mode: mode,
-        ...additionalBody,
-      },
-    });
+  const {
+    messages,
+    input,
+    handleInputChange,
+    append,
+    handleSubmit,
+    status,
+    error,
+  } = useChat({
+    api: endpoint || "/api/chat",
+    onError: (err: Error) => {
+      console.error("Chat error:", err);
+    },
+    id: `chat-${chatIdToUse}`,
+    maxSteps: MODES[mode].maxSteps,
+    body: {
+      tagId: chatIdToUse,
+      mode: mode,
+      ...additionalBody,
+    },
+  });
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      append,
+    }),
+    [append]
+  );
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
-  // Handle scroll events to detect if user has scrolled away from bottom
   useEffect(() => {
     const container = chatContainerRef.current;
     if (!container) return;
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
-      // Check if user is at bottom (with small tolerance)
       const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
       setShouldAutoScroll(isAtBottom);
     };
@@ -89,15 +112,13 @@ export function ChatInterface({
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Scroll to bottom when messages change if shouldAutoScroll is true
   useEffect(() => {
     if (shouldAutoScroll && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      messagesEndRef.current.scrollIntoView({ behavior: "instant" });
     }
   }, [messages, shouldAutoScroll]);
 
   const toggleMode = () => {
-    // cycle modes
     const currentIndex = Object.keys(MODES).indexOf(mode);
     const nextIndex = (currentIndex + 1) % Object.keys(MODES).length;
     setMode(Object.keys(MODES)[nextIndex] as Mode);
@@ -185,4 +206,6 @@ export function ChatInterface({
       </form>
     </div>
   );
-}
+});
+
+ChatInterface.displayName = "ChatInterface";

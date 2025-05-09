@@ -88,13 +88,8 @@ export default function TagPage({
   }, [categoryParam, validNoteCategories, dispatch]);
 
   useEffect(() => {
-    console.log("tag", tag, "activeCategory", activeCategory);
     if (tag && activeCategory) {
       if (clusterMap[activeCategory].clusterExists) {
-        console.log(
-          "clusterMap[activeCategory].clusterExists",
-          clusterMap[activeCategory].clusterExists
-        );
         // Find a cluster matching the active category if possible
         const matchingCluster = tag.clusters.find(
           (c) => c.category === activeCategory

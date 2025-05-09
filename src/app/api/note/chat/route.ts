@@ -30,8 +30,6 @@ export async function POST(req: Request) {
       return Response.json({ error: "Note not found" }, { status: 404 });
     }
 
-    console.log("note", note);
-
     // Format the note content
     const noteContent = `## Title: ${note.title}
 ID: [${note.id}] 
@@ -135,7 +133,7 @@ I can help update your note to include:
 Would you like me to add this information to your current note, or would you prefer to create a new, linked note specifically about the Feynman Technique?"
       `,
       messages,
-      temperature: 0.8,
+      temperature: 0.1,
       topP: 0.95,
       tools: {
         basicSearchNotesTool,

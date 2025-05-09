@@ -155,8 +155,6 @@ export class ItemService {
 
     if (error) throw new Error(error.message);
 
-    console.log("data", { ...data, embedding: "" });
-
     const newItem = {
       ...data,
       memory:

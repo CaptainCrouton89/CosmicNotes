@@ -44,7 +44,6 @@ export function useKeyboardShortcut(shortcuts: KeyShortcut[]) {
           if (combo.preventDefault !== false) {
             e.preventDefault();
           }
-          console.log("callback", callback);
           callback();
           break;
         }
