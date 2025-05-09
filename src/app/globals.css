@@ -141,8 +141,11 @@
   h6 {
     @apply text-xs font-bold mt-2 mb-1;
   }
-  p {
+  p:not(:last-child) {
     @apply text-base mb-4;
+  }
+  p:last-child {
+    @apply text-base;
   }
   a {
     @apply text-secondary hover:underline;
