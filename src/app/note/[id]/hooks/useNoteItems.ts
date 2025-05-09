@@ -140,7 +140,7 @@ export function useNoteItems(note: Note | undefined) {
     setDeleting((prev) => ({ ...prev, [id]: true }));
 
     try {
-      await deleteItemMutation(id).unwrap();
+      await deleteItemMutation({ itemId: id }).unwrap();
 
       // Remove the deleted item
       setItems((prevItems) => prevItems.filter((item) => item.id !== id));
