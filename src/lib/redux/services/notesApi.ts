@@ -55,6 +55,17 @@ export const notesApi = createApi({
           : [{ type: "Note", id: "LIST" }],
     }),
 
+    getNotesByCategory: builder.query<Note[], string>({
+      query: (category) => `note?category=${category}&fetchAll=true`,
+      providesTags: (result, __, category) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: "Note" as const, id })),
+              { type: "Note", id: `LIST_${category.toUpperCase()}` }, // Category-specific list
+            ]
+          : [{ type: "Note", id: `LIST_${category.toUpperCase()}` }],
+    }),
+
     getNote: builder.query<CompleteNote, number>({
       query: (id) => `note/${id}`,
       transformResponse: (response: { note: CompleteNote }) => response.note,

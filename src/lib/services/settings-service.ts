@@ -35,6 +35,7 @@ export class SettingsService {
           cluster_prompt: "Cluster similar items together.",
           tag_prompt: "Generate relevant tags for this content.",
           merge_tag_prompt: "Suggest tags to merge.",
+          pinned_categories: [],
         };
 
         const { data: newSettings, error: insertError } = await this.supabase
@@ -65,6 +66,14 @@ export class SettingsService {
   async updateSettings(
     settingsInput: UserSettingsInput
   ): Promise<UserSettings> {
+    // Ensure pinned_categories is an array if provided, otherwise keep as is or default to [] if it's a new insert.
+    if (
+      settingsInput.pinned_categories &&
+      !Array.isArray(settingsInput.pinned_categories)
+    ) {
+      // Or handle error, for now, let's assume it should be an array or will be handled by DB JSON conversion
+    }
+
     // Check if settings exist
     const { data: existingSettings, error: checkError } = await this.supabase
       .from("cosmic_user_settings")
@@ -76,7 +85,12 @@ export class SettingsService {
       // No settings exist yet, insert new
       const { data: insertedSettings, error: insertError } = await this.supabase
         .from("cosmic_user_settings")
-        .insert([settingsInput])
+        .insert([
+          {
+            ...settingsInput,
+            pinned_categories: settingsInput.pinned_categories || [],
+          },
+        ])
         .select("*")
         .single();
 

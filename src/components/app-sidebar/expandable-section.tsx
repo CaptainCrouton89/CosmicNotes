@@ -1,5 +1,4 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { useState } from "react";
 
 import {
   SidebarGroup,
@@ -11,35 +10,35 @@ import {
 interface ExpandableSectionProps {
   title: string;
   icon: React.ReactNode;
-  defaultExpanded?: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
   children: React.ReactNode;
 }
 
 export const ExpandableSection = ({
   title,
   icon,
-  defaultExpanded = false,
+  isOpen,
+  onToggle,
   children,
 }: ExpandableSectionProps) => {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-
   return (
     <SidebarGroup>
       <SidebarGroupLabel
         className="flex items-center gap-2 justify-between cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={onToggle}
       >
         <span className="flex items-center gap-2">
           {icon}
           <span>{title}</span>
         </span>
-        {isExpanded ? (
+        {isOpen ? (
           <ChevronDown className="h-4 w-4" />
         ) : (
           <ChevronRight className="h-4 w-4" />
         )}
       </SidebarGroupLabel>
-      {isExpanded && <SidebarGroupContent>{children}</SidebarGroupContent>}
+      {isOpen && <SidebarGroupContent>{children}</SidebarGroupContent>}
     </SidebarGroup>
   );
 };

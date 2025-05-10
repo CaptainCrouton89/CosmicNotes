@@ -344,6 +344,7 @@ export type Database = {
           created_at: string
           id: number
           merge_tag_prompt: string | null
+          pinned_categories: Json
           tag_prompt: string | null
           updated_at: string
         }
@@ -354,6 +355,7 @@ export type Database = {
           created_at?: string
           id?: number
           merge_tag_prompt?: string | null
+          pinned_categories?: Json
           tag_prompt?: string | null
           updated_at?: string
         }
@@ -364,6 +366,7 @@ export type Database = {
           created_at?: string
           id?: number
           merge_tag_prompt?: string | null
+          pinned_categories?: Json
           tag_prompt?: string | null
           updated_at?: string
         }
@@ -743,8 +746,12 @@ export type Database = {
     }
     Functions: {
       binary_quantize: {
-        Args: { "": unknown } | { "": string }
+        Args: { "": string } | { "": unknown }
         Returns: unknown
+      }
+      get_cluster_with_relations: {
+        Args: { cluster_id: number }
+        Returns: Json
       }
       get_page_parents: {
         Args: { page_id: number }
@@ -770,6 +777,10 @@ export type Database = {
           user_id: string
           tags: string[]
         }[]
+      }
+      get_tag_with_relations: {
+        Args: { tag_id: number }
+        Returns: Json
       }
       halfvec_avg: {
         Args: { "": number[] }
@@ -820,7 +831,7 @@ export type Database = {
         Returns: number
       }
       l2_normalize: {
-        Args: { "": unknown } | { "": unknown } | { "": string }
+        Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: unknown
       }
       match_clusters: {
@@ -871,6 +882,17 @@ export type Database = {
           similarity: number
         }[]
       }
+      search_notes_with_tags: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+          match_count: number
+          filter_category?: string
+          filter_zone?: string
+          filter_tag_ids?: number[]
+        }
+        Returns: Json[]
+      }
       sparsevec_out: {
         Args: { "": unknown }
         Returns: unknown
@@ -888,7 +910,7 @@ export type Database = {
         Returns: string
       }
       vector_dims: {
-        Args: { "": unknown } | { "": string }
+        Args: { "": string } | { "": unknown }
         Returns: number
       }
       vector_norm: {

@@ -442,7 +442,9 @@ export class NoteService {
     if (!existingNote) throw new Error("Note not found");
 
     if (updates.content && updates.content !== existingNote.content) {
-      updates.embedding = await generateEmbedding(updates.content);
+      updates.embedding = await generateEmbedding(
+        updates.content.slice(0, 8608)
+      );
     }
 
     // Get all tags associated with this note

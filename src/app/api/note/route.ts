@@ -49,10 +49,18 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(url.searchParams.get("limit") || "0");
     const category = url.searchParams.get("category") || null;
     const zone = url.searchParams.get("zone") || null;
+    const fetchAll = url.searchParams.get("fetchAll") === "true";
+
+    const { noteService } = await initializeServices();
+
+    if (category && fetchAll) {
+      const notes = await noteService.getNotesByCategory(category as Category);
+      // Return full notes, not simplified, and not paginated
+      return NextResponse.json(notes);
+    }
 
     // Calculate offset based on page and limit
     const offset = (page - 1) * limit;
-    const { noteService } = await initializeServices();
     // Fetch notes and totalCount from the service
     const { notes, totalCount } = await noteService.getNotes(
       offset,
@@ -62,8 +70,8 @@ export async function GET(req: NextRequest) {
     );
 
     // Calculate totalPages and hasMore
-    const totalPages = Math.ceil(totalCount / limit);
-    const hasMore = page < totalPages;
+    const totalPages = limit > 0 ? Math.ceil(totalCount / limit) : 1; // Avoid division by zero if limit is 0
+    const hasMore = limit > 0 ? page < totalPages : false;
 
     const simplifiedNotes = notes.map((note) => {
       return {

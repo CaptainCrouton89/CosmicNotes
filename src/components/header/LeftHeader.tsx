@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 export interface ILeftHeaderProps {
   children: React.ReactNode;
 }
 
-export function LeftHeader(props: ILeftHeaderProps) {
+export const LeftHeader = memo(function LeftHeader(props: ILeftHeaderProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -19,4 +19,4 @@ export function LeftHeader(props: ILeftHeaderProps) {
 
   if (!mounted) return null;
   return <div>{portalContent}</div>;
-}
+});

@@ -13,7 +13,7 @@ interface ChatPanelProps {
   chatRef?: React.Ref<ChatInterfaceHandle>;
 }
 
-export function ChatPanel({
+export const ChatPanel = React.memo(function ChatPanel({
   isVisible,
   endpoint,
   chatId,
@@ -32,4 +32,4 @@ export function ChatPanel({
       />
     </div>
   );
-}
+});

@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 export interface IRightHeaderProps {
   children: React.ReactNode;
 }
 
-export function RightHeader(props: IRightHeaderProps) {
+export const RightHeader = memo(function RightHeader(props: IRightHeaderProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -19,4 +19,4 @@ export function RightHeader(props: IRightHeaderProps) {
 
   if (!mounted) return null;
   return <div>{portalContent}</div>;
-}
+});

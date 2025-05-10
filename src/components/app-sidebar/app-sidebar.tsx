@@ -1,15 +1,14 @@
 "use client";
 
 import {
-  BookOpen,
   ChevronDown,
   ChevronRight,
   Clock,
+  Folder,
   Home,
-  Layers,
   LayoutDashboard,
   MessageCircle,
-  Search,
+  Search as SearchIconLucide,
   Settings,
   Tag,
 } from "lucide-react";
@@ -29,18 +28,46 @@ import {
   SidebarMenuSkeleton,
 } from "@/components/ui/sidebar";
 import { notesApi } from "@/lib/redux/services/notesApi";
+import { useGetSettingsQuery } from "@/lib/redux/services/settingsApi";
 import { tagsApi } from "@/lib/redux/services/tagsApi";
+import { getCategoryOptions } from "@/lib/selector-options";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ExpandableSection } from "./expandable-section";
 import { NotesList } from "./notes-list";
 
 const NOTES_LIMIT = 30; // Define a limit for notes per page
 
+// Create a map for category icons from getCategoryOptions
+const categoryIconMap: Record<string, React.ReactNode> = {};
+getCategoryOptions().forEach((option) => {
+  // Assuming option.icon is the small icon used in the sidebar currently
+  // If you intend to use option.menuIconComponent, adjust accordingly.
+  categoryIconMap[option.value] = option.icon;
+});
+
+// Helper to get appropriate icon for a category
+const getCategoryIcon = (category: string): React.ReactNode => {
+  return (
+    categoryIconMap[category.toLowerCase()] || <Folder className="h-4 w-4" />
+  ); // Fallback to Folder icon
+};
+
 export function AppSidebar() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreNotes, setHasMoreNotes] = useState(true);
+  const [categoryOpenStates, setCategoryOpenStates] = useState<
+    Record<string, boolean>
+  >({});
+  const [showAllTags, setShowAllTags] = useState(false);
 
-  // Notes query - now manages its own page
+  // Fetch user settings
+  const {
+    data: settingsData,
+    isLoading: settingsLoading,
+    error: settingsError,
+  } = useGetSettingsQuery();
+
+  // Notes query for time-based sections
   const {
     data: notesData,
     error: notesError,
@@ -56,24 +83,18 @@ export function AppSidebar() {
     }
   );
 
-  // Update hasMoreNotes based on query response
   useEffect(() => {
     if (notesData?.pagination) {
       setHasMoreNotes(notesData.pagination.hasMore);
     }
   }, [notesData]);
 
-  // Tag Families query
   const {
     data: tagsData,
     error: tagsError,
     isLoading: tagsLoading,
   } = tagsApi.useGetAllTagsQuery();
 
-  // State for showing all tags
-  const [showAllTags, setShowAllTags] = useState(false);
-
-  // Filter tags by date
   const { recentTags, olderTags } = useMemo(() => {
     if (!tagsData) {
       return { recentTags: [], olderTags: [] };
@@ -96,24 +117,14 @@ export function AppSidebar() {
     return { recentTags: recentTagsData, olderTags: olderTagsData };
   }, [tagsData]);
 
-  // Consolidate all fetched notes. notesData.content will now accumulate due to the merge strategy.
   const allNotes = useMemo(() => notesData?.content || [], [notesData]);
 
-  // Filter notes by time periods and category using allNotes
-  const {
-    lastDayNotes,
-    lastWeekNotes,
-    olderNotes,
-    collectionNotes,
-    journalNotes,
-  } = useMemo(() => {
+  const { lastDayNotes, lastWeekNotes, olderNotes } = useMemo(() => {
     if (!allNotes.length) {
       return {
         lastDayNotes: [],
         lastWeekNotes: [],
         olderNotes: [],
-        collectionNotes: [],
-        journalNotes: [],
       };
     }
 
@@ -138,25 +149,13 @@ export function AppSidebar() {
       const noteDate = new Date(note.updated_at);
       return noteDate < oneWeekAgo;
     });
-
-    const collectionNotes = allNotes.filter((note) => {
-      return note.category === "collection";
-    });
-
-    const journalNotes = allNotes.filter((note) => {
-      return note.category === "journal";
-    });
-
     return {
       lastDayNotes,
       lastWeekNotes,
       olderNotes,
-      collectionNotes,
-      journalNotes,
     };
   }, [allNotes]);
 
-  // Intersection Observer for infinite scrolling
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -176,8 +175,24 @@ export function AppSidebar() {
     [notesFetchingMore, notesLoadingInitial, hasMoreNotes]
   );
 
-  // isLoading for display should consider initial load primarily
   const displayLoading = notesLoadingInitial && currentPage === 1;
+
+  const pinnedCategories: string[] = useMemo(() => {
+    if (
+      settingsData?.pinned_categories &&
+      Array.isArray(settingsData.pinned_categories)
+    ) {
+      return settingsData.pinned_categories as string[];
+    }
+    return [];
+  }, [settingsData]);
+
+  const handleTogglePinnedCategory = (categoryName: string) => {
+    setCategoryOpenStates((prev) => ({
+      ...prev,
+      [categoryName]: !prev[categoryName],
+    }));
+  };
 
   return (
     <Sidebar>
@@ -185,7 +200,6 @@ export function AppSidebar() {
         <div className="font-medium">Cosmic Notes</div>
       </SidebarHeader>
       <SidebarContent className="flex flex-col">
-        {/* Wrapper for scrollable content */}
         <div className="flex-grow overflow-y-auto">
           {/* Home navigation */}
           <SidebarGroup>
@@ -210,7 +224,7 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link href="/search">
-                      <Search className="h-4 w-4" />
+                      <SearchIconLucide className="h-4 w-4" />
                       <span>Search</span>
                     </Link>
                   </SidebarMenuButton>
@@ -227,33 +241,39 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {/* Collections Section */}
-          <ExpandableSection
-            title="Collections"
-            icon={<Layers className="h-4 w-4" />}
-          >
-            <NotesList
-              notes={collectionNotes}
-              emptyMessage="No collection notes found"
-              loading={displayLoading}
-              error={notesError}
-              titleFallback="Untitled Collection"
-            />
-          </ExpandableSection>
-
-          {/* Journal Section */}
-          <ExpandableSection
-            title="Journal"
-            icon={<BookOpen className="h-4 w-4" />}
-          >
-            <NotesList
-              notes={journalNotes}
-              emptyMessage="No journal entries found"
-              loading={displayLoading}
-              error={notesError}
-              titleFallback="Untitled Entry"
-            />
-          </ExpandableSection>
+          {/* Pinned Categories Section */}
+          {settingsLoading && (
+            <SidebarGroup>
+              <SidebarGroupLabel>
+                Loading Pinned Categories...
+              </SidebarGroupLabel>
+              <SidebarMenuSkeleton showIcon />
+            </SidebarGroup>
+          )}
+          {!settingsLoading && settingsError && (
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-red-500">
+                Error Pinned Categories
+              </SidebarGroupLabel>
+              <div className="px-4 py-2 text-red-500">
+                Could not load pinned categories.
+              </div>
+            </SidebarGroup>
+          )}
+          {!settingsLoading &&
+            !settingsError &&
+            pinnedCategories.length > 0 && (
+              <>
+                {pinnedCategories.map((categoryName) => (
+                  <PinnedCategorySection
+                    key={categoryName}
+                    categoryName={categoryName}
+                    isOpen={!!categoryOpenStates[categoryName]}
+                    onToggle={() => handleTogglePinnedCategory(categoryName)}
+                  />
+                ))}
+              </>
+            )}
 
           {/* Tags */}
           <SidebarGroup>
@@ -265,7 +285,6 @@ export function AppSidebar() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               {tagsLoading ? (
-                // Loading state
                 <SidebarMenu>
                   {Array.from({ length: 3 }).map((_, index) => (
                     <SidebarMenuItem key={index}>
@@ -436,3 +455,45 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+// New component to render each pinned category section
+interface PinnedCategorySectionProps {
+  categoryName: string;
+  isOpen: boolean;
+  onToggle: () => void;
+}
+
+const PinnedCategorySection = ({
+  categoryName,
+  isOpen,
+  onToggle,
+}: PinnedCategorySectionProps) => {
+  const {
+    data: categoryNotesData,
+    error: categoryNotesError,
+    isLoading: categoryNotesLoading,
+  } = notesApi.useGetNotesByCategoryQuery(categoryName, {
+    skip: !isOpen, // Fetch only when open
+  });
+
+  // Capitalize first letter for display title
+  const displayTitle =
+    categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+
+  return (
+    <ExpandableSection
+      title={displayTitle}
+      icon={getCategoryIcon(categoryName)} // Use helper for icon
+      isOpen={isOpen}
+      onToggle={onToggle}
+    >
+      <NotesList
+        notes={categoryNotesData || []}
+        emptyMessage={`No notes in ${displayTitle}`}
+        loading={categoryNotesLoading}
+        error={categoryNotesError}
+        titleFallback={`Untitled ${displayTitle} Note`}
+      />
+    </ExpandableSection>
+  );
+};
