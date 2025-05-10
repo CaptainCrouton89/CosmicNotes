@@ -1,7 +1,7 @@
 import { ITEM_CATEGORIES } from "@/lib/constants";
 import { ApplicationError, UserError } from "@/lib/errors";
 import { initializeServices } from "@/lib/services";
-import { Item, Note } from "@/types/types";
+import { Category, Item, Note, Zone } from "@/types/types";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
@@ -46,13 +46,20 @@ export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const page = parseInt(url.searchParams.get("page") || "1");
-    const limit = parseInt(url.searchParams.get("limit") || "10");
+    const limit = parseInt(url.searchParams.get("limit") || "0");
+    const category = url.searchParams.get("category") || null;
+    const zone = url.searchParams.get("zone") || null;
 
     // Calculate offset based on page and limit
     const offset = (page - 1) * limit;
     const { noteService } = await initializeServices();
     // Fetch notes and totalCount from the service
-    const { notes, totalCount } = await noteService.getNotes(offset, limit);
+    const { notes, totalCount } = await noteService.getNotes(
+      offset,
+      limit,
+      category as Category,
+      zone as Zone
+    );
 
     // Calculate totalPages and hasMore
     const totalPages = Math.ceil(totalCount / limit);

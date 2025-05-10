@@ -164,16 +164,30 @@ export class NoteService {
 
   async getNotes(
     offset: number,
-    limit: number
+    limit: number,
+    category?: Category,
+    zone?: Zone
   ): Promise<{ notes: Note[]; totalCount: number }> {
-    const { data, error, count } = await this.supabase
-      .from("cosmic_memory")
-      .select(
-        "*, cosmic_memory_tag_map(tag, created_at, tag(id, name, parent_tag))",
-        { count: "exact" } // Request total count
-      )
-      .order("updated_at", { ascending: false, nullsFirst: false })
-      .range(offset, offset + limit - 1);
+    let query = this.supabase.from("cosmic_memory").select(
+      "*, cosmic_memory_tag_map(tag, created_at, tag(id, name, parent_tag))",
+      { count: "exact" } // Request total count
+    );
+
+    if (category) {
+      query = query.eq("category", category);
+    }
+
+    if (zone) {
+      query = query.eq("zone", zone);
+    }
+
+    query = query.order("updated_at", { ascending: false, nullsFirst: false });
+
+    if (limit > 0) {
+      query = query.range(offset, offset + limit - 1);
+    }
+
+    const { data, error, count } = await query;
 
     if (error) throw error;
 
