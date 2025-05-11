@@ -31,6 +31,8 @@ import { notesApi } from "@/lib/redux/services/notesApi";
 import { useGetSettingsQuery } from "@/lib/redux/services/settingsApi";
 import { tagsApi } from "@/lib/redux/services/tagsApi";
 import { getCategoryOptions } from "@/lib/selector-options";
+import { createClient } from "@/lib/supabase/client";
+import { User } from "@supabase/supabase-js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ExpandableSection } from "./expandable-section";
 import { NotesList } from "./notes-list";
@@ -60,12 +62,25 @@ export function AppSidebar() {
   >({});
   const [showAllTags, setShowAllTags] = useState(false);
 
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+  }, []);
+
   // Fetch user settings
   const {
     data: settingsData,
     isLoading: settingsLoading,
     error: settingsError,
-  } = useGetSettingsQuery();
+  } = useGetSettingsQuery(undefined, { skip: !user });
 
   // Notes query for time-based sections
   const {

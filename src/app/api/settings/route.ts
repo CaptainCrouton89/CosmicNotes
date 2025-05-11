@@ -1,5 +1,6 @@
 import { ApplicationError, UserError } from "@/lib/errors";
 import { initializeServices } from "@/lib/services";
+import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
@@ -9,6 +10,16 @@ export async function GET() {
   try {
     // Initialize services
     const { settingsService } = await initializeServices();
+
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new UserError("User not found");
+    }
 
     // Get settings using the service
     const settings = await settingsService.getSettings();
