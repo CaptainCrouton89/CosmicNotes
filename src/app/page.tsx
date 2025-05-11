@@ -1,4 +1,6 @@
 "use client";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
 import { ToolbarHeader } from "@/components/editor/ToolbarHeader";
@@ -15,14 +17,14 @@ import { CATEGORIES, Category, Zone } from "@/types/types";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 import { SaveIcon } from "lucide-react";
-import { Suspense, use, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { CategorySelector } from "./note/[id]/_components/CategorySelector";
 import { ZoneSelector } from "./note/[id]/_components/ZoneSelector";
-// Component that uses useSearchParams
+
 function HomeContent({
-  searchParams,
+  initialSearchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  initialSearchParams: { [key: string]: string | string[] | undefined };
 }) {
   const [note, setNote] = useState("");
   const [category, setCategory] = useState<Category | undefined>(undefined);
@@ -45,15 +47,13 @@ function HomeContent({
   const [categoryForDialog, setCategoryForDialog] = useState<
     Category | undefined
   >(undefined);
-  const resolvedSearchParams = use(searchParams);
 
-  // Get category from URL if present
   useEffect(() => {
-    const categoryParam = resolvedSearchParams.category;
+    const categoryParam = initialSearchParams.category;
     if (categoryParam && CATEGORIES.includes(categoryParam as Category)) {
       setCategory(categoryParam as Category);
     }
-  }, [resolvedSearchParams]);
+  }, [initialSearchParams]);
 
   const handleEditorChange = useCallback((markdown: string) => {
     setNote(markdown);
@@ -87,7 +87,6 @@ function HomeContent({
           note: { tags: tagsToSave, zone: finalZone, category: finalCategory },
         }).unwrap();
 
-        // Clear editor and reset state comprehensively
         setNote("");
         setCategory(undefined);
         setZone(undefined);
@@ -120,18 +119,14 @@ function HomeContent({
     if (!note.trim()) return;
 
     try {
-      // Get the latest content from the editor
       const currentContent = editorRef.current?.getMarkdown() || note;
-
-      // Create the note with category if specified
       const createNotePromise = createNote({
         content: currentContent,
-        category: category as Category, // Only include if set
+        category: category as Category,
         zone: zone as Zone,
       }).unwrap();
 
       if (category === "scratchpad") {
-        // For scratchpad notes, just clear the editor
         setNote("");
         setCategory(undefined);
         setZone(undefined);
@@ -142,11 +137,10 @@ function HomeContent({
       }
 
       const suggestedTagsPromise = suggestTags(currentContent).unwrap();
-
       const newNote = await createNotePromise;
       setCreatedNoteId(newNote.id);
+
       if (newNote.category === "scratchpad") {
-        // For scratchpad notes, just clear the editor
         setNote("");
         if (editorRef.current) {
           editorRef.current.setMarkdown("");
@@ -156,10 +150,8 @@ function HomeContent({
       setZoneForDialog(newNote.zone);
       setCategoryForDialog(newNote.category);
 
-      // Get tag suggestions using Redux API
       try {
         const tags = await suggestedTagsPromise;
-        // Convert to TagSuggestion format and pre-select tags with high confidence
         const suggestions: TagSuggestionWithSelected[] = tags.map((tag) => ({
           name: tag.name,
           confidence: tag.confidence,
@@ -171,11 +163,9 @@ function HomeContent({
       } catch (err) {
         console.error("Error getting tag suggestions:", err);
         setError("Failed to get tag suggestions");
-
-        // Clear the editor even if tag suggestions fail
         setNote("");
-        setCategory("scratchpad"); // Reset category too
-        setZone(undefined); // Reset zone too
+        setCategory("scratchpad");
+        setZone(undefined);
         setCategoryForDialog(undefined);
         if (editorRef.current) {
           editorRef.current.setMarkdown("");
@@ -202,13 +192,6 @@ function HomeContent({
       <LeftHeader>
         <h1 className="font-bold">Cosmic Notes</h1>
       </LeftHeader>
-      {/* <RightHeader>
-        <Button onClick={() => handleCreateNote()} size="sm">
-          <Plus className="mr-1 h-3.5 w-3.5" />
-          New Note
-        </Button>
-      </RightHeader> */}
-
       <ToolbarHeader />
       <div className="w-full flex-1 min-h-0 cursor-text" onClick={focusEditor}>
         <ForwardRefEditor
@@ -241,7 +224,6 @@ function HomeContent({
         </div>
       </RightHeader>
 
-      {/* Tag selection dialog */}
       <TagSelectionDialog
         open={showTagDialog}
         onOpenChange={setShowTagDialog}
@@ -257,15 +239,24 @@ function HomeContent({
   );
 }
 
-// Wrap the HomeContent in a Suspense boundary
-export default function Home({
+export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: { [key: string]: string | string[] | undefined };
 }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    redirect("/login");
+  }
+
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <HomeContent searchParams={searchParams} />
+      <HomeContent initialSearchParams={searchParams} />
     </Suspense>
   );
 }

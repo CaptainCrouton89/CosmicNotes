@@ -1,0 +1,60 @@
+1.  **Verify/Set Up Supabase Configuration & Client Utilities:**
+    *   Ensure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are present and correctly configured in `.env.local`.
+    *   Create Supabase client utility files if they don't exist, following the patterns in the provided documentation (e.g., `next-docs-2.md`):
+        *   `src/lib/supabase/client.ts` (for browser client)
+        *   `src/lib/supabase/server.ts` (for server components, actions, route handlers)
+        *   `src/lib/supabase/middleware.ts` (for auth token refresh logic to be used in `middleware.ts`)
+
+2.  **Create Login Page and Authentication Actions:**
+    *   Create a new route `src/app/login/page.tsx`. This page will contain a form for email and password.
+    *   Create `src/app/login/actions.ts` to handle `login` and `signup` server actions using the Supabase server client. These actions will interact with `supabase.auth.signInWithPassword()` and `supabase.auth.signUp()`.
+
+3.  **Implement Middleware for Session Management:**
+    *   Create or update `middleware.ts` at the root of the project (or `src/middleware.ts`).
+    *   This middleware will use the `updateSession` function (from `src/lib/supabase/middleware.ts` or directly from `@supabase/ssr`) to refresh authentication tokens on each request.
+    *   Configure the `matcher` in `middleware.ts` to exclude static assets and API routes that shouldn't be processed by the auth middleware, while including pages that require auth state.
+
+4.  **Implement Auth Confirmation Route:**
+    *   Create `src/app/auth/confirm/route.ts` to handle email confirmation links.
+    *   This route will use `supabase.auth.verifyOtp()` to exchange the token from the confirmation link for a user session and then redirect the user appropriately (e.g., to the homepage or their dashboard).
+
+5.  **Protect the Root Route (`/`):**
+    *   Modify the main page component (likely `src/app/page.tsx`) to be an `async` component.
+    *   Inside this component, use the Supabase server client (`createClient()` from `src/lib/supabase/server.ts`) to call `supabase.auth.getUser()`.
+    *   If `error` occurs or `!data.user` is true, redirect the user to the `/login` page using `next/navigation`'s `redirect` function.
+
+6.  **Implement Row Level Security (RLS):**
+    *   **Identify Target Tables:** Based on `src/types/database.types.ts`, identify tables that store user-specific data and require RLS. Key candidates include:
+        *   `cosmic_memory`
+        *   `cosmic_collection_item`
+        *   `cosmic_cluster`
+        *   `cosmic_tags` (if tags are user-specific)
+        *   `cosmic_user_settings`
+        *   `conversation_history`
+        *   `tasks`
+    *   **Add `user_id` Column (if missing):** For each target table that doesn't have a `user_id` column (or an equivalent linking to `auth.users`), add one. This column should typically be `UUID` and have a foreign key constraint to `auth.users(id)`.
+        *   Example DDL: `ALTER TABLE public.cosmic_memory ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;`
+        *   For `cosmic_user_settings`, `user_id` should likely be unique and the primary link to `auth.users.id`.
+    *   **Enable RLS on Tables:** For each target table, enable RLS:
+        *   Example DDL: `ALTER TABLE public.cosmic_memory ENABLE ROW LEVEL SECURITY;`
+    *   **Create RLS Policies:** For each table, define policies for `SELECT`, `INSERT`, `UPDATE`, and `DELETE` operations. Policies will typically check `auth.uid() = user_id`.
+        *   **SELECT:** `CREATE POLICY "Users can select their own data" ON public.cosmic_memory FOR SELECT USING (auth.uid() = user_id);`
+        *   **INSERT:** `CREATE POLICY "Users can insert their own data" ON public.cosmic_memory FOR INSERT WITH CHECK (auth.uid() = user_id);`
+        *   **UPDATE:** `CREATE POLICY "Users can update their own data" ON public.cosmic_memory FOR UPDATE USING (auth.uid() = user_id);`
+        *   **DELETE:** `CREATE POLICY "Users can delete their own data" ON public.cosmic_memory FOR DELETE USING (auth.uid() = user_id);`
+    *   **Public Data:** If any tables (or parts of tables) need to be publicly readable (e.g., shared templates, public profiles), create separate, more permissive policies (e.g., `FOR SELECT TO anon USING (is_public = true)`).
+    *   **Apply SQL:** These SQL statements should be saved in a migration file (e.g., `supabase/migrations/<timestamp>_setup_rls.sql`) and applied using the Supabase CLI, or run directly in the Supabase SQL Editor.
+
+7.  **Update Supabase Auth Settings:**
+    *   In the Supabase Dashboard, navigate to Authentication -> URL Configuration. Ensure the "Site URL" is correct.
+    *   If email confirmation is enabled, update the "Confirm signup" email template to use the correct redirect URL: `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/` (or another desired redirect path).
+
+8.  **Testing:**
+    *   Test signup flow, including email confirmation.
+    *   Test login and logout.
+    *   Verify that unauthenticated users are redirected from protected routes.
+    *   Verify that authenticated users can access protected routes and their own data.
+    *   Verify that users cannot access data belonging to other users.
+    *   Test error handling for auth operations.
+
+This plan covers the main aspects of setting up authentication and RLS. Each step will involve creating or modifying files and writing SQL for RLS policies. 

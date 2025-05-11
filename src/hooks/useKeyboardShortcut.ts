@@ -26,7 +26,7 @@ export function useKeyboardShortcut(shortcuts: KeyShortcut[]) {
       for (const shortcut of shortcuts) {
         const { combo, callback, condition = true } = shortcut;
         // If condition is false, skip this shortcut
-        if (!condition) continue;
+        if (!condition || !e.key) continue;
 
         // Check if the key combo matches
         const keyMatches = e.key.toLowerCase() === combo.key.toLowerCase();
