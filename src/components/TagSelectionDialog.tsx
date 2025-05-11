@@ -1,3 +1,5 @@
+import { CategorySelector } from "@/app/note/[id]/_components/CategorySelector";
+import { ZoneSelector } from "@/app/note/[id]/_components/ZoneSelector";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,9 +12,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { TagSuggestion } from "@/types/types";
+import { Category, TagSuggestion, Zone } from "@/types/types";
 import { Loader2, Plus } from "lucide-react";
-import { KeyboardEvent, useCallback, useState } from "react";
+import { KeyboardEvent, useCallback, useEffect, useState } from "react";
 
 export interface TagSuggestionWithSelected extends TagSuggestion {
   selected: boolean;
@@ -23,13 +25,18 @@ interface TagSelectionDialogProps {
   onOpenChange: (open: boolean) => void;
   suggestedTags: TagSuggestionWithSelected[];
   onToggleTagSelection: (index: number) => void;
-  onSaveTags: () => Promise<void>;
-  onSkipTags?: () => void;
+  onSave: (
+    selectedTags: TagSuggestionWithSelected[],
+    selectedZone: Zone | undefined,
+    selectedCategory: Category | undefined
+  ) => Promise<void>;
   isSaving: boolean;
   isLoading?: boolean;
   title?: string;
   description?: string;
   onAddCustomTag?: (tag: string) => void;
+  initialZone?: Zone;
+  initialCategory?: Category;
 }
 
 export function TagSelectionDialog({
@@ -37,29 +44,46 @@ export function TagSelectionDialog({
   onOpenChange,
   suggestedTags,
   onToggleTagSelection,
-  onSaveTags,
-  onSkipTags,
+  onSave,
   isSaving,
   isLoading = false,
-  title = "Select Tags",
-  description = "Select tags for your note. Tags with high confidence are pre-selected.",
+  title = "Confirm Note Details",
+  description = "Select tags, zone, and category for your note. Items with high confidence are pre-selected.",
   onAddCustomTag,
+  initialZone,
+  initialCategory,
 }: TagSelectionDialogProps) {
   const [customTagInput, setCustomTagInput] = useState("");
+  const [currentZone, setCurrentZone] = useState<Zone | undefined>(initialZone);
+  const [currentCategory, setCurrentCategory] = useState<Category | undefined>(
+    initialCategory
+  );
 
-  // Handle dialog close events
+  useEffect(() => {
+    if (open) {
+      setCurrentZone(initialZone);
+      setCurrentCategory(initialCategory);
+    }
+  }, [open, initialZone, initialCategory]);
+
   const handleOpenChange = useCallback(
     (newOpenState: boolean) => {
-      // If dialog is being closed and we have a skip handler
-      if (!newOpenState && open && onSkipTags) {
-        onSkipTags();
+      if (!newOpenState && open && !isSaving) {
+        onSave(suggestedTags, currentZone, currentCategory);
       }
       onOpenChange(newOpenState);
     },
-    [open, onSkipTags, onOpenChange]
+    [
+      open,
+      onOpenChange,
+      isSaving,
+      onSave,
+      suggestedTags,
+      currentZone,
+      currentCategory,
+    ]
   );
 
-  // Handle adding a custom tag
   const handleAddCustomTag = useCallback(() => {
     if (customTagInput.trim() && onAddCustomTag) {
       onAddCustomTag(customTagInput.trim());
@@ -67,7 +91,6 @@ export function TagSelectionDialog({
     }
   }, [customTagInput, onAddCustomTag]);
 
-  // Handle pressing Enter in the custom tag input
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter") {
@@ -77,15 +100,14 @@ export function TagSelectionDialog({
     [handleAddCustomTag]
   );
 
-  // Handle Command+Enter to save tags
   const handleDialogKeyDown = useCallback(
     (e: KeyboardEvent<HTMLDivElement>) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !isSaving) {
         e.preventDefault();
-        onSaveTags();
+        onSave(suggestedTags, currentZone, currentCategory);
       }
     },
-    [isSaving, onSaveTags]
+    [isSaving, onSave, suggestedTags, currentZone, currentCategory]
   );
 
   return (
@@ -96,7 +118,6 @@ export function TagSelectionDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        {/* Custom tag input field */}
         {onAddCustomTag && (
           <div className="flex items-center gap-2 pt-4">
             <Input
@@ -128,9 +149,9 @@ export function TagSelectionDialog({
             </div>
           ) : (
             <div className="space-y-4 max-h-[300px] overflow-y-auto">
-              {suggestedTags.length === 0 ? (
+              {suggestedTags.length === 0 && !onAddCustomTag ? (
                 <p className="text-center py-4 text-muted-foreground">
-                  No tag suggestions found.
+                  No tag suggestions found. Add a custom tag or skip.
                 </p>
               ) : (
                 suggestedTags.map((tag, index) => (
@@ -157,18 +178,52 @@ export function TagSelectionDialog({
             </div>
           )}
         </div>
-        <DialogFooter
-          className={`flex ${
-            onSkipTags ? "justify-between sm:justify-between" : ""
-          }`}
-        >
-          {onSkipTags && (
-            <Button variant="ghost" onClick={onSkipTags} disabled={isLoading}>
-              Skip Tags
-            </Button>
-          )}
-          <Button onClick={onSaveTags} disabled={isSaving || isLoading}>
-            {isSaving ? "Saving Tags..." : "Save Tags"}
+
+        {/* Zone and Category Selectors - Side-by-side with styled labels and a vertical divider */}
+        <div className="flex gap-4 pb-4 items-stretch">
+          {" "}
+          {/* Main flex container, added items-stretch */}
+          <div className="flex-1">
+            {" "}
+            {/* Zone Column */}
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+              Zone
+            </p>
+            <ZoneSelector
+              zone={currentZone}
+              updating={isSaving}
+              onUpdateZone={setCurrentZone}
+              allowNull={true}
+            />
+          </div>
+          {/* Vertical Divider */}
+          <div className="w-px bg-gray-200 dark:bg-gray-700 self-stretch"></div>
+          <div className="flex-1">
+            {" "}
+            {/* Category Column */}
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+              Category
+            </p>
+            <CategorySelector
+              category={currentCategory}
+              updating={isSaving}
+              onUpdateCategory={setCurrentCategory}
+              allowNull={true}
+            />
+          </div>
+        </div>
+
+        <DialogFooter className={`flex`}>
+          <Button
+            onClick={() => {
+              if (!isSaving) {
+                onSave(suggestedTags, currentZone, currentCategory);
+              }
+            }}
+            disabled={isSaving || isLoading}
+            className="w-full"
+          >
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -39,6 +39,12 @@ function HomeContent({
   const [createdNoteId, setCreatedNoteId] = useState<number | null>(null);
   const [savingTags, setSavingTags] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [zoneForDialog, setZoneForDialog] = useState<Zone | undefined>(
+    undefined
+  );
+  const [categoryForDialog, setCategoryForDialog] = useState<
+    Category | undefined
+  >(undefined);
   const resolvedSearchParams = use(searchParams);
 
   // Get category from URL if present
@@ -61,47 +67,47 @@ function HomeContent({
     );
   }, []);
 
-  const saveSelectedTags = useCallback(async () => {
-    if (!createdNoteId) return;
+  const handleConfirmAndSaveNoteDetails = useCallback(
+    async (
+      finalSuggestedTags: TagSuggestionWithSelected[],
+      finalZone: Zone | undefined,
+      finalCategory: Category | undefined
+    ) => {
+      if (!createdNoteId) return;
 
-    try {
-      setSavingTags(true);
+      try {
+        setSavingTags(true);
 
-      // Filter selected tags and prepare them for saving
-      const tagsToSave = suggestedTags
-        .filter((tag) => tag.selected)
-        .map((tag) => tag.name);
+        const tagsToSave = finalSuggestedTags
+          .filter((tag) => tag.selected)
+          .map((tag) => tag.name);
 
-      // Update the note with selected tags
-      await updateNote({
-        id: createdNoteId,
-        note: { tags: tagsToSave },
-      }).unwrap();
+        await updateNote({
+          id: createdNoteId,
+          note: { tags: tagsToSave, zone: finalZone, category: finalCategory },
+        }).unwrap();
 
-      // Clear editor and reset state
-      setNote("");
-      setCategory("scratchpad");
-      setShowTagDialog(false);
-      if (editorRef.current) {
-        editorRef.current.setMarkdown("");
+        // Clear editor and reset state comprehensively
+        setNote("");
+        setCategory(undefined);
+        setZone(undefined);
+        setZoneForDialog(undefined);
+        setCategoryForDialog(undefined);
+        setShowTagDialog(false);
+        setCreatedNoteId(null);
+        setSuggestedTags([]);
+        if (editorRef.current) {
+          editorRef.current.setMarkdown("");
+        }
+      } catch (err) {
+        console.error("Error saving note details:", err);
+        setError("Failed to save note details");
+      } finally {
+        setSavingTags(false);
       }
-    } catch (err) {
-      console.error("Error saving tags:", err);
-      setError("Failed to save tags");
-    } finally {
-      setSavingTags(false);
-    }
-  }, [createdNoteId, suggestedTags, updateNote]);
-
-  const skipTags = useCallback(() => {
-    // Clear editor and reset state without saving tags
-    setNote("");
-    setCategory("scratchpad");
-    setShowTagDialog(false);
-    if (editorRef.current) {
-      editorRef.current.setMarkdown("");
-    }
-  }, []);
+    },
+    [createdNoteId, updateNote, setCategory, setZone]
+  );
 
   const addCustomTag = useCallback((tag: string) => {
     setSuggestedTags((prev) => [
@@ -147,6 +153,9 @@ function HomeContent({
         }
         return;
       }
+      setZoneForDialog(newNote.zone);
+      setCategoryForDialog(newNote.category);
+
       // Get tag suggestions using Redux API
       try {
         const tags = await suggestedTagsPromise;
@@ -166,6 +175,8 @@ function HomeContent({
         // Clear the editor even if tag suggestions fail
         setNote("");
         setCategory("scratchpad"); // Reset category too
+        setZone(undefined); // Reset zone too
+        setCategoryForDialog(undefined);
         if (editorRef.current) {
           editorRef.current.setMarkdown("");
         }
@@ -236,10 +247,11 @@ function HomeContent({
         onOpenChange={setShowTagDialog}
         suggestedTags={suggestedTags}
         onToggleTagSelection={toggleTagSelection}
-        onSaveTags={saveSelectedTags}
-        onSkipTags={skipTags}
+        onSave={handleConfirmAndSaveNoteDetails}
         isSaving={savingTags}
         onAddCustomTag={addCustomTag}
+        initialZone={zoneForDialog}
+        initialCategory={categoryForDialog}
       />
     </>
   );
