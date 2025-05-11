@@ -9,20 +9,30 @@ export async function login(formData: FormData) {
   const password = formData.get("password") as string;
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { error, data } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) {
-    console.error("Login error:", error.message);
-    // You might want to redirect to the login page with an error message
-    // For now, just redirecting to login, a more robust error handling can be added.
     return redirect("/login?error=" + encodeURIComponent(error.message));
   }
 
-  // Redirect to a protected page or dashboard after successful login
-  return redirect("/");
+  console.log("Login action - signInWithPassword successful.");
+  console.log(
+    "Login action - Data from signInWithPassword:",
+    JSON.stringify(data, null, 2)
+  );
+
+  if (data?.user && data?.session) {
+    return redirect("/");
+  } else if (data?.user && !data?.session) {
+    return redirect(
+      "/login?error=Login_succeeded_but_session_was_not_established"
+    );
+  } else {
+    return redirect("/login?error=Login_failed_for_an_unknown_reason");
+  }
 }
 
 export async function signup(formData: FormData) {

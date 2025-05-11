@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login, signup } from "./actions";
 
-export default function LoginPage() {
+export default async function LoginPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <div className="p-8 bg-white shadow-md rounded-lg w-full max-w-md">
