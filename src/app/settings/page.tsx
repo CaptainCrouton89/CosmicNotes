@@ -1,5 +1,6 @@
 "use client";
 
+import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -355,6 +356,22 @@ export default function SettingsPage() {
                 </Button>
               </form>
             </Form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Account Actions</CardTitle>
+            <CardDescription>
+              Manage your account settings and actions.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form action={logout}>
+              <Button type="submit" variant="destructive">
+                Logout
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>

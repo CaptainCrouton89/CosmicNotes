@@ -61,3 +61,17 @@ export async function signup(formData: FormData) {
   // For now, redirecting to login page with a success message (or a specific pending confirmation page)
   return redirect("/login?message=Check_email_to_continue_signing_up");
 }
+
+export async function logout() {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error("Logout error:", error.message);
+    // Redirect to settings page with an error message if logout fails
+    // Or handle it differently, e.g., redirect to home with error
+    return redirect("/settings?error=" + encodeURIComponent(error.message));
+  }
+
+  return redirect("/login?message=Successfully_logged_out");
+}
