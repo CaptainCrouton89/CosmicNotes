@@ -7,8 +7,9 @@ import { Suspense } from "react";
 export default async function Page({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const search = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -21,7 +22,7 @@ export default async function Page({
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <HomeContent initialSearchParams={searchParams} />
+      <HomeContent initialSearchParams={search} />
     </Suspense>
   );
 }
