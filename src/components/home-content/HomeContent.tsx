@@ -19,6 +19,8 @@ import "@mdxeditor/editor/style.css";
 import { SaveIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const LOCAL_STORAGE_KEY = "homeContent_draft";
+
 export default function HomeContent({
   initialSearchParams,
 }: {
@@ -45,6 +47,31 @@ export default function HomeContent({
   const [categoryForDialog, setCategoryForDialog] = useState<
     Category | undefined
   >(undefined);
+
+  // Load draft from local storage on component mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (savedDraft && !note) {
+      setNote(savedDraft);
+      if (editorRef.current) {
+        editorRef.current.setMarkdown(savedDraft);
+      }
+    }
+  }, []);
+
+  // Auto-save to local storage whenever note content changes
+  useEffect(() => {
+    if (note.trim()) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, note);
+    } else {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+  }, [note]);
+
+  // Clear local storage when note is successfully saved
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+  }, []);
 
   useEffect(() => {
     const categoryParam = initialSearchParams.category;
@@ -85,6 +112,8 @@ export default function HomeContent({
           note: { tags: tagsToSave, zone: finalZone, category: finalCategory },
         }).unwrap();
 
+        // Clear draft and reset form after successful save
+        clearDraft();
         setNote("");
         setCategory(undefined);
         setZone(undefined);
@@ -103,7 +132,7 @@ export default function HomeContent({
         setSavingTags(false);
       }
     },
-    [createdNoteId, updateNote, setCategory, setZone]
+    [createdNoteId, updateNote, setCategory, setZone, clearDraft]
   );
 
   const addCustomTag = useCallback((tag: string) => {
@@ -125,6 +154,8 @@ export default function HomeContent({
       }).unwrap();
 
       if (category === "scratchpad") {
+        // Clear draft and reset form for scratchpad saves
+        clearDraft();
         setNote("");
         setCategory(undefined);
         setZone(undefined);
@@ -139,6 +170,8 @@ export default function HomeContent({
       setCreatedNoteId(newNote.id);
 
       if (newNote.category === "scratchpad") {
+        // Clear draft and reset form for scratchpad saves
+        clearDraft();
         setNote("");
         if (editorRef.current) {
           editorRef.current.setMarkdown("");
@@ -161,6 +194,8 @@ export default function HomeContent({
       } catch (err) {
         console.error("Error getting tag suggestions:", err);
         setError("Failed to get tag suggestions");
+        // Clear draft and reset form on error
+        clearDraft();
         setNote("");
         setCategory("scratchpad");
         setZone(undefined);
