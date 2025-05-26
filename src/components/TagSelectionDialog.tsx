@@ -1,5 +1,5 @@
-import { CategorySelector } from "@/app/note/[id]/_components/CategorySelector";
-import { ZoneSelector } from "@/app/note/[id]/_components/ZoneSelector";
+import { CategorySelector } from "@/app/(app)/note/[id]/_components/CategorySelector";
+import { ZoneSelector } from "@/app/(app)/note/[id]/_components/ZoneSelector";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";

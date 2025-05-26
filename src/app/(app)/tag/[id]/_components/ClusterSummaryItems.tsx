@@ -1,8 +1,8 @@
 // This file is no longer used.
 // Use SimilarItemsList.tsx instead.
 
-import { ItemList } from "@/app/note/[id]/_components/ItemList";
-import { useClusterItems } from "@/app/tag/hooks/useClusterItems";
+import { ItemList } from "../../../note/[id]/_components/ItemList";
+import { useClusterItems } from "../../hooks/useClusterItems";
 import { Cluster } from "@/types/types";
 import { Loader2 } from "lucide-react";
 interface ClusterSummaryItemsProps {

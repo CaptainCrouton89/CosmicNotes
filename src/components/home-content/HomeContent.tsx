@@ -1,7 +1,7 @@
 "use client";
 
-import { CategorySelector } from "@/app/note/[id]/_components/CategorySelector";
-import { ZoneSelector } from "@/app/note/[id]/_components/ZoneSelector";
+import { ZoneSelector } from "@/app/(app)/note/[id]/_components";
+import { CategorySelector } from "@/app/(app)/note/[id]/_components/CategorySelector";
 import { ForwardRefEditor } from "@/components/editor/ForwardRefEditor";
 import { ToolbarHeader } from "@/components/editor/ToolbarHeader";
 import { LeftHeader } from "@/components/header/LeftHeader";

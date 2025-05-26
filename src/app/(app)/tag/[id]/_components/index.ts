@@ -1,4 +1,4 @@
-export { ChatPanel } from "../../../../components/ChatPanel";
+export { ChatPanel } from "@/components/ChatPanel";
 export { ChatButtons } from "./ChatButtons";
 export { ClusterSummaryItems } from "./ClusterSummaryItems";
 export { GenerateClusterButton } from "./GenerateClusterButton";
