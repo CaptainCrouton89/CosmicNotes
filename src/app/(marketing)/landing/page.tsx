@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import Image from "next/image";
 import { 
   BrainIcon, 
   SearchIcon, 
@@ -19,7 +20,13 @@ export default function LandingPage() {
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <SparklesIcon className="w-8 h-8 text-blue-600" />
+            <Image 
+              src="/icon-template.svg" 
+              alt="Cosmic Notes" 
+              width={48} 
+              height={48} 
+              className="w-12 h-12"
+            />
             <h1 className="text-2xl font-bold text-gray-900">Cosmic Notes</h1>
           </div>
           <div className="flex items-center gap-4">
