@@ -14,7 +14,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Category, TagSuggestion, Zone } from "@/types/types";
 import { Loader2, Plus } from "lucide-react";
-import { KeyboardEvent, useCallback, useEffect, useState } from "react";
+import { KeyboardEvent, useCallback, useEffect, useState, useRef } from "react";
+import { tagsApi } from "@/lib/redux/services/tagsApi";
 
 export interface TagSuggestionWithSelected extends TagSuggestion {
   selected: boolean;
@@ -58,6 +59,23 @@ export function TagSelectionDialog({
   const [currentCategory, setCurrentCategory] = useState<Category | undefined>(
     initialCategory
   );
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  
+  const { data: allTags = [] } = tagsApi.useGetAllTagsQuery();
+  
+  // Filter for autocomplete suggestions
+  const autocompleteSuggestions = allTags
+    .filter(tag => {
+      const matchesInput = tag.name.toLowerCase().includes(customTagInput.toLowerCase());
+      const notAlreadySuggested = !suggestedTags.some(
+        suggestedTag => suggestedTag.name.toLowerCase() === tag.name.toLowerCase()
+      );
+      return matchesInput && notAlreadySuggested;
+    })
+    .slice(0, 8);
 
   useEffect(() => {
     if (open) {
@@ -65,6 +83,25 @@ export function TagSelectionDialog({
       setCurrentCategory(initialCategory);
     }
   }, [open, initialZone, initialCategory]);
+  
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [open]);
 
   const handleOpenChange = useCallback(
     (newOpenState: boolean) => {
@@ -88,16 +125,45 @@ export function TagSelectionDialog({
     if (customTagInput.trim() && onAddCustomTag) {
       onAddCustomTag(customTagInput.trim());
       setCustomTagInput("");
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(0);
     }
   }, [customTagInput, onAddCustomTag]);
+  
+  const handleSelectAutocompleteSuggestion = useCallback((tagName: string) => {
+    if (onAddCustomTag) {
+      onAddCustomTag(tagName);
+      setCustomTagInput("");
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(0);
+    }
+  }, [onAddCustomTag]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter") {
-        handleAddCustomTag();
+        e.preventDefault();
+        if (showSuggestions && autocompleteSuggestions.length > 0) {
+          handleSelectAutocompleteSuggestion(
+            autocompleteSuggestions[selectedSuggestionIndex].name
+          );
+        } else {
+          handleAddCustomTag();
+        }
+      } else if (e.key === "ArrowDown" && showSuggestions) {
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => 
+          prev < autocompleteSuggestions.length - 1 ? prev + 1 : prev
+        );
+      } else if (e.key === "ArrowUp" && showSuggestions) {
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : 0);
+      } else if (e.key === "Escape") {
+        setShowSuggestions(false);
       }
     },
-    [handleAddCustomTag]
+    [handleAddCustomTag, handleSelectAutocompleteSuggestion, showSuggestions, 
+     autocompleteSuggestions, selectedSuggestionIndex]
   );
 
   const handleDialogKeyDown = useCallback(
@@ -119,23 +185,55 @@ export function TagSelectionDialog({
         </DialogHeader>
 
         {onAddCustomTag && (
-          <div className="flex items-center gap-2 pt-4">
-            <Input
-              placeholder="Add custom tag..."
-              value={customTagInput}
-              onChange={(e) => setCustomTagInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1"
-            />
-            <Button
-              size="sm"
-              onClick={handleAddCustomTag}
-              disabled={!customTagInput.trim()}
-              variant="outline"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Add
-            </Button>
+          <div className="relative">
+            <div className="flex items-center gap-2 pt-4">
+              <Input
+                ref={inputRef}
+                placeholder="Add custom tag..."
+                value={customTagInput}
+                onChange={(e) => {
+                  setCustomTagInput(e.target.value);
+                  setShowSuggestions(e.target.value.length > 0);
+                  setSelectedSuggestionIndex(0);
+                }}
+                onFocus={() => setShowSuggestions(customTagInput.length > 0)}
+                onKeyDown={handleKeyDown}
+                className="flex-1"
+                autoComplete="off"
+              />
+              <Button
+                size="sm"
+                onClick={handleAddCustomTag}
+                disabled={!customTagInput.trim()}
+                variant="outline"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+            </div>
+            
+            {showSuggestions && autocompleteSuggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="absolute z-50 mt-1 left-0 right-0 mr-[88px] bg-popover border rounded-md shadow-md overflow-hidden"
+              >
+                {autocompleteSuggestions.map((suggestion, index) => (
+                  <button
+                    key={suggestion.id}
+                    onClick={() => handleSelectAutocompleteSuggestion(suggestion.name)}
+                    className={`w-full px-3 py-2 text-sm text-left hover:bg-accent transition-colors ${
+                      index === selectedSuggestionIndex ? 'bg-accent' : ''
+                    }`}
+                    onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                  >
+                    <div className="font-medium">{suggestion.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {suggestion.note_count} note{suggestion.note_count !== 1 ? 's' : ''}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
