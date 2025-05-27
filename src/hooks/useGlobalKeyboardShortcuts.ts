@@ -1,6 +1,6 @@
 import { useRouter } from "next/navigation";
-import { useKeyboardShortcut } from "./useKeyboardShortcut";
 import { useSearchDialog } from "./use-search-dialog";
+import { useKeyboardShortcut } from "./useKeyboardShortcut";
 
 /**
  * Hook to register global keyboard shortcuts that should be available across the application
@@ -14,6 +14,17 @@ export function useGlobalKeyboardShortcuts() {
     {
       combo: {
         key: "k",
+        metaKey: true, // For macOS
+        ctrlKey: true, // For Windows/Linux
+      },
+      callback: () => {
+        // Navigate to the home page (create new note)
+        router.push("/");
+      },
+    },
+    {
+      combo: {
+        key: "n",
         metaKey: true, // For macOS
         ctrlKey: true, // For Windows/Linux
       },
