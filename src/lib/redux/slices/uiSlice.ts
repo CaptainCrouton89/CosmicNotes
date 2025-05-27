@@ -4,6 +4,7 @@ interface UiState {
   isChatVisible: boolean;
   header: string;
   headerMeta: string;
+  isSearchDialogOpen: boolean;
 }
 
 // Use a fixed initial state for SSR to prevent hydration mismatch
@@ -11,6 +12,7 @@ const initialState: UiState = {
   isChatVisible: false,
   header: "Cosmic Notes",
   headerMeta: "",
+  isSearchDialogOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -29,6 +31,12 @@ const uiSlice = createSlice({
     setHeaderMeta: (state, action: PayloadAction<string>) => {
       state.headerMeta = action.payload;
     },
+    setSearchDialogOpen: (state, action: PayloadAction<boolean>) => {
+      state.isSearchDialogOpen = action.payload;
+    },
+    toggleSearchDialog: (state) => {
+      state.isSearchDialogOpen = !state.isSearchDialogOpen;
+    },
   },
 });
 
@@ -37,5 +45,7 @@ export const {
   toggleChatVisibility,
   setHeader,
   setHeaderMeta,
+  setSearchDialogOpen,
+  toggleSearchDialog,
 } = uiSlice.actions;
 export default uiSlice.reducer;
