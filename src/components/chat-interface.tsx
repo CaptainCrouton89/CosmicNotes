@@ -33,6 +33,7 @@ type ChatInterfaceProps = {
   chatId?: string;
   additionalBody?: any;
   noteId?: number;
+  clusterId?: number;
 };
 
 const MODES: Record<
@@ -62,7 +63,7 @@ const MODES: Record<
 export const ChatInterface = forwardRef<
   ChatInterfaceHandle,
   Omit<ChatInterfaceProps, "className">
->(({ endpoint, chatId, additionalBody, noteId }, ref) => {
+>(({ endpoint, chatId, additionalBody, noteId, clusterId }, ref) => {
   const chatIdToUse = chatId || "default";
   const [mode, setMode] = useState<Mode>("medium");
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -121,14 +122,16 @@ export const ChatInterface = forwardRef<
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Reset history loading flag when noteId changes
+  // Reset history loading flag when noteId or clusterId changes
   useEffect(() => {
     setHasLoadedInitialHistory(false);
-  }, [noteId]);
+  }, [noteId, clusterId]);
 
-  // Load chat history on mount if noteId is provided
+  // Load chat history on mount if noteId or clusterId is provided
   useEffect(() => {
-    if (noteId && !isLoadingHistory && !hasLoadedInitialHistory && additionalBody?.note?.chat_history && messages.length === 0) {
+    const shouldLoadHistory = !isLoadingHistory && !hasLoadedInitialHistory && messages.length === 0;
+    
+    if (noteId && shouldLoadHistory && additionalBody?.note?.chat_history) {
       setIsLoadingHistory(true);
       try {
         const chatHistory = additionalBody.note.chat_history;
@@ -141,14 +144,27 @@ export const ChatInterface = forwardRef<
         setIsLoadingHistory(false);
         setHasLoadedInitialHistory(true);
       }
+    } else if (clusterId && shouldLoadHistory && additionalBody?.cluster?.chat_history) {
+      setIsLoadingHistory(true);
+      try {
+        const chatHistory = additionalBody.cluster.chat_history;
+        if (Array.isArray(chatHistory)) {
+          setMessages(chatHistory);
+        }
+      } catch (error) {
+        console.error("Failed to load cluster chat history:", error);
+      } finally {
+        setIsLoadingHistory(false);
+        setHasLoadedInitialHistory(true);
+      }
     }
-  }, [noteId, additionalBody?.note?.chat_history, setMessages, messages.length, isLoadingHistory, hasLoadedInitialHistory]);
+  }, [noteId, clusterId, additionalBody?.note?.chat_history, additionalBody?.cluster?.chat_history, setMessages, messages.length, isLoadingHistory, hasLoadedInitialHistory]);
 
   // Save chat history when messages change and detect note modifications
   useEffect(() => {
     messagesRef.current = messages;
 
-    // Check if any of the latest messages contain tool invocations that modify the note
+    // Check if any of the latest messages contain tool invocations that modify the note or cluster
     const noteModifyingTools = [
       "addNoteTool",
       "updateNoteTool",
@@ -161,6 +177,9 @@ export const ChatInterface = forwardRef<
       "addItemsToNote",
       "addItemsToCollection",
     ];
+    
+    // Tools that might affect clusters (when notes in the tag are modified)
+    const clusterModifyingTools = [...noteModifyingTools];
 
     // Check for completed note-modifying tools
     const hasCompletedNoteModifyingTool = messages.some((message) => {
@@ -209,29 +228,46 @@ export const ChatInterface = forwardRef<
 
     // Trigger refresh when a tool completes
     if (hasCompletedNoteModifyingTool && !needsRefresh) {
-      console.log(
-        "Note-modifying tool detected, triggering refresh for noteId:",
-        noteId
-      );
       setNeedsRefresh(true);
-      // Trigger a refresh of the note data
+      
       if (noteId) {
+        console.log(
+          "Note-modifying tool detected, triggering refresh for noteId:",
+          noteId
+        );
         // Dispatch a custom event that the note page can listen to
         window.dispatchEvent(
           new CustomEvent("noteModified", { detail: { noteId } })
         );
+      } else if (clusterId) {
+        console.log(
+          "Cluster-modifying tool detected, triggering refresh for clusterId:",
+          clusterId
+        );
+        // Dispatch a custom event that the tag page can listen to
+        window.dispatchEvent(
+          new CustomEvent("clusterModified", { detail: { clusterId } })
+        );
       }
     }
 
-    if (noteId && messages.length > 0 && !isLoadingHistory) {
+    if ((noteId || clusterId) && messages.length > 0 && !isLoadingHistory) {
       const saveTimeout = setTimeout(async () => {
         setIsSavingChatHistory(true);
         try {
-          await fetch(`/api/note/${noteId}/chat-history`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chatHistory: messages }),
-          });
+          if (noteId) {
+            await fetch(`/api/note/${noteId}/chat-history`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chatHistory: messages }),
+            });
+          } else if (clusterId) {
+            await fetch(`/api/cluster/${clusterId}/chat-history`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chatHistory: messages }),
+            });
+          }
         } catch (error) {
           console.error("Failed to save chat history:", error);
         } finally {
@@ -241,7 +277,7 @@ export const ChatInterface = forwardRef<
 
       return () => clearTimeout(saveTimeout);
     }
-  }, [messages, noteId, isLoadingHistory]);
+  }, [messages, noteId, clusterId, isLoadingHistory]);
 
   useEffect(() => {
     if (shouldAutoScroll && messagesEndRef.current) {
@@ -278,7 +314,7 @@ export const ChatInterface = forwardRef<
     setMessages([]);
     setNeedsRefresh(false); // Reset the refresh flag
     // Don't reset hasLoadedInitialHistory - we want to prevent reloading after clear
-    // Save cleared chat history if this is a note-specific chat
+    // Save cleared chat history if this is a note-specific or cluster-specific chat
     if (noteId) {
       try {
         setIsSavingChatHistory(true);
@@ -289,6 +325,19 @@ export const ChatInterface = forwardRef<
         });
       } catch (error) {
         console.error("Failed to clear chat history:", error);
+      } finally {
+        setIsSavingChatHistory(false);
+      }
+    } else if (clusterId) {
+      try {
+        setIsSavingChatHistory(true);
+        await fetch(`/api/cluster/${clusterId}/chat-history`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chatHistory: [] }),
+        });
+      } catch (error) {
+        console.error("Failed to clear cluster chat history:", error);
       } finally {
         setIsSavingChatHistory(false);
       }

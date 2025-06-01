@@ -59,6 +59,7 @@ export default function TagPage({
     data: tag,
     isLoading: tagLoading,
     error: tagError,
+    refetch: refetchTag,
   } = tagsApi.useGetTagQuery(tagId, {
     skip: isNaN(tagId),
   });
@@ -71,6 +72,26 @@ export default function TagPage({
       dispatch(setHeader("Cosmic Notes"));
     };
   }, [tag, dispatch]);
+
+  // Listen for cluster modification events
+  useEffect(() => {
+    const handleClusterModified = (event: CustomEvent) => {
+      console.log("Cluster modification detected, refreshing tag data");
+      refetchTag();
+    };
+
+    window.addEventListener(
+      "clusterModified",
+      handleClusterModified as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "clusterModified",
+        handleClusterModified as EventListener
+      );
+    };
+  }, [refetchTag]);
 
   const categoryNotes = useMemo(
     () =>
@@ -306,6 +327,8 @@ export default function TagPage({
           isVisible={isChatVisible}
           chatId={tag.id.toString()}
           onToggle={toggleChat}
+          clusterId={activeCluster?.id}
+          additionalBody={{ cluster: activeCluster }}
         />
       </div>
     </div>

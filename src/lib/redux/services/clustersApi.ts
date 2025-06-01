@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const clustersApi = createApi({
   reducerPath: "clustersApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
-  tagTypes: ["Cluster"],
+  tagTypes: ["Cluster", "Tag"],
   endpoints: (builder) => ({
     getClusters: builder.query<
       PaginatedResponse<Cluster>,

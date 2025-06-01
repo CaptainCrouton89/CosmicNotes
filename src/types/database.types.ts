@@ -12,6 +12,7 @@ export type Database = {
       cosmic_cluster: {
         Row: {
           category: Database["public"]["Enums"]["note_category"]
+          chat_history: Json | null
           created_at: string
           dirty: boolean
           embedding: string
@@ -23,6 +24,7 @@ export type Database = {
         }
         Insert: {
           category?: Database["public"]["Enums"]["note_category"]
+          chat_history?: Json | null
           created_at?: string
           dirty?: boolean
           embedding: string
@@ -34,6 +36,7 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["note_category"]
+          chat_history?: Json | null
           created_at?: string
           dirty?: boolean
           embedding?: string

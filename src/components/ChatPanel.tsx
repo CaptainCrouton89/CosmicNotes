@@ -12,6 +12,7 @@ interface ChatPanelProps {
   additionalBody?: Record<string, any>;
   chatRef?: React.Ref<ChatInterfaceHandle>;
   noteId?: number;
+  clusterId?: number;
 }
 
 export const ChatPanel = React.memo(function ChatPanel({
@@ -21,6 +22,7 @@ export const ChatPanel = React.memo(function ChatPanel({
   additionalBody,
   chatRef,
   noteId,
+  clusterId,
 }: ChatPanelProps) {
   if (!isVisible) return null;
 
@@ -32,6 +34,7 @@ export const ChatPanel = React.memo(function ChatPanel({
         chatId={chatId}
         additionalBody={additionalBody}
         noteId={noteId}
+        clusterId={clusterId}
       />
     </div>
   );
