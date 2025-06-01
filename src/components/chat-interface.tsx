@@ -99,6 +99,7 @@ export const ChatInterface = forwardRef<
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const messagesRef = useRef(messages);
 
@@ -161,7 +162,7 @@ export const ChatInterface = forwardRef<
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (input.trim()) {
+      if (input.trim() && status === "ready") {
         const syntheticEvent = {
           preventDefault: () => {},
         } as unknown as React.FormEvent<HTMLFormElement>;
@@ -169,6 +170,13 @@ export const ChatInterface = forwardRef<
       }
     }
   };
+
+  // Add effect to refocus textarea after message is sent
+  useEffect(() => {
+    if (status === "ready" && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [status]);
 
   const toggleMode = () => {
     const currentIndex = Object.keys(MODES).indexOf(mode);
@@ -284,6 +292,7 @@ export const ChatInterface = forwardRef<
           <TooltipContent>{MODES[mode].label} mode</TooltipContent>
         </Tooltip>
         <Textarea
+          ref={textareaRef}
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
@@ -291,7 +300,6 @@ export const ChatInterface = forwardRef<
           className="flex-1 resize-none"
           rows={1}
           style={{ minHeight: "40px", maxHeight: "200px" }}
-          disabled={status !== "ready"}
         />
         <Button type="submit" disabled={status !== "ready" || !input.trim()}>
           {status === "ready" ? "Send" : "Thinking..."}
