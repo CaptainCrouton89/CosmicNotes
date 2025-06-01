@@ -275,7 +275,7 @@ export const updateNoteTool = tool({
     tags: z
       .array(z.string())
       .optional()
-      .describe("The tags of the note (as alternative to tagIds)"),
+      .describe("The title-cased tags of the note (as alternative to tagIds)"),
     tagIds: z
       .array(z.number())
       .optional()
