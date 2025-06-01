@@ -10,7 +10,7 @@ import {
 import { linkifySummary } from "@/lib/utils";
 import { Mode } from "@/types/types";
 import { useChat } from "@ai-sdk/react";
-import { CreateMessage } from "ai";
+import { CreateMessage, Message } from "ai";
 import { Brain, Trash2 } from "lucide-react";
 import {
   forwardRef,
@@ -21,6 +21,7 @@ import {
 } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { ToolInvocation } from "@/components/chat/ToolInvocation";
 
 export type ChatInterfaceHandle = {
   append: (message: CreateMessage) => Promise<string | null | undefined>;
@@ -248,18 +249,42 @@ export const ChatInterface = forwardRef<
                 }`}
               >
                 {message.parts.map((part, i) => {
-                  if (part.type === "text") {
-                    return (
-                      <div key={`${message.id}-${i}`} className="markdown">
-                        <Markdown
-                          remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
-                          children={linkifySummary(part.text)}
-                        />
-                      </div>
-                    );
+                  switch (part.type) {
+                    case "text":
+                      return (
+                        <div key={`${message.id}-${i}`} className="markdown">
+                          <Markdown
+                            remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
+                            children={linkifySummary(part.text)}
+                          />
+                        </div>
+                      );
+                    case "tool-call":
+                      return (
+                        <div key={`${message.id}-${i}`} className="my-2">
+                          <ToolInvocation
+                            toolInvocation={{
+                              state: "call",
+                              toolCallId: part.toolCallId,
+                              toolName: part.toolName,
+                              args: part.args,
+                            }}
+                          />
+                        </div>
+                      );
+                    case "tool-result":
+                      // Tool results are typically not shown directly
+                      return null;
+                    default:
+                      return null;
                   }
-                  return null;
                 })}
+                {/* Render tool invocations if available */}
+                {message.toolInvocations?.map((toolInvocation, i) => (
+                  <div key={`tool-${message.id}-${i}`} className="my-2">
+                    <ToolInvocation toolInvocation={toolInvocation} />
+                  </div>
+                ))}
               </div>
             </div>
           ))

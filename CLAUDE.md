@@ -71,3 +71,4 @@ Main tables:
 - Follow the existing error handling patterns with proper error classes
 - Maintain type safety by running `pnpm db:pull` after database schema changes
 - The app supports PWA features including offline mode
+- I am already running the dev server at all times
