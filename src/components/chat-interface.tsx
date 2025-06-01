@@ -103,6 +103,7 @@ export const ChatInterface = forwardRef<
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const messagesRef = useRef(messages);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
 
   useEffect(() => {
     const container = chatContainerRef.current;
@@ -135,9 +136,36 @@ export const ChatInterface = forwardRef<
     }
   }, [noteId, additionalBody, setMessages]);
 
-  // Save chat history when messages change
+  // Save chat history when messages change and detect note modifications
   useEffect(() => {
     messagesRef.current = messages;
+    
+    // Check if any of the latest messages contain tool invocations that modify the note
+    const noteModifyingTools = ['updateNoteTool', 'addItemsToNote', 'addItemsToCollection'];
+    const hasNoteModifyingTool = messages.some(message => {
+      if (message.parts && message.parts.length > 0) {
+        return message.parts.some((part: any) => {
+          // Check for tool-invocation parts with result
+          if (part.type === 'tool-invocation' && part.toolInvocation) {
+            const toolName = part.toolInvocation.toolName;
+            const state = part.toolInvocation.state;
+            // Check if the tool has completed (state is 'result')
+            return toolName && noteModifyingTools.includes(toolName) && state === 'result';
+          }
+          return false;
+        });
+      }
+      return false;
+    });
+
+    if (hasNoteModifyingTool && !needsRefresh) {
+      setNeedsRefresh(true);
+      // Trigger a refresh of the note data
+      if (noteId) {
+        // Dispatch a custom event that the note page can listen to
+        window.dispatchEvent(new CustomEvent('noteModified', { detail: { noteId } }));
+      }
+    }
     
     if (noteId && messages.length > 0 && !isLoadingHistory) {
       const saveTimeout = setTimeout(() => {
@@ -152,7 +180,7 @@ export const ChatInterface = forwardRef<
 
       return () => clearTimeout(saveTimeout);
     }
-  }, [messages, noteId, isLoadingHistory]);
+  }, [messages, noteId, isLoadingHistory, needsRefresh]);
 
   useEffect(() => {
     if (shouldAutoScroll && messagesEndRef.current) {
@@ -187,6 +215,7 @@ export const ChatInterface = forwardRef<
 
   const clearChat = async () => {
     setMessages([]);
+    setNeedsRefresh(false); // Reset the refresh flag
     // Save cleared chat history if this is a note-specific chat
     if (noteId) {
       try {
@@ -236,7 +265,7 @@ export const ChatInterface = forwardRef<
         ) : (
           messages.map((message, index) => {
             // Log message structure for debugging
-            if (message.toolInvocations && message.toolInvocations.length > 0) {
+            if (message.parts && message.parts.some(p => p.type === 'tool-invocation')) {
               console.log("Message with tool invocations:", message);
             }
             
@@ -255,13 +284,7 @@ export const ChatInterface = forwardRef<
                   }`}
                 >
                   <div className="space-y-2">
-                    {/* First render any tool invocations that might not be in parts */}
-                    {message.toolInvocations?.map((toolInvocation, i) => (
-                      <ToolInvocation
-                        key={`tool-${message.id}-${i}`}
-                        toolInvocation={toolInvocation}
-                      />
-                    ))}
+                    {/* Render tool invocations from parts */}
                     
                     {/* Then render the message parts */}
                     {message.parts?.map((part, i) => {
@@ -275,27 +298,13 @@ export const ChatInterface = forwardRef<
                               />
                             </div>
                           ) : null;
-                        case "tool-call":
-                          // Find the corresponding tool invocation with result
-                          const toolInvocation = message.toolInvocations?.find(
-                            inv => inv.toolCallId === part.toolCallId
-                          );
+                        case "tool-invocation":
                           return (
                             <ToolInvocation
                               key={`${message.id}-${i}`}
-                              toolInvocation={
-                                toolInvocation || {
-                                  toolCallId: part.toolCallId,
-                                  toolName: part.toolName,
-                                  args: part.args,
-                                  state: "call",
-                                }
-                              }
+                              toolInvocation={part}
                             />
                           );
-                        case "tool-result":
-                          // Tool results are handled within tool-call rendering
-                          return null;
                         default:
                           return null;
                       }

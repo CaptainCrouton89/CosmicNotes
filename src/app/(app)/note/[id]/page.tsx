@@ -187,6 +187,26 @@ export default function NotePage({
     }
   }, [refreshing, note, refetchItems]);
 
+  // Listen for note modification events from the chat interface
+  useEffect(() => {
+    const handleNoteModified = (event: CustomEvent) => {
+      if (event.detail.noteId === noteId) {
+        console.log('Note was modified by chat tool, refreshing...');
+        // Refresh the note data
+        refreshNote();
+        // Also refresh items if it's an item category
+        if (note && ITEM_CATEGORIES.includes(note.category)) {
+          refetchItems();
+        }
+      }
+    };
+
+    window.addEventListener('noteModified', handleNoteModified as EventListener);
+    return () => {
+      window.removeEventListener('noteModified', handleNoteModified as EventListener);
+    };
+  }, [noteId, refreshNote, refetchItems, note]);
+
   // Handler for the "What do you think?" button
   const handleSuggestedPromptClick = (promptText: string) => {
     if (!isChatVisible) {

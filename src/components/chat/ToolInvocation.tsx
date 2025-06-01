@@ -5,7 +5,7 @@ import { type ToolInvocation as ToolInvocationType } from "ai";
 import { useState } from "react";
 
 interface ToolInvocationProps {
-  toolInvocation: ToolInvocationType;
+  toolInvocation: ToolInvocationType | any; // Accept both types
 }
 
 const toolDisplayNames: Record<string, string> = {
@@ -22,10 +22,17 @@ const toolDisplayNames: Record<string, string> = {
 
 export function ToolInvocation({ toolInvocation }: ToolInvocationProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const displayName = toolDisplayNames[toolInvocation.toolName] || toolInvocation.toolName;
+  
+  // Handle nested toolInvocation structure from parts
+  const actualInvocation = toolInvocation.toolInvocation || toolInvocation;
+  
+  // Extract the actual tool data
+  const toolName = actualInvocation.toolName || actualInvocation.name || '';
+  const displayName = toolDisplayNames[toolName] || toolName;
+  const state = actualInvocation.state || 'call';
   
   const getStatusIcon = () => {
-    switch (toolInvocation.state) {
+    switch (state) {
       case "call":
         return <Loader2 className="w-4 h-4 animate-spin" />;
       case "result":
@@ -38,7 +45,7 @@ export function ToolInvocation({ toolInvocation }: ToolInvocationProps) {
   };
 
   const getStatusText = () => {
-    switch (toolInvocation.state) {
+    switch (state) {
       case "call":
       case "partial-call":
         return "Running...";
@@ -49,8 +56,9 @@ export function ToolInvocation({ toolInvocation }: ToolInvocationProps) {
     }
   };
 
-  const result = toolInvocation.state === "result" ? toolInvocation.result : null;
-  const hasDetails = toolInvocation.args || result;
+  const result = state === "result" ? actualInvocation.result : null;
+  const args = actualInvocation.args || actualInvocation.arguments;
+  const hasDetails = args || result;
 
   return (
     <div className="my-2 rounded-md bg-muted/50 border border-muted text-sm">
@@ -73,11 +81,11 @@ export function ToolInvocation({ toolInvocation }: ToolInvocationProps) {
       
       {isExpanded && hasDetails && (
         <div className="px-3 pb-2 space-y-2">
-          {toolInvocation.args && (
+          {args && (
             <div className="space-y-1">
               <div className="text-xs font-medium text-muted-foreground">Arguments:</div>
               <pre className="text-xs bg-background/50 rounded p-2 overflow-x-auto whitespace-pre-wrap break-words">
-                {JSON.stringify(toolInvocation.args, null, 2)}
+                {JSON.stringify(args, null, 2)}
               </pre>
             </div>
           )}
