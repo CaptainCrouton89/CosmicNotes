@@ -488,6 +488,7 @@ export default function NotePage({
             chatId={noteId.toString()}
             onToggle={toggleChat}
             additionalBody={{ note: note }}
+            noteId={noteId}
           />
         </div>
       </div>

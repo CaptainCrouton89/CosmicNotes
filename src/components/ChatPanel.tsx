@@ -11,6 +11,7 @@ interface ChatPanelProps {
   onToggle: () => void;
   additionalBody?: Record<string, any>;
   chatRef?: React.Ref<ChatInterfaceHandle>;
+  noteId?: number;
 }
 
 export const ChatPanel = React.memo(function ChatPanel({
@@ -19,6 +20,7 @@ export const ChatPanel = React.memo(function ChatPanel({
   chatId,
   additionalBody,
   chatRef,
+  noteId,
 }: ChatPanelProps) {
   if (!isVisible) return null;
 
@@ -29,6 +31,7 @@ export const ChatPanel = React.memo(function ChatPanel({
         endpoint={endpoint}
         chatId={chatId}
         additionalBody={additionalBody}
+        noteId={noteId}
       />
     </div>
   );

@@ -11,7 +11,7 @@ import { linkifySummary } from "@/lib/utils";
 import { Mode } from "@/types/types";
 import { useChat } from "@ai-sdk/react";
 import { CreateMessage } from "ai";
-import { Brain } from "lucide-react";
+import { Brain, Trash2 } from "lucide-react";
 import {
   forwardRef,
   useEffect,
@@ -31,6 +31,7 @@ type ChatInterfaceProps = {
   endpoint?: string;
   chatId?: string;
   additionalBody?: any;
+  noteId?: number;
 };
 
 const MODES: Record<
@@ -60,9 +61,10 @@ const MODES: Record<
 export const ChatInterface = forwardRef<
   ChatInterfaceHandle,
   Omit<ChatInterfaceProps, "className">
->(({ endpoint, chatId, additionalBody }, ref) => {
+>(({ endpoint, chatId, additionalBody, noteId }, ref) => {
   const chatIdToUse = chatId || "default";
   const [mode, setMode] = useState<Mode>("medium");
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const {
     messages,
@@ -72,6 +74,7 @@ export const ChatInterface = forwardRef<
     handleSubmit,
     status,
     error,
+    setMessages,
   } = useChat({
     api: endpoint || "/api/chat",
     onError: (err: Error) => {
@@ -97,6 +100,7 @@ export const ChatInterface = forwardRef<
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const messagesRef = useRef(messages);
 
   useEffect(() => {
     const container = chatContainerRef.current;
@@ -111,6 +115,42 @@ export const ChatInterface = forwardRef<
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Load chat history on mount if noteId is provided
+  useEffect(() => {
+    if (noteId && !isLoadingHistory && additionalBody?.note?.chat_history) {
+      setIsLoadingHistory(true);
+      try {
+        const chatHistory = additionalBody.note.chat_history;
+        if (Array.isArray(chatHistory)) {
+          setMessages(chatHistory);
+        }
+      } catch (error) {
+        console.error('Failed to load chat history:', error);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    }
+  }, [noteId, additionalBody, setMessages]);
+
+  // Save chat history when messages change
+  useEffect(() => {
+    messagesRef.current = messages;
+    
+    if (noteId && messages.length > 0 && !isLoadingHistory) {
+      const saveTimeout = setTimeout(() => {
+        fetch(`/api/note/${noteId}/chat-history`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatHistory: messages }),
+        }).catch(error => {
+          console.error('Failed to save chat history:', error);
+        });
+      }, 1000); // Debounce for 1 second
+
+      return () => clearTimeout(saveTimeout);
+    }
+  }, [messages, noteId, isLoadingHistory]);
 
   useEffect(() => {
     if (shouldAutoScroll && messagesEndRef.current) {
@@ -136,8 +176,43 @@ export const ChatInterface = forwardRef<
     setMode(Object.keys(MODES)[nextIndex] as Mode);
   };
 
+  const clearChat = async () => {
+    setMessages([]);
+    // Save cleared chat history if this is a note-specific chat
+    if (noteId) {
+      try {
+        await fetch(`/api/note/${noteId}/chat-history`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatHistory: [] }),
+        });
+      } catch (error) {
+        console.error('Failed to clear chat history:', error);
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
+      {messages.length > 0 && (
+        <div className="flex justify-end p-2 border-b">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={clearChat}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                aria-label="Clear chat"
+              >
+                <Trash2 size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Clear chat</TooltipContent>
+          </Tooltip>
+        </div>
+      )}
       <div
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto p-4 space-y-4"
