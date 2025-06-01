@@ -15,9 +15,14 @@ const toolDisplayNames: Record<string, string> = {
   scrapeWebSiteTool: "Scraping Website",
   updateNoteTool: "Updating Note",
   askWebEnabledAI: "Searching Web",
-  appendTextToNote: "Appending to Note",
-  addItemsToNote: "Adding Items to Note",
-  addItemsToCollection: "Adding Items to Collection",
+  appendTextToNoteTool: "Appending to Note",
+  appendTextToUnknownNoteTool: "Appending to Note",
+  addTodoItemsToNoteTool: "Adding Todo Items",
+  addTodoItemsToUnknownNoteTool: "Adding Todo Items",
+  addItemsToCollectionTool: "Adding Items to Collection",
+  addItemsToUnknownCollectionTool: "Adding Items to Collection",
+  addItemsToNote: "Adding Items to Note", // Used in note chat route
+  addItemsToCollection: "Adding Items to Collection", // Used in note chat route
 };
 
 export function ToolInvocation({ toolInvocation }: ToolInvocationProps) {

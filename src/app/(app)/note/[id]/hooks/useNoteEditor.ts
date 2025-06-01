@@ -128,6 +128,7 @@ export function useNoteEditor(noteId: number) {
     handleEditorChange,
     saveNote,
     refreshNote,
+    refetchNote: refetch,
     focusEditor,
     setError,
     updateNoteTitle,

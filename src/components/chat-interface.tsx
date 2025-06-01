@@ -1,5 +1,6 @@
 "use client";
 
+import { ToolInvocation } from "@/components/chat/ToolInvocation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -10,7 +11,7 @@ import {
 import { linkifySummary } from "@/lib/utils";
 import { Mode } from "@/types/types";
 import { useChat } from "@ai-sdk/react";
-import { CreateMessage, Message } from "ai";
+import { CreateMessage } from "ai";
 import { Brain, Trash2 } from "lucide-react";
 import {
   forwardRef,
@@ -21,7 +22,6 @@ import {
 } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ToolInvocation } from "@/components/chat/ToolInvocation";
 
 export type ChatInterfaceHandle = {
   append: (message: CreateMessage) => Promise<string | null | undefined>;
@@ -129,7 +129,7 @@ export const ChatInterface = forwardRef<
           setMessages(chatHistory);
         }
       } catch (error) {
-        console.error('Failed to load chat history:', error);
+        console.error("Failed to load chat history:", error);
       } finally {
         setIsLoadingHistory(false);
       }
@@ -139,18 +139,35 @@ export const ChatInterface = forwardRef<
   // Save chat history when messages change and detect note modifications
   useEffect(() => {
     messagesRef.current = messages;
-    
+
     // Check if any of the latest messages contain tool invocations that modify the note
-    const noteModifyingTools = ['updateNoteTool', 'addItemsToNote', 'addItemsToCollection'];
-    const hasNoteModifyingTool = messages.some(message => {
+    const noteModifyingTools = [
+      "addNoteTool",
+      "updateNoteTool",
+      "appendTextToNoteTool",
+      "appendTextToUnknownNoteTool",
+      "addTodoItemsToNoteTool",
+      "addTodoItemsToUnknownNoteTool",
+      "addItemsToCollectionTool",
+      "addItemsToUnknownCollectionTool",
+      "addItemsToNote",
+      "addItemsToCollection",
+    ];
+
+    // Check for completed note-modifying tools
+    const hasCompletedNoteModifyingTool = messages.some((message) => {
       if (message.parts && message.parts.length > 0) {
         return message.parts.some((part: any) => {
           // Check for tool-invocation parts with result
-          if (part.type === 'tool-invocation' && part.toolInvocation) {
+          if (part.type === "tool-invocation" && part.toolInvocation) {
             const toolName = part.toolInvocation.toolName;
             const state = part.toolInvocation.state;
             // Check if the tool has completed (state is 'result')
-            return toolName && noteModifyingTools.includes(toolName) && state === 'result';
+            return (
+              toolName &&
+              noteModifyingTools.includes(toolName) &&
+              state === "result"
+            );
           }
           return false;
         });
@@ -158,23 +175,54 @@ export const ChatInterface = forwardRef<
       return false;
     });
 
-    if (hasNoteModifyingTool && !needsRefresh) {
+    // Check if there's an ongoing note-modifying tool call (to reset the flag)
+    const hasOngoingNoteModifyingTool = messages.some((message) => {
+      if (message.parts && message.parts.length > 0) {
+        return message.parts.some((part: any) => {
+          if (part.type === "tool-invocation" && part.toolInvocation) {
+            const toolName = part.toolInvocation.toolName;
+            const state = part.toolInvocation.state;
+            return (
+              toolName &&
+              noteModifyingTools.includes(toolName) &&
+              (state === "call" || state === "partial-call")
+            );
+          }
+          return false;
+        });
+      }
+      return false;
+    });
+
+    // Reset needsRefresh when a new tool call starts
+    if (hasOngoingNoteModifyingTool && needsRefresh) {
+      setNeedsRefresh(false);
+    }
+
+    // Trigger refresh when a tool completes
+    if (hasCompletedNoteModifyingTool && !needsRefresh) {
+      console.log(
+        "Note-modifying tool detected, triggering refresh for noteId:",
+        noteId
+      );
       setNeedsRefresh(true);
       // Trigger a refresh of the note data
       if (noteId) {
         // Dispatch a custom event that the note page can listen to
-        window.dispatchEvent(new CustomEvent('noteModified', { detail: { noteId } }));
+        window.dispatchEvent(
+          new CustomEvent("noteModified", { detail: { noteId } })
+        );
       }
     }
-    
+
     if (noteId && messages.length > 0 && !isLoadingHistory) {
       const saveTimeout = setTimeout(() => {
         fetch(`/api/note/${noteId}/chat-history`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ chatHistory: messages }),
-        }).catch(error => {
-          console.error('Failed to save chat history:', error);
+        }).catch((error) => {
+          console.error("Failed to save chat history:", error);
         });
       }, 1000); // Debounce for 1 second
 
@@ -220,12 +268,12 @@ export const ChatInterface = forwardRef<
     if (noteId) {
       try {
         await fetch(`/api/note/${noteId}/chat-history`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ chatHistory: [] }),
         });
       } catch (error) {
-        console.error('Failed to clear chat history:', error);
+        console.error("Failed to clear chat history:", error);
       }
     }
   };
@@ -265,10 +313,13 @@ export const ChatInterface = forwardRef<
         ) : (
           messages.map((message, index) => {
             // Log message structure for debugging
-            if (message.parts && message.parts.some(p => p.type === 'tool-invocation')) {
+            if (
+              message.parts &&
+              message.parts.some((p) => p.type === "tool-invocation")
+            ) {
               console.log("Message with tool invocations:", message);
             }
-            
+
             return (
               <div
                 key={index}
@@ -285,15 +336,20 @@ export const ChatInterface = forwardRef<
                 >
                   <div className="space-y-2">
                     {/* Render tool invocations from parts */}
-                    
+
                     {/* Then render the message parts */}
                     {message.parts?.map((part, i) => {
                       switch (part.type) {
                         case "text":
                           return part.text ? (
-                            <div key={`${message.id}-${i}`} className="markdown">
+                            <div
+                              key={`${message.id}-${i}`}
+                              className="markdown"
+                            >
                               <Markdown
-                                remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
+                                remarkPlugins={[
+                                  [remarkGfm, { singleTilde: false }],
+                                ]}
                                 children={linkifySummary(part.text)}
                               />
                             </div>
@@ -308,17 +364,18 @@ export const ChatInterface = forwardRef<
                         default:
                           return null;
                       }
-                    }) || (
+                    }) ||
                       // Fallback for older message format without parts
-                      message.content && (
+                      (message.content && (
                         <div className="markdown">
                           <Markdown
-                            remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
+                            remarkPlugins={[
+                              [remarkGfm, { singleTilde: false }],
+                            ]}
                             children={linkifySummary(message.content)}
                           />
                         </div>
-                      )
-                    )}
+                      ))}
                   </div>
                 </div>
               </div>

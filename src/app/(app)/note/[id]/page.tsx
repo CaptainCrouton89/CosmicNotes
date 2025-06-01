@@ -140,6 +140,7 @@ export default function NotePage({
     handleEditorChange,
     saveNote,
     refreshNote,
+    refetchNote,
     focusEditor,
     updateNoteTitle,
   } = useNoteEditor(noteId);
@@ -191,9 +192,9 @@ export default function NotePage({
   useEffect(() => {
     const handleNoteModified = (event: CustomEvent) => {
       if (event.detail.noteId === noteId) {
-        console.log('Note was modified by chat tool, refreshing...');
-        // Refresh the note data
-        refreshNote();
+        console.log('Note was modified by chat tool, refreshing note data...');
+        // Refresh the note data without triggering AI classification
+        refetchNote();
         // Also refresh items if it's an item category
         if (note && ITEM_CATEGORIES.includes(note.category)) {
           refetchItems();
@@ -205,7 +206,7 @@ export default function NotePage({
     return () => {
       window.removeEventListener('noteModified', handleNoteModified as EventListener);
     };
-  }, [noteId, refreshNote, refetchItems, note]);
+  }, [noteId, refetchNote, refetchItems, note]);
 
   // Handler for the "What do you think?" button
   const handleSuggestedPromptClick = (promptText: string) => {
