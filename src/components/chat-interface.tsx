@@ -104,6 +104,8 @@ export const ChatInterface = forwardRef<
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const messagesRef = useRef(messages);
   const [needsRefresh, setNeedsRefresh] = useState(false);
+  const [isSavingChatHistory, setIsSavingChatHistory] = useState(false);
+  const [hasLoadedInitialHistory, setHasLoadedInitialHistory] = useState(false);
 
   useEffect(() => {
     const container = chatContainerRef.current;
@@ -119,9 +121,14 @@ export const ChatInterface = forwardRef<
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Reset history loading flag when noteId changes
+  useEffect(() => {
+    setHasLoadedInitialHistory(false);
+  }, [noteId]);
+
   // Load chat history on mount if noteId is provided
   useEffect(() => {
-    if (noteId && !isLoadingHistory && additionalBody?.note?.chat_history) {
+    if (noteId && !isLoadingHistory && !hasLoadedInitialHistory && additionalBody?.note?.chat_history && messages.length === 0) {
       setIsLoadingHistory(true);
       try {
         const chatHistory = additionalBody.note.chat_history;
@@ -132,9 +139,10 @@ export const ChatInterface = forwardRef<
         console.error("Failed to load chat history:", error);
       } finally {
         setIsLoadingHistory(false);
+        setHasLoadedInitialHistory(true);
       }
     }
-  }, [noteId, additionalBody, setMessages]);
+  }, [noteId, additionalBody?.note?.chat_history, setMessages, messages.length, isLoadingHistory, hasLoadedInitialHistory]);
 
   // Save chat history when messages change and detect note modifications
   useEffect(() => {
@@ -216,19 +224,24 @@ export const ChatInterface = forwardRef<
     }
 
     if (noteId && messages.length > 0 && !isLoadingHistory) {
-      const saveTimeout = setTimeout(() => {
-        fetch(`/api/note/${noteId}/chat-history`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chatHistory: messages }),
-        }).catch((error) => {
+      const saveTimeout = setTimeout(async () => {
+        setIsSavingChatHistory(true);
+        try {
+          await fetch(`/api/note/${noteId}/chat-history`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chatHistory: messages }),
+          });
+        } catch (error) {
           console.error("Failed to save chat history:", error);
-        });
+        } finally {
+          setIsSavingChatHistory(false);
+        }
       }, 1000); // Debounce for 1 second
 
       return () => clearTimeout(saveTimeout);
     }
-  }, [messages, noteId, isLoadingHistory, needsRefresh]);
+  }, [messages, noteId, isLoadingHistory]);
 
   useEffect(() => {
     if (shouldAutoScroll && messagesEndRef.current) {
@@ -264,9 +277,11 @@ export const ChatInterface = forwardRef<
   const clearChat = async () => {
     setMessages([]);
     setNeedsRefresh(false); // Reset the refresh flag
+    // Don't reset hasLoadedInitialHistory - we want to prevent reloading after clear
     // Save cleared chat history if this is a note-specific chat
     if (noteId) {
       try {
+        setIsSavingChatHistory(true);
         await fetch(`/api/note/${noteId}/chat-history`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -274,6 +289,8 @@ export const ChatInterface = forwardRef<
         });
       } catch (error) {
         console.error("Failed to clear chat history:", error);
+      } finally {
+        setIsSavingChatHistory(false);
       }
     }
   };
