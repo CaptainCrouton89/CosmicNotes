@@ -234,60 +234,87 @@ export const ChatInterface = forwardRef<
             <p className="text-sm">Seriously :)</p>
           </div>
         ) : (
-          messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
+          messages.map((message, index) => {
+            // Log message structure for debugging
+            if (message.toolInvocations && message.toolInvocations.length > 0) {
+              console.log("Message with tool invocations:", message);
+            }
+            
+            return (
               <div
-                className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                key={index}
+                className={`flex ${
+                  message.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                {message.parts.map((part, i) => {
-                  switch (part.type) {
-                    case "text":
-                      return (
-                        <div key={`${message.id}-${i}`} className="markdown">
+                <div
+                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  }`}
+                >
+                  <div className="space-y-2">
+                    {/* First render any tool invocations that might not be in parts */}
+                    {message.toolInvocations?.map((toolInvocation, i) => (
+                      <ToolInvocation
+                        key={`tool-${message.id}-${i}`}
+                        toolInvocation={toolInvocation}
+                      />
+                    ))}
+                    
+                    {/* Then render the message parts */}
+                    {message.parts?.map((part, i) => {
+                      switch (part.type) {
+                        case "text":
+                          return part.text ? (
+                            <div key={`${message.id}-${i}`} className="markdown">
+                              <Markdown
+                                remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
+                                children={linkifySummary(part.text)}
+                              />
+                            </div>
+                          ) : null;
+                        case "tool-call":
+                          // Find the corresponding tool invocation with result
+                          const toolInvocation = message.toolInvocations?.find(
+                            inv => inv.toolCallId === part.toolCallId
+                          );
+                          return (
+                            <ToolInvocation
+                              key={`${message.id}-${i}`}
+                              toolInvocation={
+                                toolInvocation || {
+                                  toolCallId: part.toolCallId,
+                                  toolName: part.toolName,
+                                  args: part.args,
+                                  state: "call",
+                                }
+                              }
+                            />
+                          );
+                        case "tool-result":
+                          // Tool results are handled within tool-call rendering
+                          return null;
+                        default:
+                          return null;
+                      }
+                    }) || (
+                      // Fallback for older message format without parts
+                      message.content && (
+                        <div className="markdown">
                           <Markdown
                             remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
-                            children={linkifySummary(part.text)}
+                            children={linkifySummary(message.content)}
                           />
                         </div>
-                      );
-                    case "tool-call":
-                      return (
-                        <div key={`${message.id}-${i}`} className="my-2">
-                          <ToolInvocation
-                            toolInvocation={{
-                              state: "call",
-                              toolCallId: part.toolCallId,
-                              toolName: part.toolName,
-                              args: part.args,
-                            }}
-                          />
-                        </div>
-                      );
-                    case "tool-result":
-                      // Tool results are typically not shown directly
-                      return null;
-                    default:
-                      return null;
-                  }
-                })}
-                {/* Render tool invocations if available */}
-                {message.toolInvocations?.map((toolInvocation, i) => (
-                  <div key={`tool-${message.id}-${i}`} className="my-2">
-                    <ToolInvocation toolInvocation={toolInvocation} />
+                      )
+                    )}
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
         {error && (
           <div className="p-4 bg-red-50 text-red-500 rounded-md">

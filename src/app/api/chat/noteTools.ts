@@ -145,6 +145,10 @@ export const deepSearchNotesTool = tool({
       notes: notesToReturn.map((note) => note.title),
     });
 
+    if (notesToReturn.length === 0) {
+      return "No notes found — Expand your search by reducing the threshold or using other similar queries.";
+    }
+
     return JSON.stringify(
       notesToReturn.map((note) => ({
         id: note.id,
