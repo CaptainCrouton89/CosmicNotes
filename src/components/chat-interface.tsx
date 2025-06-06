@@ -168,6 +168,7 @@ export const ChatInterface = forwardRef<
     const noteModifyingTools = [
       "addNoteTool",
       "updateNoteTool",
+      "applyDiffToNoteTool",
       "appendTextToNoteTool",
       "appendTextToUnknownNoteTool",
       "addTodoItemsToNoteTool",

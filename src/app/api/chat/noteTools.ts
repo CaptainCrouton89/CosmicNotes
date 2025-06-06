@@ -430,3 +430,261 @@ export const addItemsToUnknownCollectionTool = tool({
     return "Items added to collection successfully";
   },
 });
+
+// Diff operation types
+const DiffOperationSchema = z.object({
+  type: z.enum(["replace", "insert", "delete", "append"]).describe("Type of operation to perform"),
+  
+  // For replace operations
+  find: z.string().optional().describe("Exact text to find and replace"),
+  replace: z.string().optional().describe("Text to replace it with"),
+  
+  // For insert operations
+  insertAfter: z.string().optional().describe("Insert content after this exact text"),
+  insertBefore: z.string().optional().describe("Insert content before this exact text"),
+  content: z.string().optional().describe("Content to insert or append"),
+  
+  // For delete operations
+  delete: z.string().optional().describe("Exact text to delete"),
+  
+  // Context validation (recommended for safety)
+  contextBefore: z.string().optional().describe("Expected text before the target (for validation)"),
+  contextAfter: z.string().optional().describe("Expected text after the target (for validation)"),
+  
+  // Safety options
+  allowMultipleMatches: z.boolean().optional().default(false).describe("Allow operation if text appears multiple times"),
+});
+
+export const applyDiffToNoteTool = tool({
+  description: `Apply a structured diff to a note's content. This allows precise modifications without rewriting the entire note. 
+  
+  Supports operations:
+  - replace: Find exact text and replace it
+  - insert: Insert content before/after specific text  
+  - delete: Remove exact text
+  - append: Add content to the end
+  
+  Use contextBefore/contextAfter for validation to ensure changes are applied safely.`,
+  
+  parameters: z.object({
+    noteId: z.number().describe("The ID of the note to modify"),
+    operations: z.array(DiffOperationSchema).describe("Array of diff operations to apply"),
+    dryRun: z.boolean().optional().default(false).describe("If true, validate operations but don't apply changes"),
+  }),
+  
+  execute: async ({ noteId, operations, dryRun = false }) => {
+    const { noteService } = await initializeServices();
+    
+    // Get current note
+    const note = await noteService.getNoteById(noteId);
+    if (!note) {
+      return "Error: Note not found";
+    }
+    
+    let content = note.content;
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const appliedOperations: string[] = [];
+    
+    // Validate all operations first (fail fast)
+    for (let i = 0; i < operations.length; i++) {
+      const op = operations[i];
+      
+      try {
+        switch (op.type) {
+          case "replace":
+            if (!op.find || op.replace === undefined) {
+              errors.push(`Operation ${i + 1}: replace requires 'find' and 'replace' fields`);
+              continue;
+            }
+            
+            const replaceMatches = (content.match(new RegExp(escapeRegex(op.find), 'g')) || []).length;
+            if (replaceMatches === 0) {
+              errors.push(`Operation ${i + 1}: Could not find text "${op.find}" in note content`);
+              continue;
+            }
+            if (replaceMatches > 1 && !op.allowMultipleMatches) {
+              errors.push(`Operation ${i + 1}: Text "${op.find}" appears ${replaceMatches} times. Set allowMultipleMatches=true to proceed`);
+              continue;
+            }
+            
+            // Validate context if provided
+            if (op.contextBefore || op.contextAfter) {
+              const findIndex = content.indexOf(op.find);
+              if (findIndex === -1) {
+                errors.push(`Operation ${i + 1}: Context validation failed - target text not found`);
+                continue;
+              }
+              
+              if (op.contextBefore) {
+                const beforeStart = Math.max(0, findIndex - op.contextBefore.length);
+                const actualBefore = content.substring(beforeStart, findIndex);
+                if (!actualBefore.includes(op.contextBefore)) {
+                  errors.push(`Operation ${i + 1}: Expected context "${op.contextBefore}" before target, found "${actualBefore}"`);
+                  continue;
+                }
+              }
+              
+              if (op.contextAfter) {
+                const afterStart = findIndex + op.find.length;
+                const afterEnd = Math.min(content.length, afterStart + op.contextAfter.length);
+                const actualAfter = content.substring(afterStart, afterEnd);
+                if (!actualAfter.includes(op.contextAfter)) {
+                  errors.push(`Operation ${i + 1}: Expected context "${op.contextAfter}" after target, found "${actualAfter}"`);
+                  continue;
+                }
+              }
+            }
+            break;
+            
+          case "insert":
+            if (!op.content) {
+              errors.push(`Operation ${i + 1}: insert requires 'content' field`);
+              continue;
+            }
+            if (!op.insertAfter && !op.insertBefore) {
+              errors.push(`Operation ${i + 1}: insert requires either 'insertAfter' or 'insertBefore' field`);
+              continue;
+            }
+            if (op.insertAfter && op.insertBefore) {
+              errors.push(`Operation ${i + 1}: insert cannot have both 'insertAfter' and 'insertBefore'`);
+              continue;
+            }
+            
+            const insertTarget = op.insertAfter || op.insertBefore!;
+            const insertMatches = (content.match(new RegExp(escapeRegex(insertTarget), 'g')) || []).length;
+            if (insertMatches === 0) {
+              errors.push(`Operation ${i + 1}: Could not find text "${insertTarget}" for insertion`);
+              continue;
+            }
+            if (insertMatches > 1 && !op.allowMultipleMatches) {
+              errors.push(`Operation ${i + 1}: Insert target "${insertTarget}" appears ${insertMatches} times. Set allowMultipleMatches=true to proceed`);
+              continue;
+            }
+            break;
+            
+          case "delete":
+            if (!op.delete) {
+              errors.push(`Operation ${i + 1}: delete requires 'delete' field`);
+              continue;
+            }
+            
+            const deleteMatches = (content.match(new RegExp(escapeRegex(op.delete), 'g')) || []).length;
+            if (deleteMatches === 0) {
+              errors.push(`Operation ${i + 1}: Could not find text "${op.delete}" to delete`);
+              continue;
+            }
+            if (deleteMatches > 1 && !op.allowMultipleMatches) {
+              errors.push(`Operation ${i + 1}: Delete target "${op.delete}" appears ${deleteMatches} times. Set allowMultipleMatches=true to proceed`);
+              continue;
+            }
+            break;
+            
+          case "append":
+            if (!op.content) {
+              errors.push(`Operation ${i + 1}: append requires 'content' field`);
+              continue;
+            }
+            break;
+            
+          default:
+            errors.push(`Operation ${i + 1}: Unknown operation type "${(op as any).type}"`);
+        }
+      } catch (error) {
+        errors.push(`Operation ${i + 1}: Validation error - ${error}`);
+      }
+    }
+    
+    // If validation failed, return errors
+    if (errors.length > 0) {
+      return `Validation failed:\n${errors.join('\n')}`;
+    }
+    
+    // If dry run, return what would be applied
+    if (dryRun) {
+      return `Dry run successful. ${operations.length} operations would be applied:\n${operations.map((op, i) => `${i + 1}. ${op.type} operation`).join('\n')}`;
+    }
+    
+    // Apply operations sequentially
+    let newContent = content;
+    
+    for (let i = 0; i < operations.length; i++) {
+      const op = operations[i];
+      
+      try {
+        switch (op.type) {
+          case "replace":
+            if (op.allowMultipleMatches) {
+              newContent = newContent.replaceAll(op.find!, op.replace!);
+              appliedOperations.push(`Replaced all instances of "${op.find}" with "${op.replace}"`);
+            } else {
+              newContent = newContent.replace(op.find!, op.replace!);
+              appliedOperations.push(`Replaced "${op.find}" with "${op.replace}"`);
+            }
+            break;
+            
+          case "insert":
+            const insertTarget = op.insertAfter || op.insertBefore!;
+            const isAfter = !!op.insertAfter;
+            
+            if (op.allowMultipleMatches) {
+              if (isAfter) {
+                newContent = newContent.replaceAll(insertTarget, insertTarget + op.content!);
+              } else {
+                newContent = newContent.replaceAll(insertTarget, op.content! + insertTarget);
+              }
+              appliedOperations.push(`Inserted content ${isAfter ? 'after' : 'before'} all instances of "${insertTarget}"`);
+            } else {
+              if (isAfter) {
+                newContent = newContent.replace(insertTarget, insertTarget + op.content!);
+              } else {
+                newContent = newContent.replace(insertTarget, op.content! + insertTarget);
+              }
+              appliedOperations.push(`Inserted content ${isAfter ? 'after' : 'before'} "${insertTarget}"`);
+            }
+            break;
+            
+          case "delete":
+            if (op.allowMultipleMatches) {
+              newContent = newContent.replaceAll(op.delete!, '');
+              appliedOperations.push(`Deleted all instances of "${op.delete}"`);
+            } else {
+              newContent = newContent.replace(op.delete!, '');
+              appliedOperations.push(`Deleted "${op.delete}"`);
+            }
+            break;
+            
+          case "append":
+            newContent = newContent + op.content!;
+            appliedOperations.push(`Appended content to end of note`);
+            break;
+        }
+      } catch (error) {
+        errors.push(`Operation ${i + 1}: Failed to apply - ${error}`);
+        // If any operation fails, don't apply any changes
+        return `Error applying operations:\n${errors.join('\n')}`;
+      }
+    }
+    
+    // Apply the changes to the note
+    try {
+      await noteService.updateNote(noteId, { content: newContent });
+      
+      let result = `Successfully applied ${operations.length} diff operations:\n${appliedOperations.join('\n')}`;
+      
+      if (warnings.length > 0) {
+        result += `\n\nWarnings:\n${warnings.join('\n')}`;
+      }
+      
+      return result;
+      
+    } catch (error) {
+      return `Error saving note: ${error}`;
+    }
+  },
+});
+
+// Helper function to escape regex special characters
+function escapeRegex(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
