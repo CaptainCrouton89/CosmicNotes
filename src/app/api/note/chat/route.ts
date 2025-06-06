@@ -100,10 +100,6 @@ ${
         <description>Modify the current focused note with new information, structure, or corrections</description>
         <confirmation>Required unless explicitly requested by user</confirmation>
       </tool>
-      <tool name="appendTextToNoteTool">
-        <description>Append markdown text to a note, starting on a new line</description>
-        <confirmation>Not required for simple appending</confirmation>
-      </tool>
     </note-management>
     
     <task-management>

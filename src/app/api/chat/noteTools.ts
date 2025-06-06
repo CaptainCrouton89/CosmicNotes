@@ -309,43 +309,6 @@ export const updateNoteTool = tool({
   },
 });
 
-export const appendTextToNoteTool = (noteId: number) =>
-  tool({
-    description: "Append text to a note",
-    parameters: z.object({
-      text: z.string().describe("The text to append to the note"),
-    }),
-    execute: async ({ text }) => {
-      const { noteService } = await initializeServices();
-      const note = await noteService.getNoteById(noteId);
-      if (!note) {
-        return "Note not found";
-      }
-      await noteService.updateNote(noteId, {
-        content: `${note.content}\n${text}`,
-      });
-      return "Text appended to note successfully";
-    },
-  });
-
-export const appendTextToUnknownNoteTool = tool({
-  description: "Append text to a note",
-  parameters: z.object({
-    noteId: z.number().describe("The ID of the note to append to"),
-    text: z.string().describe("The text to append to the note"),
-  }),
-  execute: async ({ text, noteId }) => {
-    const { noteService } = await initializeServices();
-    const note = await noteService.getNoteById(noteId);
-    if (!note) {
-      return "Note not found";
-    }
-    await noteService.updateNote(noteId, {
-      content: `${note.content}\n${text}`,
-    });
-    return "Text appended to note successfully";
-  },
-});
 
 export const addTodoItemsToNoteTool = (noteId: number) =>
   tool({
