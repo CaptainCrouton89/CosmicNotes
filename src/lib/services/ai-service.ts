@@ -58,7 +58,7 @@ export async function generateNoteCategory(
   similarNotes: (Note & { tags: { name: string }[] })[]
 ): Promise<Category> {
   const result = await generateObject({
-    model: openai("gpt-4.1-nano-2025-04-14"),
+    model: openai("gpt-4.1-nano"),
     temperature: 0.1,
     system:
       "You are an assistant that helps categorize notes into a few broad categories.",
@@ -96,7 +96,7 @@ export async function generateNoteFields(content: string): Promise<{
   zone: Zone;
 }> {
   const result = await generateObject({
-    model: openai("gpt-4.1-nano-2025-04-14"),
+    model: openai("gpt-4.1-nano"),
     temperature: 0.2,
     system:
       "You are a helpful assistant that specializes in organizing and categorizing notes.",
@@ -198,7 +198,7 @@ export async function convertContentToItems(
 
 export async function generateTags(cleanedContent: string, tagPrompt?: string) {
   return await generateObject({
-    model: openai("gpt-4.1-nano-2025-04-14"),
+    model: openai("gpt-4.1-nano"),
     temperature: 0.3,
     system:
       "You are a helpful assistant that extracts relevant tags from content.",

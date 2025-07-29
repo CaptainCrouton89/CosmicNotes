@@ -208,6 +208,22 @@ export default function NotePage({
     };
   }, [noteId, refetchNote, refetchItems, note]);
 
+  // Listen for global save event (Command+S)
+  useEffect(() => {
+    const handleGlobalSave = (event: CustomEvent) => {
+      const { pathname } = event.detail;
+      // Only handle save if we're on a note page
+      if (pathname.startsWith('/note/')) {
+        saveNote();
+      }
+    };
+
+    window.addEventListener('globalSave', handleGlobalSave as EventListener);
+    return () => {
+      window.removeEventListener('globalSave', handleGlobalSave as EventListener);
+    };
+  }, [saveNote]);
+
   // Handler for the "What do you think?" button
   const handleSuggestedPromptClick = (promptText: string) => {
     if (!isChatVisible) {

@@ -217,6 +217,22 @@ export default function HomeContent({
     }
   }, []);
 
+  // Listen for global save event (Command+S)
+  useEffect(() => {
+    const handleGlobalSave = (event: CustomEvent) => {
+      const { pathname } = event.detail;
+      // Only handle save if we're on the home page
+      if (pathname === "/") {
+        handleSaveNote();
+      }
+    };
+
+    window.addEventListener('globalSave', handleGlobalSave as EventListener);
+    return () => {
+      window.removeEventListener('globalSave', handleGlobalSave as EventListener);
+    };
+  }, [handleSaveNote]);
+
   return (
     <>
       {error && (

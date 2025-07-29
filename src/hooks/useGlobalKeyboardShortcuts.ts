@@ -1,4 +1,4 @@
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useSearchDialog } from "./use-search-dialog";
 import { useKeyboardShortcut } from "./useKeyboardShortcut";
 
@@ -7,6 +7,7 @@ import { useKeyboardShortcut } from "./useKeyboardShortcut";
  */
 export function useGlobalKeyboardShortcuts() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchDialog = useSearchDialog();
 
   // Register global keyboard shortcuts
@@ -43,6 +44,21 @@ export function useGlobalKeyboardShortcuts() {
       callback: () => {
         // Open search dialog
         searchDialog.open();
+      },
+    },
+    {
+      combo: {
+        key: "s",
+        metaKey: true, // For macOS
+        ctrlKey: true, // For Windows/Linux
+        preventDefault: true, // Prevent default browser save
+      },
+      callback: () => {
+        // Trigger save based on current route
+        const saveEvent = new CustomEvent('globalSave', {
+          detail: { pathname }
+        });
+        window.dispatchEvent(saveEvent);
       },
     },
     // Add more global shortcuts here as needed
