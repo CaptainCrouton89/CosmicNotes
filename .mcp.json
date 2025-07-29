@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "sql": {
+      "command": "node",
+      "args": ["/Users/silasrhyneer/Code/MCP/sql/dist/index.js"],
+      "env": {
+        "SUPABASE_CONNECTION_STRING": "postgresql://postgres:5J8hUKkRdHE26nX%23@db.yiwkbafldsqjvrktrlbu.supabase.co:5432/postgres",
+        "SUPABASE_URL": "https://yiwkbafldsqjvrktrlbu.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlpd2tiYWZsZHNxanZya3RybGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzNjM5NTIsImV4cCI6MjA1NzkzOTk1Mn0.gt-O8nGEJs57RUBV-jikh0OwjGHAHkUHp1djYgyQ6H4",
+        "SUPABASE_SERVICE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlpd2tiYWZsZHNxanZya3RybGJ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MjM2Mzk1MiwiZXhwIjoyMDU3OTM5OTUyfQ.CkuQ95MQ-FPWNNR1BVxCA13MsihRvubo_spZYy2zHZc"
+      }
+    },
+    "static-analysis": {
+      "command": "node",
+      "args": ["/Users/silasrhyneer/Code/MCP/static-analysis/dist/index.js"]
+    },
+    "zen": {
+      "command": "/Users/silasrhyneer/Code/MCP/zen-mcp-server/.zen_venv/bin/python",
+      "args": ["/Users/silasrhyneer/Code/MCP/zen-mcp-server/server.py"]
+    }
+  }
+}

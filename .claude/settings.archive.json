@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/silasrhyneer/Code/Smut-AI/smut-writer-library/.claude/ts-diagnostics.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Glass.aiff"
+          },
+          {
+            "type": "command",
+            "command": "/Users/silasrhyneer/Code/Smut-AI/smut-writer-library/.claude/say-on-done.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

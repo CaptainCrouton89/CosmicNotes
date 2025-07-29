@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": []
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/silasrhyneer/Code/Smut-AI/smut-writer-library/.claude/ts-diagnostics.sh"
+          },
+          {
+            "type": "command",
+            "command": "/Users/silasrhyneer/Code/Smut-AI/smut-writer-library/.claude/hooks/play-sound.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/silasrhyneer/Code/Smut-AI/smut-writer-library/.claude/hooks/play-sound.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
