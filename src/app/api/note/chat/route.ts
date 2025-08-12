@@ -307,7 +307,6 @@ ${userSettings.chat_system_instructions || "No custom instructions provided"}
   </advanced-behaviors>
 </system>`,
       messages,
-      temperature: 0.1,
       maxTokens: 10000,
       tools: {
         basicSearchNotesTool,

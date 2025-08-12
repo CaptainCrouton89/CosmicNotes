@@ -27,6 +27,7 @@ export async function generateNoteSummary(notes: Note[], category: Category) {
     model,
     system,
     prompt,
+    temperature: 1,
     schema: z.object({
       [schemaKey]: z.string().describe(schemaValue),
     }),
@@ -56,6 +57,7 @@ export async function generateNoteCategory(
 ): Promise<Category> {
   const result = await generateObject({
     model: openai("gpt-5-nano"),
+    temperature: 1,
     system:
       "You are an assistant that helps categorize notes into a few broad categories.",
     prompt: `Determine the most likely category for the following note:
@@ -93,6 +95,7 @@ export async function generateNoteFields(content: string): Promise<{
 }> {
   const result = await generateObject({
     model: openai("gpt-5-nano"),
+    temperature: 1,
     system:
       "You are a helpful assistant that specializes in organizing and categorizing notes.",
     prompt: `Generate a concise title and determine the most appropriate category and zone for the following note:
@@ -114,9 +117,7 @@ export async function generateNoteFields(content: string): Promise<{
         .describe("The most appropriate category for the note"),
       zone: z
         .enum(ZONES)
-        .describe(
-          "The most appropriate zone for the note (personal or work)"
-        ),
+        .describe("The most appropriate zone for the note (personal or work)"),
     }),
   });
 
@@ -130,6 +131,7 @@ export async function generateNoteFields(content: string): Promise<{
 export async function generateWeeklyReview(notes: Note[]) {
   const result = await generateObject({
     model: openai("gpt-5"),
+    temperature: 1,
     system:
       "You are a thoughtful assistant that helps users reflect on their notes from the past week. Create a helpful summary that identifies themes, patterns, and insights.",
     prompt: `
@@ -180,6 +182,7 @@ export async function convertContentToItems(
     model,
     system,
     prompt,
+    temperature: 1,
     schema: z.object({
       items: z.array(z.string()).describe(itemsArrayDescription),
     }),
@@ -191,6 +194,7 @@ export async function convertContentToItems(
 export async function generateTags(cleanedContent: string, tagPrompt?: string) {
   return await generateObject({
     model: openai("gpt-5-nano"),
+    temperature: 1,
     system:
       "You are a helpful assistant that extracts relevant tags from content.",
     prompt: `Identify 3-5 tags that best describe the content. Try to include some that are both more and less specific.

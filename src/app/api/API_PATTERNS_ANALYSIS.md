@@ -80,10 +80,19 @@ All routes follow consistent patterns:
 export const runtime = "edge"; // All routes use Edge Runtime
 
 // Standard HTTP methods
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {}
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {}
 export async function POST(req: NextRequest) {}
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {}
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {}
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {}
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {}
 ```
 
 ### 2. Service Layer Pattern
@@ -114,7 +123,7 @@ try {
   } else {
     console.error(error);
   }
-  
+
   return NextResponse.json(
     { error: "There was an error processing your request" },
     { status: 500 }
@@ -125,6 +134,7 @@ try {
 ### 4. Authentication
 
 Authentication is handled via Supabase middleware:
+
 - The middleware runs on all routes except static files
 - It checks for authenticated users and redirects to `/login` if not authenticated
 - Individual routes don't need to handle auth checks
@@ -132,6 +142,7 @@ Authentication is handled via Supabase middleware:
 ### 5. Request/Response Patterns
 
 #### Query Parameters
+
 ```typescript
 const url = new URL(req.url);
 const page = parseInt(url.searchParams.get("page") || "1");
@@ -140,6 +151,7 @@ const category = url.searchParams.get("category") as Category;
 ```
 
 #### Request Body
+
 ```typescript
 const requestData = await req.json();
 if (!requestData) {
@@ -148,6 +160,7 @@ if (!requestData) {
 ```
 
 #### Pagination Response
+
 ```typescript
 return NextResponse.json({
   content: items,
@@ -171,10 +184,11 @@ import { openai } from "@ai-sdk/openai";
 
 const result = streamText({
   model: openai(getModeModel(mode)),
-  temperature: 0.1,
   system: systemPrompt,
   messages,
-  tools: { /* AI tools */ },
+  tools: {
+    /* AI tools */
+  },
 });
 
 return result.toDataStreamResponse();
@@ -204,6 +218,7 @@ export const basicSearchNotesTool = tool({
 ### 1. Resource CRUD Operations
 
 Standard RESTful pattern for resources:
+
 - `GET /api/[resource]` - List with pagination
 - `POST /api/[resource]` - Create new
 - `GET /api/[resource]/[id]` - Get specific
@@ -213,6 +228,7 @@ Standard RESTful pattern for resources:
 ### 2. Nested Resource Routes
 
 For related resources:
+
 - `/api/note/[noteId]/tag/[tagId]` - Manage note-tag relations
 - `/api/note/[noteId]/item` - Add items to note
 - `/api/tag/[id]/cluster` - Get clusters for tag
@@ -220,6 +236,7 @@ For related resources:
 ### 3. Action Routes
 
 For specific operations:
+
 - `/api/note/[noteId]/refresh` - Refresh note metadata
 - `/api/tag/cleanup` - Cleanup problematic tags
 - `/api/tag/refine` - AI-powered tag refinement
@@ -228,6 +245,7 @@ For specific operations:
 ### 4. Search Routes
 
 Specialized search endpoints:
+
 - `/api/note/search` - Semantic search using embeddings
 - Chat tools provide both basic (filter) and deep (semantic) search
 
@@ -236,6 +254,7 @@ Specialized search endpoints:
 ### 1. Database Interaction
 
 All database operations go through service classes:
+
 ```typescript
 const { noteService } = await initializeServices();
 const note = await noteService.getNoteById(id);
@@ -266,6 +285,7 @@ const note = await noteService.getNoteById(id);
 ### 1. Chat History Management
 
 Both notes and clusters have chat history:
+
 - `GET` retrieves existing history
 - `POST` saves new history
 - History includes messages and metadata
@@ -273,6 +293,7 @@ Both notes and clusters have chat history:
 ### 2. AI Integration
 
 Multiple AI-powered endpoints:
+
 - Chat interfaces with tool support
 - Tag suggestion and refinement
 - Cluster generation
@@ -281,6 +302,7 @@ Multiple AI-powered endpoints:
 ### 3. Batch Operations
 
 Some routes handle batch operations:
+
 - `/api/tag/apply-merges` - Apply multiple tag merges
 - `/api/tag/cleanup` - Clean multiple problematic tags
 
@@ -300,13 +322,16 @@ Some routes handle batch operations:
 ## Common Utilities
 
 ### Error Classes
+
 - `UserError`: Client errors (400)
 - `ApplicationError`: Server errors with logging
 
 ### Service Initialization
+
 - `initializeServices()`: Creates all services with dependencies
 
 ### AI Utilities
+
 - `getModeModel()`: Selects AI model based on mode
 - Tool definitions for consistent AI interactions
 

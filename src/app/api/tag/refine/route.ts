@@ -25,6 +25,7 @@ export async function POST() {
         
         Additional user information:
         ${userSettings.merge_tag_prompt}`,
+      temperature: 1,
       prompt: `Analyze these tags and identify groups of similar or related tags that should be merged.
                For each group, select the most appropriate tag as the primary tag.
                Only suggest merging tags that are truly similar or represent the same concept.

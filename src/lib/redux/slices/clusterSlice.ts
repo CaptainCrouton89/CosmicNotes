@@ -107,7 +107,11 @@ const clusterSlice = createSlice({
         state.validNoteCategories = [
           ...new Set(payload.notes.map((note) => note.category)),
         ];
-        state.activeCategory = payload.notes[0].category;
+        // Initialize active category only if not already chosen (via URL or user interaction)
+        if (!state.activeCategory) {
+          state.activeCategory =
+            payload.notes.length > 0 ? payload.notes[0].category : null;
+        }
         state.clusterMap = map;
       }
     );
