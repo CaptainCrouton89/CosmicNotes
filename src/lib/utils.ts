@@ -91,12 +91,12 @@ export const sanitizeText = (text: string): string => {
 export const getModeModel = (mode: Mode): string => {
   switch (mode) {
     case "standard":
-      return "gpt-4.1-nano";
+      return "gpt-5-nano";
     case "medium":
-      return "gpt-4.1-mini";
+      return "gpt-5-mini";
     case "high":
-      return "gpt-4.1";
+      return "gpt-5";
     default:
-      return "gpt-4.1"; // Default to highest capability
+      return "gpt-5"; // Default to highest capability
   }
 };

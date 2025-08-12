@@ -51,7 +51,7 @@ export const getScratchpadPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `Please organize the following scratchpad notes into a coherent document. Preserve all original thoughts while creating a logical structure.\n\n${notes
     .map((note) => formatNote(note, { title: true }))
     .join("\n\n")}`,
-  model: openai("gpt-4.1-mini-2025-04-14"),
+  model: openai("gpt-5-mini"),
   schemaKey: "document",
   schemaValue: "The organized scratchpad notes",
 });
@@ -61,7 +61,7 @@ export const getCollectionsPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `Please organize the following collection notes into a single comprehensive collection with logical groupings.\n\n${notes
     .map((note) => formatNote(note, { title: true }))
     .join("\n\n")}`,
-  model: openai("gpt-4.1-mini-2025-04-14"),
+  model: openai("gpt-5-mini"),
   schemaKey: "collection",
   schemaValue: "The organized collection notes",
 });
@@ -71,7 +71,7 @@ export const getBrainstormPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `Please organize the following brainstorm notes into a coherent ideation document that preserves all original concepts and ideas.\n\n${notes
     .map((note) => formatNote(note, { title: true }))
     .join("\n\n")}`,
-  model: openai("gpt-4.1-2025-04-14"),
+  model: openai("gpt-5"),
   schemaKey: "brainstorm",
   schemaValue: "The organized brainstorm notes",
 });
@@ -81,7 +81,7 @@ export const getJournalPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `Please organize the following journal entries chronologically while preserving the authentic voice and emotional context of each entry.\n\n${notes
     .map((note) => formatNote(note, { date: true, id: true, title: true }))
     .join("\n\n")}`,
-  model: openai("gpt-4.1-mini-2025-04-14"),
+  model: openai("gpt-5-mini"),
   schemaKey: "journal",
   schemaValue: "The organized journal notes",
 });
@@ -91,7 +91,7 @@ export const getMeetingPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `Please organize the following meeting notes into a comprehensive professional document with clear sections for decisions and action items.\n\n${notes
     .map((note) => formatNote(note, { date: true, id: true, title: true }))
     .join("\n\n")}`,
-  model: openai("gpt-4.1-mini-2025-04-14"),
+  model: openai("gpt-5-mini"),
   schemaKey: "meetings",
   schemaValue: "The organized meeting notes",
 });
@@ -101,7 +101,7 @@ export const getResearchPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `Please organize the following research notes into a comprehensive academic document that maintains all factual content and citations.\n\n${notes
     .map((note) => formatNote(note, { title: true }))
     .join("\n\n")}`,
-  model: openai("gpt-4.1-2025-04-14"),
+  model: openai("gpt-5"),
   schemaKey: "research",
   schemaValue: "The organized research notes",
 });
@@ -111,7 +111,7 @@ export const getLearningPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `Please organize the following learning notes into a comprehensive study guide with a logical progression from fundamental to advanced concepts.\n\n${notes
     .map((note) => formatNote(note, { title: true }))
     .join("\n\n")}`,
-  model: openai("gpt-4.1-2025-04-14"),
+  model: openai("gpt-5"),
   schemaKey: "learning",
   schemaValue: "The organized learning notes",
 });
@@ -121,7 +121,7 @@ export const getFeedbackPrompt = (notes: Note[]): SummaryPrompt => ({
   prompt: `Please organize the following feedback notes into a structured report that preserves the original sentiment and priority of each point.\n\n${notes
     .map((note) => formatNote(note, { date: true, id: true, title: true }))
     .join("\n\n")}`,
-  model: openai("gpt-4.1-mini-2025-04-14"),
+  model: openai("gpt-5-mini"),
   schemaKey: "feedback",
   schemaValue: "The organized feedback notes",
 });

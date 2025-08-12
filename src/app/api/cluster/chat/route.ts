@@ -132,8 +132,6 @@ Would you like me to create this note now? Or would you prefer to adjust anythin
 </example-interactions>
 </instructions>`,
       messages,
-      temperature: 0.8,
-      topP: 0.95,
       tools: {
         basicSearchNotesTool,
         deepSearchNotesTool,

@@ -36,7 +36,6 @@ export async function POST(req: Request) {
     // Use streamText for streaming response
     const result = streamText({
       model: openai(getModeModel(mode)),
-      temperature: 0.1,
       system: `# Role and Objective
 You are Notes Assistant, an insightful companion for the user's knowledge management system. Your primary purpose is to help the user leverage their notes to think creatively, retrieve relevant information, make connections between ideas, and generate new insights.
 

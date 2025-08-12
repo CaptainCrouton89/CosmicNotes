@@ -25,8 +25,6 @@ export async function generateNoteSummary(notes: Note[], category: Category) {
 
   const result = await generateObject({
     model,
-    temperature: 0.2,
-    topP: 0,
     system,
     prompt,
     schema: z.object({
@@ -40,7 +38,6 @@ export async function generateNoteSummary(notes: Note[], category: Category) {
 export async function generateNoteTitle(content: string) {
   const result = await generateObject({
     model: google("gemini-1.5-flash"),
-    temperature: 0,
     system:
       "You are a helpful assistant that specializes in turning disorganized notes into well-organized, markdown formatted notes.",
     prompt: `Come up with a concise title for the following note:
@@ -58,8 +55,7 @@ export async function generateNoteCategory(
   similarNotes: (Note & { tags: { name: string }[] })[]
 ): Promise<Category> {
   const result = await generateObject({
-    model: openai("gpt-4.1-nano"),
-    temperature: 0.1,
+    model: openai("gpt-5-nano"),
     system:
       "You are an assistant that helps categorize notes into a few broad categories.",
     prompt: `Determine the most likely category for the following note:
@@ -96,8 +92,7 @@ export async function generateNoteFields(content: string): Promise<{
   zone: Zone;
 }> {
   const result = await generateObject({
-    model: openai("gpt-4.1-nano"),
-    temperature: 0.2,
+    model: openai("gpt-5-nano"),
     system:
       "You are a helpful assistant that specializes in organizing and categorizing notes.",
     prompt: `Generate a concise title and determine the most appropriate category and zone for the following note:
@@ -134,9 +129,7 @@ export async function generateNoteFields(content: string): Promise<{
 
 export async function generateWeeklyReview(notes: Note[]) {
   const result = await generateObject({
-    model: openai("gpt-4.1-2025-04-14"),
-    temperature: 0.3,
-    topP: 0.1,
+    model: openai("gpt-5"),
     system:
       "You are a thoughtful assistant that helps users reflect on their notes from the past week. Create a helpful summary that identifies themes, patterns, and insights.",
     prompt: `
@@ -185,7 +178,6 @@ export async function convertContentToItems(
 
   const result = await generateObject({
     model,
-    temperature: 0,
     system,
     prompt,
     schema: z.object({
@@ -198,8 +190,7 @@ export async function convertContentToItems(
 
 export async function generateTags(cleanedContent: string, tagPrompt?: string) {
   return await generateObject({
-    model: openai("gpt-4.1-nano"),
-    temperature: 0.3,
+    model: openai("gpt-5-nano"),
     system:
       "You are a helpful assistant that extracts relevant tags from content.",
     prompt: `Identify 3-5 tags that best describe the content. Try to include some that are both more and less specific.
