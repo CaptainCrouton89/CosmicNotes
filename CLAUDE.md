@@ -60,7 +60,7 @@ Main tables:
 ### Key Concepts
 
 - **Categories**: Notes are categorized as scratchpad, to-do, journal, collection, learning, research, meeting, feedback, or brainstorm
-- **Zones**: Personal, Work, or Other for organization
+- **Zones**: Personal or Work for organization
 - **Vector Search**: Notes have embeddings for semantic search
 - **Clusters**: AI-generated summaries linking related notes by tag
 

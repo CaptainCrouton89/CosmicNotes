@@ -181,7 +181,7 @@ export const addNoteTool = tool({
       .optional()
       .describe("Tag IDs to add to the note (as alternative to tags)"),
     zone: z
-      .enum(["personal", "work", "other"])
+      .enum(ZONES)
       .describe("The zone of the note"),
     category: z.enum(CATEGORIES).describe("The category of the note"),
   }),

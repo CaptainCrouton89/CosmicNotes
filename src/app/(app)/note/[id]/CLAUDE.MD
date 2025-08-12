@@ -24,7 +24,7 @@ The note editor uses a **modular, hooks-based architecture** with clear separati
 
 ### Sub-components (`_components/`)
 - **CategorySelector** - 9 categories: scratchpad, to-do, journal, collection, brainstorm, research, learning, feedback, meeting
-- **ZoneSelector** - personal, work, or other zones
+- **ZoneSelector** - personal or work zones
 - **TagList** - Autocomplete, deletion, keyboard navigation
 - **ItemList** - Checkbox items with optimistic updates
 - **NoteActions** - Save/delete with confirmation states

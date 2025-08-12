@@ -100,7 +100,7 @@ export type CompleteCluster = {
   cluster_items: Item[];
 };
 
-export const ZONES = ["personal", "work", "other"] as const;
+export const ZONES = ["personal", "work"] as const;
 export type Zone = (typeof ZONES)[number];
 
 export interface PaginatedResponse<T> {

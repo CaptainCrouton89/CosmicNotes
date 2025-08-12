@@ -7,7 +7,7 @@ Cosmic Notes is a modern note-taking application designed to help you organize y
 - **Rich Text Editor**: Create and edit notes with a full-featured Markdown editor
 - **Automatic Tagging**: AI suggests relevant tags based on your note content
 - **Note Categorization**: Organize notes by categories (scratchpad, to-do, journal, etc.)
-- **Personal/Work Zones**: Separate notes into personal, work, or other zones
+- **Personal/Work Zones**: Separate notes into personal or work zones
 - **Search**: Powerful semantic search to find notes by content similarity
 - **Tag Management**: Add, merge, and manage tags to organize your knowledge
 - **Chat Interface**: Interact with your notes through a conversational interface
@@ -90,7 +90,7 @@ Notes are created with metadata including:
 
 - Content (Markdown)
 - Category (scratchpad, to-do, journal, collection, etc.)
-- Zone (personal, work, other)
+- Zone (personal, work)
 - Tags (automatically suggested and manually selectable)
 
 ### Tag System

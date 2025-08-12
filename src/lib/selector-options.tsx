@@ -4,7 +4,6 @@ import {
   Book,
   Briefcase,
   FolderKanban,
-  Globe,
   GraduationCap,
   Home,
   Layers,
@@ -36,13 +35,6 @@ export const getZoneOptions = (): SelectorOption<Zone>[] => [
     icon: <Briefcase className="h-3.5 w-3.5" />,
     menuIconComponent: <Briefcase className="mr-2 h-4 w-4 text-green-600" />,
     colorClasses: "bg-green-50 text-green-700 hover:bg-green-100",
-  },
-  {
-    value: "other",
-    label: "Other",
-    icon: <Globe className="h-3.5 w-3.5" />,
-    menuIconComponent: <Globe className="mr-2 h-4 w-4 text-gray-600" />,
-    colorClasses: "bg-gray-50 text-gray-700 hover:bg-gray-100",
   },
 ];
 

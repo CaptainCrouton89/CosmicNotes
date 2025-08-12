@@ -115,7 +115,7 @@ export async function generateNoteFields(content: string): Promise<{
       zone: z
         .enum(ZONES)
         .describe(
-          "The most appropriate zone for the note (personal, work, or other)"
+          "The most appropriate zone for the note (personal or work)"
         ),
     }),
   });

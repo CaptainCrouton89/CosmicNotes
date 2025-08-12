@@ -527,7 +527,7 @@ export type Database = {
         | "research"
         | "learning"
         | "feedback"
-      note_zone: "personal" | "work" | "other"
+      note_zone: "personal" | "work"
       priority: "low" | "medium" | "high"
       requirement_priority: "low" | "medium" | "high" | "critical"
       requirement_status:
@@ -689,7 +689,7 @@ export const Constants = {
         "learning",
         "feedback",
       ],
-      note_zone: ["personal", "work", "other"],
+      note_zone: ["personal", "work"],
       priority: ["low", "medium", "high"],
       requirement_priority: ["low", "medium", "high", "critical"],
       requirement_status: [
